@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.zones;
 
+import openfl.utils.ByteArray;
+import openfl.display.BitmapData;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 import idv.cjcat.stardustextended.geom.MotionData2D;
 import idv.cjcat.stardustextended.geom.MotionData2DPool;
@@ -44,7 +46,8 @@ class BitmapZone extends Zone {
 
 		var ba:ByteArray = bitmapData.getPixels(bitmapData.rect);
 		var len:Int = ba.length >> 2;
-		as3hx.Compat.setArrayLength(xCoords, as3hx.Compat.setArrayLength(yCoords, len));
+		xCoords.resize(len);
+		yCoords.resize(len);
 
 		var xPos:Int = 0;
 		var yPos:Int = 0;
@@ -64,12 +67,11 @@ class BitmapZone extends Zone {
 	}
 
 	override public function contains(x:Float, y:Float):Bool {
-		x = Std.int(x + 0.5);
-		y = Std.int(y + 0.5);
-		if (Std.int(bmpd.getPixel32(x, y) >> 24)) {
-			return true;
-		}
-		return false;
+		var intX = Std.int(x + 0.5);
+		var intY = Std.int(y + 0.5);
+		var pixel = bmpd.getPixel32(intX, intY);
+		var alpha = (pixel >> 24) & 0xFF;
+		return alpha != 0;
 	}
 
 	override public function calculateMotionData2D():MotionData2D {
@@ -89,27 +91,27 @@ class BitmapZone extends Zone {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.setAttribute("x", _x);
-		xml.setAttribute("y", _y);
-		xml.setAttribute("scaleX", scaleX);
-		xml.setAttribute("scaleY", scaleY);
+		xml.set("x", Std.string(_x));
+		xml.set("y", Std.string(_y));
+		xml.set("scaleX", Std.string(scaleX));
+		xml.set("scaleY", Std.string(scaleY));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			_x = as3hx.Compat.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			_x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			_y = as3hx.Compat.parseFloat(xml.att.y);
+		if (xml.exists("x")) {
+			_y = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.scaleX.length()) {
-			scaleX = as3hx.Compat.parseFloat(xml.att.scaleX);
+		if (xml.exists("scaleX")) {
+			scaleX = Std.parseFloat(xml.get("scaleX"));
 		}
-		if (xml.att.scaleY.length()) {
-			scaleY = as3hx.Compat.parseFloat(xml.att.scaleY);
+		if (xml.exists("scaleY")) {
+			scaleY = Std.parseFloat(xml.get("scaleY"));
 		}
 	}
 }

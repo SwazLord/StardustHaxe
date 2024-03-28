@@ -123,12 +123,12 @@ class Line extends Contour {
 	}
 
 	override public function toXML():Xml {
-		var xml:Xml = super.toXML();
+		var xml:Xml = cast super.toXML();
 
-		xml.setAttribute("x1", _x);
-		xml.setAttribute("y1", _y);
-		xml.setAttribute("x2", _x2);
-		xml.setAttribute("y2", _y2);
+		xml.set("x1", Std.string(_x));
+		xml.set("y1", Std.string(_y));
+		xml.set("x2", Std.string(_x2));
+		xml.set("y2", Std.string(_y2));
 
 		return xml;
 	}
@@ -136,17 +136,17 @@ class Line extends Contour {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x1.length()) {
-			_x = as3hx.Compat.parseFloat(xml.att.x1);
+		if (xml.exists("x1")) {
+			_x = Std.parseFloat(xml.get("x1"));
 		}
-		if (xml.att.y1.length()) {
-			_y = as3hx.Compat.parseFloat(xml.att.y1);
+		if (xml.exists("y1")) {
+			_y = Std.parseFloat(xml.get("y1"));
 		}
-		if (xml.att.x2.length()) {
-			_x2 = as3hx.Compat.parseFloat(xml.att.x2);
+		if (xml.exists("x2")) {
+			_x2 = Std.parseFloat(xml.get("x2"));
 		}
-		if (xml.att.y2.length()) {
-			_y2 = as3hx.Compat.parseFloat(xml.att.y2);
+		if (xml.exists("y2")) {
+			_y2 = Std.parseFloat(xml.get("y2"));
 		}
 		updateArea();
 	}

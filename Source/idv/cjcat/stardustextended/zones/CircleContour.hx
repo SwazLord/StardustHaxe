@@ -64,23 +64,23 @@ class CircleContour extends Contour {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.setAttribute("x", x);
-		xml.setAttribute("y", y);
-		xml.setAttribute("radius", radius);
+		xml.set("x", Std.string(_x));
+		xml.set("y", Std.string(_y));
+		xml.set("radius", Std.string(radius));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			_x = as3hx.Compat.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			_x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			_y = as3hx.Compat.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			_y = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.radius.length()) {
-			radius = as3hx.Compat.parseFloat(xml.att.radius);
+		if (xml.exists("radius")) {
+			radius = Std.parseFloat(xml.get("radius"));
 		}
 	}
 }

@@ -40,7 +40,7 @@ class Contour extends Zone {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("virtualThickness", virtualThickness);
+		xml.set("virtualThickness", Std.string(virtualThickness));
 
 		return xml;
 	}
@@ -48,8 +48,8 @@ class Contour extends Zone {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.virtualThickness.length()) {
-			virtualThickness = as3hx.Compat.parseFloat(xml.att.virtualThickness);
+		if (xml.exists("virtualThickness")) {
+			virtualThickness = Std.parseFloat(xml.get("virtualThickness"));
 		}
 	}
 }

@@ -124,14 +124,14 @@ class RectZone extends Zone {
 	}
 
 	override public function toXML():Xml {
-		var xml:Xml = super.toXML();
+		var xml:Xml = cast super.toXML();
 
-		xml.setAttribute("x", _x);
-		xml.setAttribute("y", _y);
-		xml.setAttribute("width", _width);
-		xml.setAttribute("height", _height);
-		xml.setAttribute("randomX", _randomX.name);
-		xml.setAttribute("randomY", _randomY.name);
+		xml.set("x", Std.string(_x));
+		xml.set("y", Std.string(_y));
+		xml.set("width", Std.string(_width));
+		xml.set("height", Std.string(_height));
+		xml.set("randomX", Std.string(_randomX.name));
+		xml.set("randomY", Std.string(_randomY.name));
 
 		return xml;
 	}
@@ -139,23 +139,23 @@ class RectZone extends Zone {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			_x = as3hx.Compat.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			_x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			_y = as3hx.Compat.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			_y = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.width.length()) {
-			width = as3hx.Compat.parseFloat(xml.att.width);
+		if (xml.exists("width")) {
+			width = Std.parseFloat(xml.get("width"));
 		}
-		if (xml.att.height.length()) {
-			height = as3hx.Compat.parseFloat(xml.att.height);
+		if (xml.exists("height")) {
+			height = Std.parseFloat(xml.get("height"));
 		}
-		if (xml.att.randomX.length()) {
-			randomX = try cast(builder.getElementByName(xml.att.randomX), Random) catch (e:Dynamic) null;
+		if (xml.exists("randomX")) {
+			randomX = try cast(builder.getElementByName(xml.get("randomX")), Random) catch (e:Dynamic) null;
 		}
-		if (xml.att.randomY.length()) {
-			randomY = try cast(builder.getElementByName(xml.att.randomY), Random) catch (e:Dynamic) null;
+		if (xml.exists("randomY")) {
+			randomY = try cast(builder.getElementByName(xml.get("randomY")), Random) catch (e:Dynamic) null;
 		}
 	}
 }

@@ -141,7 +141,7 @@ class RectContour extends Composite {
 		return xml;
 	}
 
-	override public function parseXML(xml:Xml, builder:XmlBuilder = null):Void {
+	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 		// parsing removes all zones, so we add them back
 		addZone(_line1);

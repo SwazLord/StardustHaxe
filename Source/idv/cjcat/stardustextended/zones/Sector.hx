@@ -146,36 +146,36 @@ class Sector extends Zone {
 	}
 
 	override public function toXML():Xml {
-		var xml:Xml = super.toXML();
-		xml.setAttribute("x", _x);
-		xml.setAttribute("y", _y);
-		xml.setAttribute("minRadius", minRadius);
-		xml.setAttribute("maxRadius", maxRadius);
-		xml.setAttribute("minAngle", minAngle);
-		xml.setAttribute("maxAngle", maxAngle);
+		var xml:Xml = cast super.toXML();
+		xml.set("x", Std.string(_x));
+		xml.set("y", Std.string(_y));
+		xml.set("minRadius", Std.string(minRadius));
+		xml.set("maxRadius", Std.string(maxRadius));
+		xml.set("minAngle", Std.string(minAngle));
+		xml.set("maxAngle", Std.string(maxAngle));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			_x = as3hx.Compat.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			_x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			_y = as3hx.Compat.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			_y = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.minRadius.length()) {
-			minRadius = as3hx.Compat.parseFloat(xml.att.minRadius);
+		if (xml.exists("minRadius")) {
+			minRadius = Std.parseFloat(xml.get("minRadius"));
 		}
-		if (xml.att.maxRadius.length()) {
-			maxRadius = as3hx.Compat.parseFloat(xml.att.maxRadius);
+		if (xml.exists("maxRadius")) {
+			maxRadius = Std.parseFloat(xml.get("maxRadius"));
 		}
-		if (xml.att.minAngle.length()) {
-			minAngle = as3hx.Compat.parseFloat(xml.att.minAngle);
+		if (xml.exists("minAngle")) {
+			minAngle = Std.parseFloat(xml.get("minAngle"));
 		}
-		if (xml.att.maxAngle.length()) {
-			maxAngle = as3hx.Compat.parseFloat(xml.att.maxAngle);
+		if (xml.exists("maxAngle")) {
+			maxAngle = Std.parseFloat(xml.get("maxAngle"));
 		}
 	}
 }

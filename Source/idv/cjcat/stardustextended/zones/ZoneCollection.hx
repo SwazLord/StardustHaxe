@@ -1,10 +1,11 @@
 package idv.cjcat.stardustextended.zones;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 import idv.cjcat.stardustextended.geom.MotionData2D;
 
 class ZoneCollection {
-	public var zones:Array<Zone> = new Array<Zone>();
+	public var zones:Vector<Zone> = new Vector<Zone>();
 
 	public function new():Void {}
 
@@ -15,7 +16,7 @@ class ZoneCollection {
 			var sumArea:Float = 0;
 			var areas:Array<Float> = new Array<Float>();
 			for (i in 0...numZones) {
-				sumArea += Zone(zones[i]).getArea();
+				sumArea += cast(zones[i], Zone).getArea();
 				areas.push(sumArea);
 			}
 			var position:Float = Math.random() * sumArea;
@@ -57,10 +58,10 @@ class ZoneCollection {
 	}
 
 	inline public final function parseFromStardustXML(stardustXML:Xml, builder:XMLBuilder):Void {
-		zones = new Array<Zone>();
+		zones = new Vector<Zone>();
 		var access = new haxe.xml.Access(stardustXML);
 		for (node in access.node.zones.elements) {
-			zones.push(Zone(builder.getElementByName(node.att.name)));
+			zones.push(cast(builder.getElementByName(node.att.name), Zone));
 		}
 	}
 }

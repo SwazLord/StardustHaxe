@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.zones;
 
+import openfl.errors.Error;
+import openfl.geom.Point;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.math.StardustMath;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
@@ -145,14 +147,14 @@ class Zone extends StardustElement implements IPosition {
 	}
 
 	override public function toXML():Xml {
-		var xml:Xml = super.toXML();
-		xml.setAttribute("rotation", _rotation);
+		var xml:Xml = cast super.toXML();
+		xml.set("rotation", Std.string(_rotation));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		rotation = as3hx.Compat.parseFloat(xml.att.rotation);
+		rotation = Std.parseFloat(xml.get("rotation"));
 	}
 }
