@@ -2,7 +2,7 @@ package com.funkypandagame.stardustplayer.emitter;
 
 import com.funkypandagame.stardustplayer.Particle2DSnapshot;
 import openfl.Lib.registerClassAlias;
-import flash.utils.ByteArray;
+import openfl.utils.ByteArray;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.particles.PooledParticleFactory;

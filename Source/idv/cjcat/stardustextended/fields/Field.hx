@@ -1,7 +1,7 @@
 package idv.cjcat.stardustextended.fields;
 
-import flash.errors.Error;
-import flash.geom.Point;
+import openfl.errors.Error;
+import openfl.geom.Point;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;

@@ -1,14 +1,9 @@
 package idv.cjcat.stardustextended.interfaces;
 
-import flash.geom.Point;
+import openfl.geom.Point;
 
-interface IPosition
-{
+interface IPosition {
+	function setPosition(xc:Float, yc:Float):Void;
 
-    function setPosition(xc : Float, yc : Float) : Void
-    ;
-    
-    function getPosition() : Point
-    ;
+	function getPosition():Point;
 }
-

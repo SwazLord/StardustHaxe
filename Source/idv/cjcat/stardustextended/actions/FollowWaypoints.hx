@@ -88,7 +88,7 @@ class FollowWaypoints extends Action {
 
 		var index:Int = particle.dictionary[FollowWaypoints];
 		if (index >= numWPs) {
-			index = as3hx.Compat.parseInt(numWPs - 1);
+			index = Std.int(numWPs - 1);
 			particle.dictionary[FollowWaypoints] = index;
 		}
 

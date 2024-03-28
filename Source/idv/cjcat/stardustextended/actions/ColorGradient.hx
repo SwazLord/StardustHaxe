@@ -74,7 +74,7 @@ class ColorGradient extends Action {
 		sprite.graphics.endFill();
 		var bd:BitmapData = new BitmapData(numSteps, 1, true, 0x00000000);
 		bd.draw(sprite);
-		var i:Int = as3hx.Compat.parseInt(numSteps - 1);
+		var i:Int = Std.int(numSteps - 1);
 		while (i > -1) {
 			var color:Int = bd.getPixel32(i, 0);
 			colorRs.push(ColorUtil.extractRed(color));
@@ -91,7 +91,7 @@ class ColorGradient extends Action {
 	}
 
 	inline final override public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void {
-		var ratio:Int = as3hx.Compat.parseInt((numSteps - 1) * particle.life / particle.initLife);
+		var ratio:Int = Std.int((numSteps - 1) * particle.life / particle.initLife);
 
 		particle.colorR = colorRs[ratio];
 		particle.colorB = colorBs[ratio];

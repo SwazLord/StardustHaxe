@@ -25,13 +25,13 @@ class PixelHandler extends ParticleHandler {
 
 	inline final override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
 		for (particle in particles) {
-			x = as3hx.Compat.parseInt(particle.x + 0.5);
+			x = Std.int(particle.x + 0.5);
 
 			if ((x < 0) || (x >= targetBitmapData.width)) {
 				return;
 			}
 
-			y = as3hx.Compat.parseInt(particle.y + 0.5);
+			y = Std.int(particle.y + 0.5);
 
 			if ((y < 0) || (y >= targetBitmapData.height)) {
 				return;
@@ -39,7 +39,7 @@ class PixelHandler extends ParticleHandler {
 
 			var rgbColor:Int = ColorUtil.rgbToHex(particle.colorR, particle.colorG, particle.colorB);
 
-			finalColor = as3hx.Compat.parseInt(rgbColor & 0xFFFFFF) | as3hx.Compat.parseInt(as3hx.Compat.parseInt(particle.alpha * 255) << 24);
+			finalColor = Std.int(rgbColor & 0xFFFFFF) | Std.int(Std.int(particle.alpha * 255) << 24);
 
 			targetBitmapData.setPixel32(x, y, finalColor);
 		}

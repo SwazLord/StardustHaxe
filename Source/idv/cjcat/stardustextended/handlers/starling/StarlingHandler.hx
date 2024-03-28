@@ -1,7 +1,7 @@
 package idv.cjcat.stardustextended.handlers.starling;
 
-import flash.errors.ArgumentError;
-import flash.errors.Error;
+import openfl.errors.ArgumentError;
+import openfl.errors.Error;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.handlers.ISpriteSheetHandler;
 import idv.cjcat.stardustextended.handlers.ParticleHandler;
@@ -79,7 +79,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 					_particle = particles[_i];
 					_currentFrame = _particle.currentAnimationFrame;
 
-					_currentFrame = as3hx.Compat.parseInt(_currentFrame + _stepSize);
+					_currentFrame = Std.int(_currentFrame + _stepSize);
 
 					if (_currentFrame >= _totalFrames) {
 						_currentFrame = 0;
@@ -100,7 +100,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 			var currFrame:Int = 0;
 
 			if (_spriteSheetStartAtRandomFrame) {
-				currFrame = as3hx.Compat.parseInt(Math.random() * _totalFrames);
+				currFrame = Std.int(Math.random() * _totalFrames);
 			}
 
 			particle.currentAnimationFrame = currFrame;

@@ -33,9 +33,9 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 			var bmp:CenteredBitmap = cast((particle.target), CenteredBitmap);
 			if (_isSpriteSheet && _spriteSheetAnimationSpeed > 0) {
 				var currFrame:Int = particle.currentAnimationFrame;
-				var nextFrame:Int = as3hx.Compat.parseInt((currFrame + time) % _totalFrames);
-				var nextImageIndex:Int = as3hx.Compat.parseInt(nextFrame / _spriteSheetAnimationSpeed);
-				var currImageIndex:Int = as3hx.Compat.parseInt(currFrame / _spriteSheetAnimationSpeed);
+				var nextFrame:Int = Std.int((currFrame + time) % _totalFrames);
+				var nextImageIndex:Int = Std.int(nextFrame / _spriteSheetAnimationSpeed);
+				var currImageIndex:Int = Std.int(currFrame / _spriteSheetAnimationSpeed);
 				if (nextImageIndex != currImageIndex) {
 					bmp.bitmapData = _images[nextImageIndex];
 					bmp.smoothing = _smoothing;
@@ -55,10 +55,10 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 			makeSpriteSheetCache();
 			var currFrame:Int = 0;
 			if (_spriteSheetStartAtRandomFrame) {
-				currFrame = as3hx.Compat.parseInt(Math.random() * _totalFrames);
+				currFrame = Std.int(Math.random() * _totalFrames);
 			}
 			if (_spriteSheetAnimationSpeed > 0) {
-				bmp.bitmapData = _images[as3hx.Compat.parseInt(currFrame / _spriteSheetAnimationSpeed)];
+				bmp.bitmapData = _images[Std.int(currFrame / _spriteSheetAnimationSpeed)];
 			} else {
 				bmp.bitmapData = _images[currFrame];
 			}
@@ -93,7 +93,7 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 	}
 
 	private function get_spriteSheetAnimationSpeed():Int {
-		return as3hx.Compat.parseInt(_spriteSheetAnimationSpeed);
+		return Std.int(_spriteSheetAnimationSpeed);
 	}
 
 	private function set_spriteSheetStartAtRandomFrame(spriteSheetStartAtRandomFrame:Bool):Bool {
@@ -123,11 +123,11 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 			return;
 		}
 		_isSpriteSheet = _images.length > 1;
-		var numStates:Int = as3hx.Compat.parseInt(_spriteSheetAnimationSpeed);
+		var numStates:Int = Std.int(_spriteSheetAnimationSpeed);
 		if (numStates == 0) {
 			numStates = 1;
 		}
-		_totalFrames = as3hx.Compat.parseInt(numStates * _images.length);
+		_totalFrames = Std.int(numStates * _images.length);
 	}
 
 	// Xml

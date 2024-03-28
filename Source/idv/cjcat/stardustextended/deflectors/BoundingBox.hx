@@ -1,6 +1,6 @@
 package idv.cjcat.stardustextended.deflectors;
 
-import flash.geom.Point;
+import openfl.geom.Point;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 import idv.cjcat.stardustextended.geom.MotionData4D;

@@ -94,7 +94,7 @@ class StarlingParticleBuffers {
 	/** Call this function to switch to the next Vertex buffer before calling uploadFromVector() to implement multi
 	 *  buffering. Has only effect if numberOfVertexBuffers > 1 */
 	inline public static function switchVertexBuffer():Void {
-		_vertexBufferIdx = as3hx.Compat.parseInt(++_vertexBufferIdx % sNumberOfVertexBuffers);
+		_vertexBufferIdx = Std.int(++_vertexBufferIdx % sNumberOfVertexBuffers);
 	}
 
 	inline private static function get_vertexBuffer():VertexBuffer3D {

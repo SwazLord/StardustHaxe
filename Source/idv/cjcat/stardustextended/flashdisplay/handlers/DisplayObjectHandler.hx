@@ -107,7 +107,7 @@ class DisplayObjectHandler extends ParticleHandler {
 		super.parseXML(xml, builder);
 
 		if (xml.att.addChildMode.length()) {
-			addChildMode = as3hx.Compat.parseInt(xml.att.addChildMode);
+			addChildMode = Std.int(xml.att.addChildMode);
 		}
 		if (xml.att.forceParentChange.length()) {
 			forceParentChange = (xml.att.forceParentChange == "true");

@@ -48,7 +48,7 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 
 	override public function doInitialize(particles:Array<Particle>, currentTime:Float):Void {
 		if (positions != null) {
-			currentPos = as3hx.Compat.parseInt(currentTime % positions.length);
+			currentPos = Std.int(currentTime % positions.length);
 			prevPos = ((currentPos > 0)) ? currentPos - 1 : positions.length - 1;
 		}
 		super.doInitialize(particles, currentTime);

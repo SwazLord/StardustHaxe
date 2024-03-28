@@ -64,9 +64,9 @@ class BitmapZone extends Zone {
 	}
 
 	override public function contains(x:Float, y:Float):Bool {
-		x = as3hx.Compat.parseInt(x + 0.5);
-		y = as3hx.Compat.parseInt(y + 0.5);
-		if (as3hx.Compat.parseInt(bmpd.getPixel32(x, y) >> 24)) {
+		x = Std.int(x + 0.5);
+		y = Std.int(y + 0.5);
+		if (Std.int(bmpd.getPixel32(x, y) >> 24)) {
 			return true;
 		}
 		return false;
@@ -76,7 +76,7 @@ class BitmapZone extends Zone {
 		if (xCoords.length == 0) {
 			return MotionData2DPool.get(0, 0);
 		}
-		var index:Int = as3hx.Compat.parseInt(coordLength * Math.random());
+		var index:Int = Std.int(coordLength * Math.random());
 		return MotionData2DPool.get(xCoords[index] * scaleX, yCoords[index] * scaleY);
 	}
 

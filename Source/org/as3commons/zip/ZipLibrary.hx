@@ -16,8 +16,8 @@
 
 package org.as3commons.zip;
 
+import openfl.errors.ArgumentError;
 import openfl.errors.Error;
-import openfl.errors.ReferenceError;
 import openfl.events.*;
 import openfl.display.Bitmap;
 import openfl.display.BitmapData;
@@ -48,8 +48,8 @@ import openfl.utils.ByteArray;
  *
  * <pre>
  * package {
- * 	import flash.events.*;
- * 	import flash.display.BitmapData;
+ * 	import openfl.events.*;
+ * 	import openfl.display.BitmapData;
  * 	import org.as3commons.zip.Zip;
  * 	import org.as3commons.org.ZipLibrary;
  *
@@ -93,8 +93,8 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 	private var currentFilename:String;
 	private var currentZip:Zip;
 	private var currentLoader:Loader;
-	private var bitmapDataFormat:EReg = new EReg("[]");
-	private var displayObjectFormat:EReg = new EReg("[]");
+	private var bitmapDataFormat:EReg = ~/[]/;
+	private var displayObjectFormat:EReg = ~/[]/;
 	private var bitmapDataList:Dynamic = {};
 	private var displayObjectList:Dynamic = {};
 
@@ -139,7 +139,10 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 	 * @private
 	 */
 	private function addExtension(original:EReg, ext:String):EReg {
-		return new EReg(ext.replace( / [ ^ A - Za - z0 - 9] /, "\\$&") + "$|" + original.source);
+		var pattern:EReg = ~/[^A-Za-z0-9]/;
+		var replacement:String = "\\$&";
+		var result:String = pattern.replace(ext, replacement);
+		return new EReg(result + "$|" + original, "");
 	}
 
 	/**
@@ -151,7 +154,7 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 	 */
 	public function getBitmapData(filename:String):BitmapData {
 		if (Std.is(!Reflect.field(bitmapDataList, filename), BitmapData)) {
-			throw new Error("File \"" + filename + "\" was not found as a BitmapData");
+			throw new ArgumentError("File \"" + filename + "\" was not found as a BitmapData");
 		}
 		return try cast(Reflect.field(bitmapDataList, filename), BitmapData) catch (e:Dynamic) null;
 	}
@@ -165,7 +168,7 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 	 */
 	public function getDisplayObject(filename:String):DisplayObject {
 		if (!displayObjectList.exists(filename)) {
-			throw new ReferenceError("File \"" + filename + "\" was not found as a DisplayObject");
+			throw new ArgumentError("File \"" + filename + "\" was not found as a DisplayObject");
 		}
 		return try cast(Reflect.field(displayObjectList, filename), DisplayObject) catch (e:Dynamic) null;
 	}
@@ -180,13 +183,13 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 	 */
 	public function getDefinition(filename:String, definition:String):Dynamic {
 		if (!displayObjectList.exists(filename)) {
-			throw new ReferenceError("File \"" + filename + "\" was not found as a DisplayObject, ");
+			throw new ArgumentError("File \"" + filename + "\" was not found as a DisplayObject, ");
 		}
 		var disp:DisplayObject = try cast(Reflect.field(displayObjectList, filename), DisplayObject) catch (e:Dynamic) null;
 		try {
 			return disp.loaderInfo.applicationDomain.getDefinition(definition);
-		} catch (e:ReferenceError) {
-			throw new ReferenceError("Definition \"" + definition + "\" in file \"" + filename + "\" could not be retrieved: " + e.message);
+		} catch (e:Error) {
+			throw new ArgumentError("Definition \"" + definition + "\" in file \"" + filename + "\" could not be retrieved: " + e.message);
 		}
 		return null;
 	}
@@ -198,13 +201,13 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 		while (currentState == 0) {
 			if (pendingFiles.length > 0) {
 				var nextFile:ZipFile = pendingFiles.pop();
-				if (bitmapDataFormat.test(nextFile.filename)) {
+				if (bitmapDataFormat.match(nextFile.filename)) {
 					currentState = currentState | FORMAT_BITMAPDATA;
 				}
-				if (displayObjectFormat.test(nextFile.filename)) {
+				if (displayObjectFormat.match(nextFile.filename)) {
 					currentState = currentState | FORMAT_DISPLAYOBJECT;
 				}
-				if ((currentState & as3hx.Compat.parseInt(FORMAT_BITMAPDATA | FORMAT_DISPLAYOBJECT)) != 0) {
+				if ((currentState & Std.int(FORMAT_BITMAPDATA | FORMAT_DISPLAYOBJECT)) != 0) {
 					currentFilename = nextFile.filename;
 					currentLoader = new Loader();
 					currentLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, loaderCompleteHandler);
@@ -249,8 +252,8 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 				var bitmapData:BitmapData = (try cast(currentLoader.content, Bitmap) catch (e:Dynamic) null).bitmapData;
 				Reflect.setField(bitmapDataList, currentFilename, bitmapData.clone());
 			} else if (Std.is(currentLoader.content, DisplayObject)) {
-				var width:Int = as3hx.Compat.parseInt(currentLoader.content.width);
-				var height:Int = as3hx.Compat.parseInt(currentLoader.content.height);
+				var width:Int = Std.int(currentLoader.content.width);
+				var height:Int = Std.int(currentLoader.content.height);
 				if (width != 0 && height != 0) {
 					var bitmapData2:BitmapData = new BitmapData(width, height, true, 0x00000000);
 					bitmapData2.draw(currentLoader);
@@ -275,7 +278,7 @@ class ZipLibrary extends EventDispatcher implements IZipLibrary {
 		}
 		currentLoader = null;
 		currentFilename = "";
-		currentState = currentState & as3hx.Compat.parseInt(~(FORMAT_BITMAPDATA | FORMAT_DISPLAYOBJECT));
+		currentState = currentState & Std.int(~(FORMAT_BITMAPDATA | FORMAT_DISPLAYOBJECT));
 		processNext();
 	}
 

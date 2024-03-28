@@ -15,7 +15,7 @@
 */
 package org.as3commons.zip;
 
-import flash.events.Event;
+import openfl.events.Event;
 
 /**
 	 * Zip dispatches ZipEvent objects when a file contained in the
