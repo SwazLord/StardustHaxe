@@ -119,11 +119,11 @@ class AccelerationZone extends Action implements IZoneContainer {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 		zoneCollection.addToStardustXML(xml);
-		xml.setAttribute("inverted", inverted);
-		xml.setAttribute("acceleration", acceleration);
-		xml.setAttribute("useParticleDirection", useParticleDirection);
-		xml.setAttribute("directionX", _direction.x);
-		xml.setAttribute("directionY", _direction.y);
+		xml.set("inverted", inverted);
+		xml.set("acceleration", acceleration);
+		xml.set("useParticleDirection", useParticleDirection);
+		xml.set("directionX", _direction.x);
+		xml.set("directionY", _direction.y);
 		return xml;
 	}
 

@@ -60,8 +60,8 @@ class Oriented extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("factor", factor);
-		xml.setAttribute("offset", offset);
+		xml.set("factor", factor);
+		xml.set("offset", offset);
 
 		return xml;
 	}

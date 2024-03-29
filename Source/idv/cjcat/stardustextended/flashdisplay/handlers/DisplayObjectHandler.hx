@@ -96,9 +96,9 @@ class DisplayObjectHandler extends ParticleHandler {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("addChildMode", addChildMode);
-		xml.setAttribute("forceParentChange", forceParentChange);
-		xml.setAttribute("blendMode", _blendMode);
+		xml.set("addChildMode", addChildMode);
+		xml.set("forceParentChange", forceParentChange);
+		xml.set("blendMode", _blendMode);
 
 		return xml;
 	}

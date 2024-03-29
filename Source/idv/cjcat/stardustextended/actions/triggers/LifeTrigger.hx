@@ -78,9 +78,9 @@ class LifeTrigger extends Trigger {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.setAttribute("triggerWithinBounds", triggerWithinBounds);
-		xml.setAttribute("lowerBound", _lowerBound);
-		xml.setAttribute("upperBound", _upperBound);
+		xml.set("triggerWithinBounds", triggerWithinBounds);
+		xml.set("lowerBound", _lowerBound);
+		xml.set("upperBound", _upperBound);
 		return xml;
 	}
 

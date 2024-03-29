@@ -139,9 +139,9 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.setAttribute("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
-		xml.setAttribute("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
-		xml.setAttribute("smoothing", _smoothing);
+		xml.set("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
+		xml.set("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
+		xml.set("smoothing", _smoothing);
 		return xml;
 	}
 

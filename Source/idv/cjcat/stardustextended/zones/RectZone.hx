@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.zones;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.geom.MotionData2DPool;
 import idv.cjcat.stardustextended.math.Random;
@@ -115,8 +116,8 @@ class RectZone extends Zone {
 
 	// Xml
 	//------------------------------------------------------------------------------------------------
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_randomX, _randomY];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return new Vector<StardustElement>([_randomX, _randomY]);
 	}
 
 	override public function getXMLTagName():String {

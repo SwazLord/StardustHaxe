@@ -61,7 +61,7 @@ class MutualAction extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("maxDistance", maxDistance);
+		xml.set("maxDistance", maxDistance);
 
 		return xml;
 	}

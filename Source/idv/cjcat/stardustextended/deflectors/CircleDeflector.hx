@@ -88,9 +88,9 @@ class CircleDeflector extends Deflector {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("x", x);
-		xml.setAttribute("y", y);
-		xml.setAttribute("radius", radius);
+		xml.set("x", x);
+		xml.set("y", y);
+		xml.set("radius", radius);
 
 		return xml;
 	}

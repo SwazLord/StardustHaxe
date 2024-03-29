@@ -15,7 +15,7 @@ class SpeedLimit extends Action {
 	 */
 	public var limit:Float;
 
-	public function new(lim:Float = Math.POSITIVE_INFINITY) {
+	public function new(lim:Float = 1e+308) {
 		super();
 		this.limit = lim;
 	}

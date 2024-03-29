@@ -49,7 +49,7 @@ class Move extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("multiplier", multiplier);
+		xml.set("multiplier", multiplier);
 
 		return xml;
 	}

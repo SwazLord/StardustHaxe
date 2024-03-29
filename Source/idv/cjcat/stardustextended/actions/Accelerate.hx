@@ -57,7 +57,7 @@ class Accelerate extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("acceleration", acceleration);
+		xml.set("acceleration", Std.string(acceleration));
 
 		return xml;
 	}
@@ -65,8 +65,8 @@ class Accelerate extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.acceleration.length()) {
-			acceleration = Std.parseFloat(xml.att.acceleration);
+		if (xml.exists("acceleration")) {
+			acceleration = Std.parseFloat(xml.get("acceleration"));
 		}
 	}
 }

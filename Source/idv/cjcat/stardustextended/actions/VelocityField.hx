@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -28,7 +29,7 @@ class VelocityField extends Action implements IFieldContainer {
 
 	public function new(_field:Field = null) {
 		super();
-		priority = -2;
+		_priority = -2;
 		if (field != null) {
 			field = _field;
 		} else {
@@ -65,8 +66,10 @@ class VelocityField extends Action implements IFieldContainer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [field];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(field);
+		return relatedObjects;
 	}
 
 	override public function getXMLTagName():String {
@@ -77,9 +80,9 @@ class VelocityField extends Action implements IFieldContainer {
 		var xml:Xml = super.toXML();
 
 		if (field == null) {
-			xml.setAttribute("field", "null");
+			xml.set("field", "null");
 		} else {
-			xml.setAttribute("field", field.name);
+			xml.set("field", field.name);
 		}
 
 		return xml;
@@ -88,10 +91,10 @@ class VelocityField extends Action implements IFieldContainer {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.field == "null") {
+		if (xml.get("field") == "null") {
 			field = null;
-		} else if (xml.att.field.length()) {
-			field = try cast(builder.getElementByName(xml.att.field), Field) catch (e:Dynamic) null;
+		} else if (xml.exists("field")) {
+			field = try cast(builder.getElementByName(xml.get("field")), Field) catch (e:Dynamic) null;
 		}
 	}
 }

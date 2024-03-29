@@ -219,11 +219,11 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.setAttribute("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
-		xml.setAttribute("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
-		xml.setAttribute("smoothing", smoothing);
-		xml.setAttribute("blendMode", _blendMode);
-		xml.setAttribute("premultiplyAlpha", _premultiplyAlpha);
+		xml.set("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
+		xml.set("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
+		xml.set("smoothing", smoothing);
+		xml.set("blendMode", _blendMode);
+		xml.set("premultiplyAlpha", _premultiplyAlpha);
 		return xml;
 	}
 

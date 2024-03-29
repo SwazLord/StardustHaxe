@@ -1,6 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
-import haxe.Constraints.Function;
+import openfl.utils.Function;
 import idv.cjcat.stardustextended.easing.EasingFunctionType;
 import idv.cjcat.stardustextended.easing.Linear;
 import idv.cjcat.stardustextended.emitters.Emitter;
@@ -8,20 +8,15 @@ import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 
 /**
- * Alters a particle's alpha value according to its <code>life</code> property.
+ * Alters a particle's alpha value according to its `life` property.
  *
  * <p>
  * The alpha transition is applied using the easing functions designed by Robert Penner.
- * These functions can be found in the <code>idv.cjcat.stardust.common.easing</code> package.
+ * These functions can be found in the `idv.cjcat.stardust.common.easing` package.
  * </p>
  */
 // [Deprecated(message="use ColorGradient instead")]
 class AlphaCurve extends Action {
-	public var inFunctionExtraParams(get, set):Array<Dynamic>;
-	public var outFunctionExtraParams(get, set):Array<Dynamic>;
-	public var inFunction(get, set):Function;
-	public var outFunction(get, set):Function;
-
 	/**
 	 * The initial alpha value of a particle.
 	 */
@@ -44,8 +39,8 @@ class AlphaCurve extends Action {
 
 	private var _inFunction:Function;
 	private var _outFunction:Function;
-	private var _inFunctionExtraParams:Array<Dynamic>;
-	private var _outFunctionExtraParams:Array<Dynamic>;
+	private var _inFunctionExtraParams:Array<Float>;
+	private var _outFunctionExtraParams:Array<Float>;
 
 	public function new(inLifespan:Float = 1, outLifespan:Float = 1, inFunction:Function = null, outFunction:Function = null) {
 		super();
@@ -59,26 +54,17 @@ class AlphaCurve extends Action {
 		this.outFunctionExtraParams = [];
 	}
 
-	inline final override public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void {
+	override public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void {
 		if ((particle.initLife - particle.life) < inLifespan) {
 			if (_inFunction != null) {
-				particle.alpha = Reflect.callMethod(null, _inFunction, [
-					particle.initLife - particle.life,
-					inAlpha,
-					particle.initAlpha - inAlpha,
-					inLifespan
-				].concat(_inFunctionExtraParams));
+				particle.alpha = _inFunction(particle.initLife - particle.life, inAlpha, particle.initAlpha - inAlpha, inLifespan, _inFunctionExtraParams);
 			} else {
 				particle.alpha = Linear.easeIn(particle.initLife - particle.life, inAlpha, particle.initAlpha - inAlpha, inLifespan);
 			}
 		} else if (particle.life < outLifespan) {
 			if (_outFunction != null) {
-				particle.alpha = Reflect.callMethod(null, _outFunction, [
-					outLifespan - particle.life,
-					particle.initAlpha,
-					outAlpha - particle.initAlpha,
-					outLifespan
-				].concat(_outFunctionExtraParams));
+				particle.alpha = _outFunction(outLifespan - particle.life, particle.initAlpha, outAlpha - particle.initAlpha, outLifespan,
+					_outFunctionExtraParams);
 			} else {
 				particle.alpha = Linear.easeOut(outLifespan - particle.life, particle.initAlpha, outAlpha - particle.initAlpha, outLifespan);
 			}
@@ -88,38 +74,42 @@ class AlphaCurve extends Action {
 	}
 
 	/**
-	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the <code>inFunction</code>.
+	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the `inFunction`.
 	 */
-	private function get_inFunctionExtraParams():Array<Dynamic> {
+	public var inFunctionExtraParams(get, set):Array<Float>;
+
+	private function get_inFunctionExtraParams():Array<Float> {
 		return _inFunctionExtraParams;
 	}
 
-	private function set_inFunctionExtraParams(value:Array<Dynamic>):Array<Dynamic> {
-		if (value == null) {
+	private function set_inFunctionExtraParams(value:Array<Float>):Array<Float> {
+		if (value == null)
 			value = [];
-		}
 		_inFunctionExtraParams = value;
 		return value;
 	}
 
 	/**
-	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the <code>outFunction</code>.
+	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the `outFunction`.
 	 */
-	private function get_outFunctionExtraParams():Array<Dynamic> {
+	public var outFunctionExtraParams(get, set):Array<Float>;
+
+	private function get_outFunctionExtraParams():Array<Float> {
 		return _outFunctionExtraParams;
 	}
 
-	private function set_outFunctionExtraParams(value:Array<Dynamic>):Array<Dynamic> {
-		if (value == null) {
+	private function set_outFunctionExtraParams(value:Array<Float>):Array<Float> {
+		if (value == null)
 			value = [];
-		}
 		_outFunctionExtraParams = value;
 		return value;
 	}
 
 	/**
-	 * The easing function from the initial alpha to the normal alpha, <code>Linear.easeIn</code> by default.
+	 * The easing function from the initial alpha to the normal alpha, `Linear.easeIn` by default.
 	 */
+	public var inFunction(get, set):Function;
+
 	private function get_inFunction():Function {
 		return _inFunction;
 	}
@@ -130,8 +120,10 @@ class AlphaCurve extends Action {
 	}
 
 	/**
-	 * The easing function from the normal alpha to the final alpha, <code>Linear.easeOut</code> by default.
+	 * The easing function from the normal alpha to the final alpha, `Linear.easeOut` by default.
 	 */
+	public var outFunction(get, set):Function;
+
 	private function get_outFunction():Function {
 		return _outFunction;
 	}
@@ -141,7 +133,7 @@ class AlphaCurve extends Action {
 		return value;
 	}
 
-	// Xml
+	// XML
 	//------------------------------------------------------------------------------------------------
 
 	override public function getXMLTagName():String {
@@ -151,15 +143,15 @@ class AlphaCurve extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("inAlpha", inAlpha);
-		xml.setAttribute("outAlpha", outAlpha);
-		xml.setAttribute("inLifespan", inLifespan);
-		xml.setAttribute("outLifespan", outLifespan);
+		xml.set("inAlpha", Std.string(inAlpha));
+		xml.set("outAlpha", Std.string(outAlpha));
+		xml.set("inLifespan", Std.string(inLifespan));
+		xml.set("outLifespan", Std.string(outLifespan));
 		if (_inFunction != null) {
-			xml.setAttribute("inFunction", EasingFunctionType.functions[_inFunction]);
+			xml.set("inFunction", EasingFunctionType.functions[_inFunction]);
 		}
 		if (_outFunction != null) {
-			xml.setAttribute("outFunction", EasingFunctionType.functions[_outFunction]);
+			xml.set("outFunction", EasingFunctionType.functions[_outFunction]);
 		}
 		return xml;
 	}
@@ -167,23 +159,20 @@ class AlphaCurve extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.inAlpha.length()) {
-			inAlpha = Std.parseFloat(xml.att.inAlpha);
-		}
-		if (xml.att.outAlpha.length()) {
-			outAlpha = Std.parseFloat(xml.att.outAlpha);
-		}
-		if (xml.att.inLifespan.length()) {
-			inLifespan = Std.parseFloat(xml.att.inLifespan);
-		}
-		if (xml.att.outLifespan.length()) {
-			outLifespan = Std.parseFloat(xml.att.outLifespan);
-		}
-		if (xml.att.inFunction.length()) {
-			inFunction = EasingFunctionType.functions[Std.string(xml.att.inFunction)];
-		}
-		if (xml.att.outFunction.length()) {
-			outFunction = EasingFunctionType.functions[Std.string(xml.att.outFunction)];
-		}
+		if (xml.exists("inAlpha"))
+			inAlpha = Std.parseFloat(xml.get("inAlpha"));
+		if (xml.exists("outAlpha"))
+			outAlpha = Std.parseFloat(xml.get("outAlpha"));
+		if (xml.exists("inLifespan"))
+			inLifespan = Std.parseFloat(xml.get("inLifespan"));
+		if (xml.exists("outLifespan"))
+			outLifespan = Std.parseFloat(xml.get("outLifespan"));
+		if (xml.exists("inFunction"))
+			inFunction = EasingFunctionType.functions[xml.get("inFunction")];
+		if (xml.exists("outFunction"))
+			outFunction = EasingFunctionType.functions[xml.get("outFunction")];
 	}
+
+	//------------------------------------------------------------------------------------------------
+	// end of XML
 }

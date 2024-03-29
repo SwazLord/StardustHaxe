@@ -45,7 +45,7 @@ class Age extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("multiplier", multiplier);
+		xml.set("multiplier", Std.string(multiplier));
 
 		return xml;
 	}
@@ -53,8 +53,8 @@ class Age extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.multiplier.length()) {
-			multiplier = Std.parseFloat(xml.att.multiplier);
+		if (xml.exists("multiplier")) {
+			multiplier = Std.parseFloat(xml.get("multiplier"));
 		}
 	}
 }

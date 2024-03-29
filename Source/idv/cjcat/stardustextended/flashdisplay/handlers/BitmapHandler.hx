@@ -55,7 +55,7 @@ class BitmapHandler extends ParticleHandler {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("blendMode", blendMode);
+		xml.set("blendMode", blendMode);
 
 		return xml;
 	}

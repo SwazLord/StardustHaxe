@@ -101,9 +101,9 @@ class NormalDrift extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("massless", massless);
-		xml.setAttribute("max", _max);
-		xml.setAttribute("random", _random.name);
+		xml.set("massless", massless);
+		xml.set("max", _max);
+		xml.set("random", _random.name);
 
 		return xml;
 	}

@@ -52,7 +52,7 @@ class Damping extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("damping", damping);
+		xml.set("damping", damping);
 
 		return xml;
 	}

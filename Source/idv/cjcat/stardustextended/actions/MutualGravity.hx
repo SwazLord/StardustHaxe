@@ -88,10 +88,10 @@ class MutualGravity extends MutualAction {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("strength", strength);
-		xml.setAttribute("epsilon", epsilon);
-		xml.setAttribute("attenuationPower", attenuationPower);
-		xml.setAttribute("massless", massless);
+		xml.set("strength", strength);
+		xml.set("epsilon", epsilon);
+		xml.set("attenuationPower", attenuationPower);
+		xml.set("massless", massless);
 
 		return xml;
 	}

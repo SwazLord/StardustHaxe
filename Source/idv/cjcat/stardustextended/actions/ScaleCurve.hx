@@ -150,15 +150,15 @@ class ScaleCurve extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("inScale", inScale);
-		xml.setAttribute("outScale", outScale);
-		xml.setAttribute("inLifespan", inLifespan);
-		xml.setAttribute("outLifespan", outLifespan);
+		xml.set("inScale", inScale);
+		xml.set("outScale", outScale);
+		xml.set("inLifespan", inLifespan);
+		xml.set("outLifespan", outLifespan);
 		if (_inFunction != null) {
-			xml.setAttribute("inFunction", EasingFunctionType.functions[_inFunction]);
+			xml.set("inFunction", EasingFunctionType.functions[_inFunction]);
 		}
 		if (_outFunction != null) {
-			xml.setAttribute("outFunction", EasingFunctionType.functions[_outFunction]);
+			xml.set("outFunction", EasingFunctionType.functions[_outFunction]);
 		}
 		return xml;
 	}

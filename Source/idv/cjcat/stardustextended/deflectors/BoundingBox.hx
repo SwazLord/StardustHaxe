@@ -116,10 +116,10 @@ class BoundingBox extends Deflector {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("x", x);
-		xml.setAttribute("y", y);
-		xml.setAttribute("width", width);
-		xml.setAttribute("height", height);
+		xml.set("x", x);
+		xml.set("y", y);
+		xml.set("width", width);
+		xml.set("height", height);
 
 		return xml;
 	}

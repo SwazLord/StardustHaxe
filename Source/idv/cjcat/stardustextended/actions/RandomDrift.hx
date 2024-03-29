@@ -130,11 +130,11 @@ class RandomDrift extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("massless", massless);
-		xml.setAttribute("maxX", _maxX);
-		xml.setAttribute("maxY", _maxY);
-		xml.setAttribute("randomX", _randomX.name);
-		xml.setAttribute("randomY", _randomY.name);
+		xml.set("massless", massless);
+		xml.set("maxX", _maxX);
+		xml.set("maxY", _maxY);
+		xml.set("randomX", _randomX.name);
+		xml.set("randomY", _randomY.name);
 
 		return xml;
 	}

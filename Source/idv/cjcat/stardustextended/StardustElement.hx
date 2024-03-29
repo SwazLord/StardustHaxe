@@ -61,7 +61,7 @@ class StardustElement {
 	 */
 	final public function getXMLTag():Xml {
 		/* var xml:Xml = Xml.parse("<" + getXMLTagName() + "/>");
-			xml.setAttribute("name", name); */
+			xml.set("name", name); */
 		var xml:Xml = Xml.createElement(getXMLTagName());
 		xml.set("name", name);
 		return xml;

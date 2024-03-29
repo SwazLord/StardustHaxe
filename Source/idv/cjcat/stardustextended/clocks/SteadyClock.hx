@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.clocks;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.math.Random;
 import idv.cjcat.stardustextended.math.StardustMath;
@@ -72,8 +73,10 @@ class SteadyClock extends Clock {
 		return "SteadyClock";
 	}
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_initialDelay];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(_initialDelay);
+		return relatedObjects;
 	}
 
 	override public function toXML():Xml {
