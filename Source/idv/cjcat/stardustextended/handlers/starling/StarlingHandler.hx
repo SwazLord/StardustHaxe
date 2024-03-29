@@ -229,7 +229,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		_spriteSheetAnimationSpeed = as3hx.Compat.parseFloat(xml.att.spriteSheetAnimationSpeed);
+		_spriteSheetAnimationSpeed = Std.parseFloat(xml.att.spriteSheetAnimationSpeed);
 		_spriteSheetStartAtRandomFrame = (xml.att.spriteSheetStartAtRandomFrame == "true");
 		smoothing = (xml.att.smoothing == "true");
 		blendMode = (xml.att.blendMode);

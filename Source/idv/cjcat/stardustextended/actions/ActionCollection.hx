@@ -1,20 +1,21 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.events.StardustActionEvent;
 
 /**
  * This class is used internally by classes that implements the <code>ActionCollector</code> interface.
  */
 class ActionCollection implements ActionCollector {
-	public var actions(get, never):Array<Action>;
+	public var actions(get, never):Vector<Action>;
 
-	private var _actions:Array<Action>;
+	private var _actions:Vector<Action>;
 
 	public function new() {
-		_actions = new Array<Action>();
+		_actions = new Vector<Action>();
 	}
 
-	inline final private function get_actions():Array<Action> {
+	inline final private function get_actions():Vector<Action> {
 		return _actions;
 	}
 
@@ -47,10 +48,10 @@ class ActionCollection implements ActionCollector {
 	}
 
 	// descending priority sort
-	private static function prioritySort(el1:Action, el2:Action):Float {
-		if (el1.priority > el2.priority) {
+	private static function prioritySort(el1:Action, el2:Action):Int {
+		if (el1._priority > el2._priority) {
 			return -1;
-		} else if (el1.priority < el2.priority) {
+		} else if (el1._priority < el2._priority) {
 			return 1;
 		}
 

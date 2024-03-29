@@ -133,21 +133,21 @@ class FollowWaypoints extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		var waypointsXML:Xml = Xml.parse("<waypoints/>");
+		var waypointsXML:Xml = Xml.createElement("waypoints");
 		for (waypoint in _waypoints) {
-			var waypointXML:Xml = Xml.parse("<Waypoint/>");
-			waypointXML.setAttribute("x", waypoint.x);
-			waypointXML.setAttribute("y", waypoint.y);
-			waypointXML.setAttribute("radius", waypoint.radius);
-			waypointXML.setAttribute("strength", waypoint.strength);
-			waypointXML.setAttribute("attenuationPower", waypoint.attenuationPower);
-			waypointXML.setAttribute("epsilon", waypoint.epsilon);
+			var waypointXML:Xml = Xml.createElement("Waypoint");
+			waypointXML.set("x", Std.string(waypoint.x));
+			waypointXML.set("y", Std.string(waypoint.y));
+			waypointXML.set("radius", Std.string(waypoint.radius));
+			waypointXML.set("strength", Std.string(waypoint.strength));
+			waypointXML.set("attenuationPower", Std.string(waypoint.attenuationPower));
+			waypointXML.set("epsilon", Std.string(waypoint.epsilon));
 
-			waypointsXML.node.appendChild.innerData(waypointXML);
+			waypointsXML.addChild(waypointXML);
 		}
-		xml.node.appendChild.innerData(waypointsXML);
-		xml.setAttribute("loop", loop);
-		xml.setAttribute("massless", massless);
+		xml.addChild(waypointsXML);
+		xml.set("loop", Std.string(loop));
+		xml.set("massless", Std.string(massless));
 		return xml;
 	}
 
@@ -155,18 +155,18 @@ class FollowWaypoints extends Action {
 		super.parseXML(xml, builder);
 
 		clearWaypoints();
-		for (node /* AS3HX WARNING could not determine type for var: node exp: EField(EField(EIdent(xml),waypoints),Waypoint) type: null */ in xml.nodes.waypoints.node.Waypoint.innerData) {
+		for (node in xml.elementsNamed("Waypoint")) {
 			var waypoint:Waypoint = new Waypoint();
-			waypoint.x = as3hx.Compat.parseFloat(node.att.x);
-			waypoint.y = as3hx.Compat.parseFloat(node.att.y);
-			waypoint.radius = as3hx.Compat.parseFloat(node.att.radius);
-			waypoint.strength = as3hx.Compat.parseFloat(node.att.strength);
-			waypoint.attenuationPower = as3hx.Compat.parseFloat(node.att.attenuationPower);
-			waypoint.epsilon = as3hx.Compat.parseFloat(node.att.epsilon);
+			waypoint.x = Std.parseFloat(node.get("x"));
+			waypoint.y = Std.parseFloat(node.get("y"));
+			waypoint.radius = Std.parseFloat(node.get("radius"));
+			waypoint.strength = Std.parseFloat(node.get("strength"));
+			waypoint.attenuationPower = Std.parseFloat(node.get("attenuationPower"));
+			waypoint.epsilon = Std.parseFloat(node.get("epsilon"));
 
 			addWaypoint(waypoint);
 		}
-		loop = (xml.att.loop == "true");
-		massless = (xml.att.massless == "true");
+		loop = (xml.get("loop") == "true");
+		massless = (xml.get("massless") == "true");
 	}
 }

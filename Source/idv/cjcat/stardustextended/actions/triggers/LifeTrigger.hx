@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions.triggers;
 
+import starling.utils.MathUtil;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
@@ -20,7 +21,7 @@ class LifeTrigger extends Trigger {
 	private var _lowerBound:Float;
 	private var _upperBound:Float;
 
-	public function new(lowerBound:Float = 0, upperBound:Float = as3hx.Compat.FLOAT_MAX, triggerWithinBounds:Bool = true) {
+	public function new(lowerBound:Float = 0, upperBound:Float = MathUtil.FLOAT_MAX, triggerWithinBounds:Bool = true) {
 		super();
 		this.lowerBound = lowerBound;
 		this.upperBound = upperBound;
@@ -87,7 +88,7 @@ class LifeTrigger extends Trigger {
 		super.parseXML(xml, builder);
 
 		triggerWithinBounds = (xml.att.triggerWithinBounds == "true");
-		lowerBound = as3hx.Compat.parseFloat(xml.att.lowerBound);
-		upperBound = as3hx.Compat.parseFloat(xml.att.upperBound);
+		lowerBound = Std.parseFloat(xml.att.lowerBound);
+		upperBound = Std.parseFloat(xml.att.upperBound);
 	}
 }

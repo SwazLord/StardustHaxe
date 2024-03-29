@@ -100,13 +100,13 @@ class MutualGravity extends MutualAction {
 		super.parseXML(xml, builder);
 
 		if (xml.att.strength.length()) {
-			strength = as3hx.Compat.parseFloat(xml.att.strength);
+			strength = Std.parseFloat(xml.att.strength);
 		}
 		if (xml.att.epsilon.length()) {
-			epsilon = as3hx.Compat.parseFloat(xml.att.epsilon);
+			epsilon = Std.parseFloat(xml.att.epsilon);
 		}
 		if (xml.att.attenuationPower.length()) {
-			attenuationPower = as3hx.Compat.parseFloat(xml.att.attenuationPower);
+			attenuationPower = Std.parseFloat(xml.att.attenuationPower);
 		}
 		if (xml.att.massless.length()) {
 			massless = (xml.att.massless == "true");

@@ -66,7 +66,7 @@ class Accelerate extends Action {
 		super.parseXML(xml, builder);
 
 		if (xml.att.acceleration.length()) {
-			acceleration = as3hx.Compat.parseFloat(xml.att.acceleration);
+			acceleration = Std.parseFloat(xml.att.acceleration);
 		}
 	}
 }

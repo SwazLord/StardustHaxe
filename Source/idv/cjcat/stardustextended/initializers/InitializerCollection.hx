@@ -1,17 +1,18 @@
 package idv.cjcat.stardustextended.initializers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.events.StardustInitializerEvent;
 
 /**
  * This class is used internally by classes that implements the <code>InitializerCollector</code> interface.
  */
 class InitializerCollection implements InitializerCollector {
-	public var initializers(get, never):Array<Initializer>;
+	public var initializers(get, never):Vector<Initializer>;
 
-	private var _initializers:Array<Initializer>;
+	private var _initializers:Vector<Initializer>;
 
 	public function new() {
-		_initializers = new Array<Initializer>();
+		_initializers = new Vector<Initializer>();
 	}
 
 	final public function addInitializer(initializer:Initializer):Void {
@@ -42,7 +43,7 @@ class InitializerCollection implements InitializerCollector {
 		}
 	}
 
-	private function get_initializers():Array<Initializer> {
+	private function get_initializers():Vector<Initializer> {
 		return _initializers;
 	}
 

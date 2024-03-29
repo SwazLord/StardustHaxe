@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import starling.utils.MathUtil;
 import idv.cjcat.stardustextended.actions.Action;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -14,9 +15,9 @@ class SpeedLimit extends Action {
 	 */
 	public var limit:Float;
 
-	public function new(limit:Float = as3hx.Compat.FLOAT_MAX) {
+	public function new(lim:Float = Math.POSITIVE_INFINITY) {
 		super();
-		this.limit = limit;
+		this.limit = lim;
 	}
 
 	override public function preUpdate(emitter:Emitter, time:Float):Void {
@@ -46,7 +47,7 @@ class SpeedLimit extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("limit", limit);
+		xml.set("limit", Std.string(limit));
 
 		return xml;
 	}
@@ -54,8 +55,8 @@ class SpeedLimit extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.limit.length()) {
-			limit = as3hx.Compat.parseFloat(xml.att.limit);
+		if (xml.exists("limit")) {
+			limit = Std.parseFloat(xml.get("limit"));
 		}
 	}
 }

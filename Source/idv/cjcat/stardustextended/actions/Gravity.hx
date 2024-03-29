@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.fields.Field;
@@ -17,8 +18,9 @@ class Gravity extends Action implements IFieldContainer {
 	private var _fields:Array<Field>;
 
 	public function new(fields:Array<Field> = null) {
-		priority = -3;
-		if (fields) {
+		super();
+		_priority = -3;
+		if (fields != null) {
 			_fields = fields;
 		} else {
 			_fields = new Array<Field>();
@@ -52,7 +54,7 @@ class Gravity extends Action implements IFieldContainer {
 	public function removeField(field:Field):Void {
 		var index:Int = _fields.indexOf(field);
 		if (index >= 0)
-			_fields.removeAt(index);
+			_fields.splice(index, 1);
 	}
 
 	/**
@@ -72,7 +74,7 @@ class Gravity extends Action implements IFieldContainer {
 		for (_ui in 0..._uLen) {
 			_updateMd2D = _fields[_ui].getMotionData2D(particle);
 
-			if (_updateMd2D) {
+			if (_updateMd2D != null) {
 				particle.vx += _updateMd2D.x * timeDelta;
 				particle.vy += _updateMd2D.y * timeDelta;
 				MotionData2DPool.recycle(_updateMd2D);
@@ -83,8 +85,8 @@ class Gravity extends Action implements IFieldContainer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return Array<StardustElement>(_fields);
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return cast _fields;
 	}
 
 	override public function getXMLTagName():String {
@@ -95,10 +97,10 @@ class Gravity extends Action implements IFieldContainer {
 		var xml:Xml = super.toXML();
 
 		if (_fields.length > 0) {
-			xml.appendChild(<fields/>);
-			var field:Field;
+			var fieldsXml:Xml = Xml.createElement("fields");
+			xml.addChild(fieldsXml);
 			for (field in _fields) {
-				xml.fields.appendChild(field.getXMLTag());
+				fieldsXml.addChild(field.getXMLTag());
 			}
 		}
 
@@ -107,10 +109,12 @@ class Gravity extends Action implements IFieldContainer {
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		var access = new haxe.xml.Access(xml);
+
 		clearFields();
-		for (node in access.node.fields.element) {
-			addField(cast(builder.getElementByName(node.att.name), Field));
+		if (xml.exists("fields")) {
+			for (node in xml.elementsNamed("fields").next().elements()) {
+				addField(cast(builder.getElementByName(node.get("name")), Field));
+			}
 		}
 	}
 

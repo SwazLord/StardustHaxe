@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.actions.triggers.DeathTrigger;
 import idv.cjcat.stardustextended.actions.triggers.Trigger;
@@ -30,7 +31,7 @@ class Spawn extends Action {
 
 	public function new(inheritDirection:Bool = true, inheritVelocity:Bool = false, trigger:Trigger = null) {
 		super();
-		priority = -10;
+		_priority = -10;
 		this.inheritDirection = inheritDirection;
 		this.inheritVelocity = inheritVelocity;
 		this.trigger = trigger;
@@ -68,7 +69,7 @@ class Spawn extends Action {
 		}
 		if (_trigger.testTrigger(emitter, particle, timeDelta)) {
 			var p:Particle;
-			var newParticles:Array<Particle> = _spawnerEmitter.createParticles(_spawnerEmitter.clock.getTicks(timeDelta));
+			var newParticles:Vector<Particle> = _spawnerEmitter.createParticles(_spawnerEmitter.clock.getTicks(timeDelta));
 			var len:Int = newParticles.length;
 			for (m in 0...len) {
 				p = newParticles[m];
@@ -92,19 +93,21 @@ class Spawn extends Action {
 		return "Spawn";
 	}
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_trigger];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(_trigger);
+		return relatedObjects;
 	}
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("inheritDirection", inheritDirection);
-		xml.setAttribute("inheritVelocity", inheritVelocity);
-		xml.setAttribute("trigger", _trigger.name);
+		xml.set("inheritDirection", Std.string(inheritDirection));
+		xml.set("inheritVelocity", Std.string(inheritVelocity));
+		xml.set("trigger", _trigger.name);
 
 		if (_spawnerEmitter != null) {
-			xml.setAttribute("spawnerEmitter", _spawnerEmitter.name);
+			xml.set("spawnerEmitter", _spawnerEmitter.name);
 		}
 
 		return xml;
@@ -113,12 +116,12 @@ class Spawn extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		inheritDirection = (xml.att.inheritDirection == "true");
-		inheritVelocity = (xml.att.inheritVelocity == "true");
+		inheritDirection = (xml.get("inheritDirection") == "true");
+		inheritVelocity = (xml.get("inheritVelocity") == "true");
 
-		if (xml.att.spawnerEmitter) {
-			_spawnerEmitterId = xml.att.spawnerEmitter;
+		if (xml.exists("spawnerEmitter")) {
+			_spawnerEmitterId = xml.get("spawnerEmitter");
 		}
-		_trigger = try cast(builder.getElementByName(xml.att.trigger), Trigger) catch (e:Dynamic) null;
+		_trigger = try cast(builder.getElementByName(xml.get("trigger")), Trigger) catch (e:Dynamic) null;
 	}
 }

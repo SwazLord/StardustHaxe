@@ -61,7 +61,7 @@ class Damping extends Action {
 		super.parseXML(xml, builder);
 
 		if (xml.att.damping.length()) {
-			damping = as3hx.Compat.parseFloat(xml.att.damping);
+			damping = Std.parseFloat(xml.att.damping);
 		}
 	}
 }

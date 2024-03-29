@@ -115,7 +115,7 @@ class NormalDrift extends Action {
 			massless = (xml.att.massless == "true");
 		}
 		if (xml.att.max.length()) {
-			max = as3hx.Compat.parseFloat(xml.att.max);
+			max = Std.parseFloat(xml.att.max);
 		}
 		if (xml.att.random.length()) {
 			random = try cast(builder.getElementByName(xml.att.random), Random) catch (e:Dynamic) null;

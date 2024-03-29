@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -28,17 +29,18 @@ import idv.cjcat.stardustextended.geom.MotionData4D;
  * @see idv.cjcat.stardustextended.deflectors.Deflector
  */
 class Deflect extends Action {
-	private var _deflectors:Array<Deflector>;
+	private var _deflectors:Vector<Deflector>;
 	private var hasTrigger:Bool;
 
 	public function new() {
-		priority = -5;
-		_deflectors = new Array<Deflector>();
+		super();
+		_priority = -5;
+		_deflectors = new Vector<Deflector>();
 	}
 
 	/**
 	 * Adds a deflector to the simulation.
-	 * @param    deflector
+	 * @param deflector
 	 */
 	public function addDeflector(deflector:Deflector):Void {
 		if (_deflectors.indexOf(deflector) < 0)
@@ -47,35 +49,35 @@ class Deflect extends Action {
 
 	/**
 	 * Removes a deflector from the simulation.
-	 * @param    deflector
+	 * @param deflector
 	 */
 	public function removeDeflector(deflector:Deflector):Void {
 		var index:Int = _deflectors.indexOf(deflector);
-		if (_deflectors.indexOf(deflector) >= 0)
-			_deflectors.removeAt(index);
+		if (index >= 0)
+			_deflectors.splice(index, 1);
 	}
 
 	/**
 	 * Removes all deflectors from the simulation.
 	 */
 	public function clearDeflectors():Void {
-		_deflectors = new Array<Deflector>();
+		_deflectors = new Vector<Deflector>();
 	}
 
-	public var deflectors(get, set):Array<Deflector>;
+	public var deflectors(get, set):Vector<Deflector>;
 
-	public function get_deflectors():Array<Deflector> {
+	private function get_deflectors():Vector<Deflector> {
 		return _deflectors;
 	}
 
-	public function set_deflectors(val:Array<Deflector>):Void {
-		_deflectors = val;
+	private function set_deflectors(val:Vector<Deflector>):Vector<Deflector> {
+		return _deflectors = val;
 	}
 
 	override public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void {
 		for (deflector in _deflectors) {
 			var md4D:MotionData4D = deflector.getMotionData4D(particle);
-			if (md4D) {
+			if (md4D != null) {
 				if (hasTrigger)
 					particle.dictionary[deflector] = true;
 				particle.x = md4D.x;
@@ -90,7 +92,7 @@ class Deflect extends Action {
 
 	override public function preUpdate(emitter:Emitter, time:Float):Void {
 		for (action in emitter.actions) {
-			if (action is DeflectorTrigger) {
+			if (Std.isOfType(action, DeflectorTrigger)) {
 				hasTrigger = true;
 				return;
 			}
@@ -101,34 +103,33 @@ class Deflect extends Action {
 	// XML
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return Array<StardustElement>(_deflectors);
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return cast _deflectors;
 	}
 
 	override public function getXMLTagName():String {
 		return "Deflect";
 	}
 
-	override public function toXML():XML {
-		var xml:XML = super.toXML();
+	override public function toXML():Xml {
+		var xml:Xml = super.toXML();
 
 		if (_deflectors.length > 0) {
-			xml.appendChild(<deflectors/>);
-			var deflector:Deflector;
+			xml.addChild(Xml.createElement("deflectors"));
 			for (deflector in _deflectors) {
-				xml.deflectors.appendChild(deflector.getXMLTag());
+				xml.elementsNamed("deflectors").next().addChild(deflector.getXMLTag());
 			}
 		}
 
 		return xml;
 	}
 
-	override public function parseXML(xml:XML, builder:XMLBuilder = null):Void {
+	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		var access = new haxe.xml.Access(xml);
+
 		clearDeflectors();
-		for (node in access.node.deflectors.elements) {
-			addDeflector(cast(builder.getElementByName(node.att.name), Deflector));
+		for (node in xml.elementsNamed("deflectors").next().elementsNamed("node")) {
+			addDeflector(cast builder.getElementByName(node.get("name")));
 		}
 	}
 

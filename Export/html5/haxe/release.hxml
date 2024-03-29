@@ -14,7 +14,6 @@
 -D howlerjs
 -D no-compilation
 -D openfl-html5
--D disable_preloader_assets=1
 -D lime-webgl
 -D lime-dom
 -D lime-howlerjs

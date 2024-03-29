@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 
 /**
@@ -42,8 +43,8 @@ class StardustElement {
 	 * </p>
 	 * @return
 	 */
-	public function getRelatedObjects():Array<StardustElement> {
-		return new Array<StardustElement>();
+	public function getRelatedObjects():Vector<StardustElement> {
+		return new Vector<StardustElement>();
 	}
 
 	/**

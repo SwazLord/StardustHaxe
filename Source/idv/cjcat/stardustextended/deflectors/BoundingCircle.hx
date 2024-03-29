@@ -97,13 +97,13 @@ class BoundingCircle extends Deflector {
 		super.parseXML(xml, builder);
 
 		if (xml.att.x.length()) {
-			x = as3hx.Compat.parseFloat(xml.att.x);
+			x = Std.parseFloat(xml.att.x);
 		}
 		if (xml.att.y.length()) {
-			y = as3hx.Compat.parseFloat(xml.att.y);
+			y = Std.parseFloat(xml.att.y);
 		}
 		if (xml.att.radius.length()) {
-			radius = as3hx.Compat.parseFloat(xml.att.radius);
+			radius = Std.parseFloat(xml.att.radius);
 		}
 	}
 }

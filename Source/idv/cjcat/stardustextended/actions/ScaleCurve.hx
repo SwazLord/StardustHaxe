@@ -167,16 +167,16 @@ class ScaleCurve extends Action {
 		super.parseXML(xml, builder);
 
 		if (xml.att.inScale.length()) {
-			inScale = as3hx.Compat.parseFloat(xml.att.inScale);
+			inScale = Std.parseFloat(xml.att.inScale);
 		}
 		if (xml.att.outScale.length()) {
-			outScale = as3hx.Compat.parseFloat(xml.att.outScale);
+			outScale = Std.parseFloat(xml.att.outScale);
 		}
 		if (xml.att.inLifespan.length()) {
-			inLifespan = as3hx.Compat.parseFloat(xml.att.inLifespan);
+			inLifespan = Std.parseFloat(xml.att.inLifespan);
 		}
 		if (xml.att.outLifespan.length()) {
-			outLifespan = as3hx.Compat.parseFloat(xml.att.outLifespan);
+			outLifespan = Std.parseFloat(xml.att.outLifespan);
 		}
 		if (xml.att.inFunction.length()) {
 			inFunction = EasingFunctionType.functions[Std.string(xml.att.inFunction)];

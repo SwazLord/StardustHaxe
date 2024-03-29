@@ -1,6 +1,7 @@
 package idv.cjcat.stardustextended.actions;
 
-import haxe.Constraints.Function;
+import flash.events.EventDispatcher;
+import haxe.rtti.Meta;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.events.StardustActionEvent;
@@ -21,32 +22,33 @@ import idv.cjcat.stardustextended.xml.XMLBuilder;
  * Default priority = 0;
  * </p>
  */
-/* @:meta(Event(name = "PRIORITY_CHANGE", type = "idv.cjcat.stardustextended.events.StardustActionEvent"))
-	@:meta(Event(name = "ADD", type = "idv.cjcat.stardustextended.events.StardustActionEvent"))
-	@:meta(Event(name = "REMOVE", type = "idv.cjcat.stardustextended.events.StardustActionEvent")) */
+@:events([
+	StardustActionEvent.PRIORITY_CHANGE => "priorityChangeEvent",
+	StardustActionEvent.ADD => "addEvent",
+	StardustActionEvent.REMOVE => "removeEvent"
+])
 class Action extends StardustElement {
-	public var priority(get, set):Int;
-	public var needsSortedParticles(get, never):Bool;
-
-	private var eventDispatcher(default, never):EventDispatcher = new EventDispatcher();
+	private var eventDispatcher:EventDispatcher = new EventDispatcher();
 
 	private static var addEvent:StardustActionEvent = new StardustActionEvent(StardustActionEvent.ADD);
 	private static var removeEvent:StardustActionEvent = new StardustActionEvent(StardustActionEvent.REMOVE);
 	private static var priorityChangeEvent:StardustActionEvent = new StardustActionEvent(StardustActionEvent.PRIORITY_CHANGE);
 
-	public function addEventListener(_type:String, listener:Function, useCapture:Bool = false, priority:Int = 0, useWeakReference:Bool = false):Void {
+	public function addEventListener(_type:String, listener:Dynamic, useCapture:Bool = false, priority:Int = 0, useWeakReference:Bool = false):Void {
 		eventDispatcher.addEventListener(_type, listener, useCapture, priority, useWeakReference);
 	}
 
-	public function removeEventListener(_type:String, listener:Function, useCapture:Bool = false):Void {
+	public function removeEventListener(_type:String, listener:Dynamic, useCapture:Bool = false):Void {
 		eventDispatcher.removeEventListener(_type, listener, useCapture);
 	}
 
+	@:keep
 	inline final public function dispatchAddEvent():Void {
 		addEvent.action = this;
 		eventDispatcher.dispatchEvent(addEvent);
 	}
 
+	@:keep
 	inline final public function dispatchRemoveEvent():Void {
 		removeEvent.action = this;
 		eventDispatcher.dispatchEvent(removeEvent);
@@ -57,11 +59,13 @@ class Action extends StardustElement {
 	 */
 	public var active:Bool;
 
-	private var _priority:Int;
+	public var needsSortedParticles(get, never):Bool;
+
+	public var _priority:Int;
 
 	public function new() {
 		super();
-		priority = 0;
+		_priority = 0;
 		active = true;
 	}
 
@@ -72,10 +76,11 @@ class Action extends StardustElement {
 	 * <p>
 	 * All setup operations before the <code>update()</code> calls should be done here.
 	 * </p>
-	 * @param    emitter        The associated emitter.
-	 * @param    time        The timespan of each emitter's step.
+	 * @param emitter The associated emitter.
+	 * @param time The timespan of each emitter's step.
 	 */
-	public function preUpdate(emitter:Emitter, time:Float):Void { // abstract method
+	public function preUpdate(emitter:Emitter, time:Float):Void {
+		// abstract method
 	}
 
 	/**
@@ -84,12 +89,13 @@ class Action extends StardustElement {
 	 * <p>
 	 * Override this method to create custom actions.
 	 * </p>
-	 * @param    emitter        The associated emitter.
-	 * @param    particle    The associated particle.
-	 * @param    timeDelta   The timespan of each emitter's step.
-	 * @param    currentTime The total time from the first emitter.step() call.
+	 * @param emitter The associated emitter.
+	 * @param particle The associated particle.
+	 * @param timeDelta The timespan of each emitter's step.
+	 * @param currentTime The total time from the first emitter.step() call.
 	 */
-	public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void { // abstract method
+	public function update(emitter:Emitter, particle:Particle, timeDelta:Float, currentTime:Float):Void {
+		// abstract method
 	}
 
 	/**
@@ -99,10 +105,11 @@ class Action extends StardustElement {
 	 * <p>
 	 * All setup operations after the <code>update()</code> calls should be done here.
 	 * </p>
-	 * @param    emitter        The associated emitter.
-	 * @param    time        The timespan of each emitter's step.
+	 * @param emitter The associated emitter.
+	 * @param time The timespan of each emitter's step.
 	 */
-	public function postUpdate(emitter:Emitter, time:Float):Void { // abstract method
+	public function postUpdate(emitter:Emitter, time:Float):Void {
+		// abstract method
 	}
 
 	/**
@@ -115,11 +122,11 @@ class Action extends StardustElement {
 	 * You can alter the priority of an action, but it is recommended that you use the default values.
 	 * </p>
 	 */
-	inline final private function get_priority():Int {
+	@:keep inline final function get_priority():Int {
 		return _priority;
 	}
 
-	private function set_priority(value:Int):Int {
+	public function set_priority(value:Int):Int {
 		_priority = value;
 
 		priorityChangeEvent.action = this;
@@ -134,32 +141,33 @@ class Action extends StardustElement {
 	 * For instance, the <code>Collide</code> action needs all particles to be sorted in X positions.
 	 * </p>
 	 */
-	private function get_needsSortedParticles():Bool {
+	public function get_needsSortedParticles():Bool {
 		return false;
 	}
 
-	// Xml
-	//------------------------------------------------------------------------------------------------
+	// XML
+	// ------------------------------------------------------------------------------------------------
 
 	override public function getXMLTagName():String {
 		return Type.getClassName(Type.getClass(this));
 	}
 
 	override public function getElementTypeXMLTag():Xml {
-		// return Xml.parse("<actions/>");
 		return Xml.createElement("actions");
 	}
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.set("active", active);
+		xml.set("active", Std.string(active));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		if (xml.att.active.length()) {
-			active = (xml.att.active == "true");
-		}
+		if (xml.exists("active"))
+			active = xml.get("active") == "true";
 	}
+
+	// ------------------------------------------------------------------------------------------------
+	// end of XML
 }

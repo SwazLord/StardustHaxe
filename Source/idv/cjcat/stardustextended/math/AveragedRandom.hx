@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.math;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 
@@ -37,8 +38,10 @@ class AveragedRandom extends Random {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [randomObj];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(randomObj);
+		return relatedObjects;
 	}
 
 	override public function getXMLTagName():String {

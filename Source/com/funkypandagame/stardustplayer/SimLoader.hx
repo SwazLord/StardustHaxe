@@ -45,7 +45,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 		if (descriptorJSON == null) {
 			throw new Error(DESCRIPTOR_FILENAME + " not found.");
 		}
-		if (as3hx.Compat.parseFloat(descriptorJSON.version) < Stardust.VERSION) {
+		if (Std.parseFloat(descriptorJSON.version) < Stardust.VERSION) {
 			trace("Stardust Sim Loader: WARNING loaded simulation is created with an old version of the editor, it might not run.");
 		}
 
@@ -78,14 +78,14 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 
 				var rawData:RawEmitterData = new RawEmitterData();
 				rawData.emitterID = emitterId;
-				rawData.emitterXML = new FastXML(stardustBA.readUTFBytes(stardustBA.length));
+				rawData.emitterXML = new Xml(stardustBA.readUTFBytes(stardustBA.length));
 				rawData.snapshot = (snapshot != null) ? snapshot.content : null;
 				rawEmitterDatas.push(rawData);
 			}
 		}
 		var job:LoadByteArrayJob = sequenceLoader.getCompletedJobs().pop();
 		var atlasXMLBA:ByteArray = loadedZip.getFileByName(SDEConstants.ATLAS_XML_NAME).content;
-		var atlasXML:FastXML = new FastXML(atlasXMLBA.readUTFBytes(atlasXMLBA.length));
+		var atlasXML:Xml = new Xml(atlasXMLBA.readUTFBytes(atlasXMLBA.length));
 		var atlasBD:BitmapData = cast((job.content), Bitmap).bitmapData;
 		atlas = new TextureAtlas(Texture.fromBitmapData(atlasBD, false), atlasXML);
 
@@ -99,7 +99,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 		if (!projectLoaded) {
 			throw new Error("ERROR: Project is not loaded, call loadSim(), and then wait for the Event.COMPLETE event.");
 		}
-		var project:ProjectValueObject = new ProjectValueObject(as3hx.Compat.parseFloat(descriptorJSON.version));
+		var project:ProjectValueObject = new ProjectValueObject(Std.parseFloat(descriptorJSON.version));
 		for (rawData in rawEmitterDatas) {
 			var emitter:Emitter = EmitterBuilder.buildEmitter(rawData.emitterXML, rawData.emitterID);
 			emitter.name = rawData.emitterID;
@@ -162,7 +162,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 
 class RawEmitterData {
 	public var emitterID:String;
-	public var emitterXML:FastXML;
+	public var emitterXML:Xml;
 	public var snapshot:ByteArray;
 
 	public function new() {}

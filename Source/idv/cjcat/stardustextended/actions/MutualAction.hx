@@ -70,7 +70,7 @@ class MutualAction extends Action {
 		super.parseXML(xml, builder);
 
 		if (xml.att.maxDistance.length()) {
-			maxDistance = as3hx.Compat.parseFloat(xml.att.maxDistance);
+			maxDistance = Std.parseFloat(xml.att.maxDistance);
 		}
 	}
 }

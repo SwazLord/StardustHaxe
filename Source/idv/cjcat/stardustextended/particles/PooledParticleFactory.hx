@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.particles;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.initializers.Initializer;
 import idv.cjcat.stardustextended.initializers.InitializerCollection;
 
@@ -19,11 +20,11 @@ class PooledParticleFactory {
 	 * @param toVector The vector the particles will be added to to prevent object allocation
 	 * @return the newly created particles
 	 */
-	inline final public function createParticles(count:Int, currentTime:Float, toVector:Array<Particle> = null):Array<Particle> {
-		var particles:Array<Particle> = toVector;
+	inline final public function createParticles(count:Int, currentTime:Float, toVector:Vector<Particle> = null):Vector<Particle> {
+		var particles:Vector<Particle> = toVector;
 
 		if (particles == null) {
-			particles = new Array<Particle>();
+			particles = new Vector<Particle>();
 		}
 
 		if (count > 0) {
@@ -36,7 +37,7 @@ class PooledParticleFactory {
 				particles.push(particle);
 			}
 
-			var initializers:Array<Initializer> = _initializerCollection.initializers;
+			var initializers:Vector<Initializer> = _initializerCollection.initializers;
 			var len:Int = initializers.length;
 
 			for (i in 0...len) {

@@ -118,13 +118,13 @@ class Explode extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("x", x);
-		xml.setAttribute("y", y);
-		xml.setAttribute("strength", strength);
-		xml.setAttribute("growSpeed", growSpeed);
-		xml.setAttribute("maxDistance", maxDistance);
-		xml.setAttribute("attenuationPower", attenuationPower);
-		xml.setAttribute("epsilon", epsilon);
+		xml.set("x", Std.string(x));
+		xml.set("y", Std.string(y));
+		xml.set("strength", Std.string(strength));
+		xml.set("growSpeed", Std.string(growSpeed));
+		xml.set("maxDistance", Std.string(maxDistance));
+		xml.set("attenuationPower", Std.string(attenuationPower));
+		xml.set("epsilon", Std.string(epsilon));
 
 		return xml;
 	}
@@ -132,26 +132,26 @@ class Explode extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			x = as3hx.Compat.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			y = as3hx.Compat.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			y = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.strength.length()) {
-			strength = as3hx.Compat.parseFloat(xml.att.strength);
+		if (xml.exists("strength")) {
+			strength = Std.parseFloat(xml.get("strength"));
 		}
-		if (xml.att.growSpeed.length()) {
-			growSpeed = as3hx.Compat.parseFloat(xml.att.growSpeed);
+		if (xml.exists("growSpeed")) {
+			growSpeed = Std.parseFloat(xml.get("growSpeed"));
 		}
-		if (xml.att.maxDistance.length()) {
-			maxDistance = as3hx.Compat.parseFloat(xml.att.maxDistance);
+		if (xml.exists("maxDistance")) {
+			maxDistance = Std.parseFloat(xml.get("maxDistance"));
 		}
-		if (xml.att.attenuationPower.length()) {
-			attenuationPower = as3hx.Compat.parseFloat(xml.att.attenuationPower);
+		if (xml.exists("attenuationPower")) {
+			attenuationPower = Std.parseFloat(xml.get("attenuationPower"));
 		}
-		if (xml.att.epsilon.length()) {
-			epsilon = as3hx.Compat.parseFloat(xml.att.epsilon);
+		if (xml.exists("epsilon")) {
+			epsilon = Std.parseFloat(xml.get("epsilon"));
 		}
 	}
 }

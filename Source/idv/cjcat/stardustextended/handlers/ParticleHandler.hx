@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.handlers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.StardustElement;
@@ -29,7 +30,7 @@ class ParticleHandler extends StardustElement {
 	 * @param    particles
 	 * @param    time
 	 */
-	public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {}
+	public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {}
 
 	/**
 	 * [Abstract Method] Invoked for each particle added.

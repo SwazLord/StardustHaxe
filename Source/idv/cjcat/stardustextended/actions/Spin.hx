@@ -53,7 +53,7 @@ class Spin extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 		if (xml.att.multiplier.length()) {
-			multiplier = as3hx.Compat.parseFloat(xml.att.multiplier);
+			multiplier = Std.parseFloat(xml.att.multiplier);
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.initializers;
 
+import openfl.Vector;
 import openfl.events.EventDispatcher;
 import haxe.Constraints.Function;
 import idv.cjcat.stardustextended.events.StardustInitializerEvent;
@@ -64,7 +65,7 @@ class Initializer extends StardustElement {
 	}
 
 	/** @private */
-	public function doInitialize(particles:Array<Particle>, currentTime:Float):Void {
+	public function doInitialize(particles:Vector<Particle>, currentTime:Float):Void {
 		if (active) {
 			var particle:Particle;
 			for (m in 0...particles.length) {

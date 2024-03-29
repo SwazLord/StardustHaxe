@@ -1,5 +1,11 @@
 package idv.cjcat.stardustextended.initializers;
 
+import openfl.utils.ByteArray;
+import openfl.geom.Point;
+import haxe.Serializer;
+import haxe.Unserializer;
+import openfl.Vector;
+import openfl.Lib;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
@@ -16,27 +22,26 @@ import idv.cjcat.stardustextended.zones.ZoneCollection;
  * The current position is: positions[currentFrame] + random point in the zone.
  */
 class PositionAnimated extends Initializer implements IZoneContainer {
-	public var zones(get, set):Array<Zone>;
-	public var currentPosition(get, never):Point;
-
 	private var zoneCollection:ZoneCollection;
 
-	private function get_zones():Array<Zone> {
+	public var zones(get, set):Vector<Zone>;
+
+	private function get_zones():Vector<Zone> {
 		return zoneCollection.zones;
 	}
 
-	private function set_zones(value:Array<Zone>):Array<Zone> {
+	private function set_zones(value:Vector<Zone>):Vector<Zone> {
 		zoneCollection.zones = value;
 		return value;
 	}
 
 	public var inheritVelocity:Bool = false;
-	public var positions:Array<Point>;
+	public var positions:Vector<Point>;
 
-	private var prevPos:Int;
-	private var currentPos:Int;
+	private var prevPos:UInt;
+	private var currentPos:UInt;
 
-	public function new(zones:Array<Zone> = null) {
+	public function new(zones:Vector<Zone> = null) {
 		super();
 		zoneCollection = new ZoneCollection();
 		if (zones != null) {
@@ -46,10 +51,10 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 		}
 	}
 
-	override public function doInitialize(particles:Array<Particle>, currentTime:Float):Void {
+	override public function doInitialize(particles:Vector<Particle>, currentTime:Float):Void {
 		if (positions != null) {
-			currentPos = Std.int(currentTime % positions.length);
-			prevPos = ((currentPos > 0)) ? currentPos - 1 : positions.length - 1;
+			currentPos = Std.int(currentTime) % positions.length;
+			prevPos = (currentPos > 0) ? currentPos - 1 : positions.length - 1;
 		}
 		super.doInitialize(particles, currentTime);
 	}
@@ -76,17 +81,17 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 		}
 	}
 
-	private function get_currentPosition():Point {
+	public function get_currentPosition():Point {
 		if (positions != null) {
 			return positions[currentPos];
 		}
 		return null;
 	}
 
-	// Xml
-	//------------------------------------------------------------------------------------------------
-	override public function getRelatedObjects():Array<StardustElement> {
-		return zoneCollection.zones;
+	// XML
+	// ------------------------------------------------------------------------------------------------
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {
@@ -96,14 +101,14 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 		zoneCollection.addToStardustXML(xml);
-		xml.setAttribute("inheritVelocity", inheritVelocity);
+		xml.set("inheritVelocity", Std.string(inheritVelocity));
 		if (positions != null && positions.length > 0) {
-			registerClassAlias("String", String);
-			registerClassAlias("Point", Point);
-			registerClassAlias("VecPoint", Type.getClass(Array /*Vector.<T> call?*/));
-			var ba:ByteArray = new ByteArray();
-			ba.writeObject(positions);
-			xml.setAttribute("positions", Base64.encode(ba));
+			Lib.registerClassAlias("String", String);
+			Lib.registerClassAlias("Point", Point);
+			Lib.registerClassAlias("VecPoint", Vector);
+			var bytes = new ByteArray();
+			bytes.writeObject(positions);
+			xml.set("positions", Base64.encode(bytes));
 		}
 		return xml;
 	}
@@ -111,22 +116,23 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.zone.length()) {
+		if (xml.exists("zone")) {
 			trace("WARNING: the simulation contains a deprecated property 'zone' for " + getXMLTagName());
-			zoneCollection.zones = [cast((builder.getElementByName(xml.att.zone)), Zone)];
+			zoneCollection.zones = cast builder.getElementByName(xml.get("zone"));
 		} else {
 			zoneCollection.parseFromStardustXML(xml, builder);
 		}
-		if (xml.att.positions.length()) {
-			registerClassAlias("String", String);
-			registerClassAlias("Point", Point);
-			registerClassAlias("VecPoint", Type.getClass(Array /*Vector.<T> call?*/));
-			var ba:ByteArray = Base64.decode(xml.att.positions);
-			ba.position = 0;
-			positions = ba.readObject();
+		if (xml.exists("positions")) {
+			Lib.registerClassAlias("String", String);
+			Lib.registerClassAlias("Point", Point);
+			Lib.registerClassAlias("VecPoint", Vector);
+			var bytes = new ByteArray();
+			bytes = Base64.decode(xml.get("positions"));
+			bytes.position = 0;
+			positions = bytes.readObject();
 		}
-		if (xml.att.inheritVelocity.length()) {
-			inheritVelocity = (xml.att.inheritVelocity == "true");
+		if (xml.exists("inheritVelocity")) {
+			inheritVelocity = xml.get("inheritVelocity") == "true";
 		}
 	}
 }

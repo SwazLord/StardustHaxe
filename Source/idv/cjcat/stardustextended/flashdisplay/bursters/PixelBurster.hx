@@ -39,7 +39,7 @@ class PixelBurster extends Burster {
 			for (i in 0...columns) {
 				p = particles[index];
 				var color:Int = bitmapData.getPixel32(i, j);
-				p.alpha = as3hx.Compat.parseFloat(Std.int(color & 0xFF000000) >> 24) * inv255;
+				p.alpha = Std.parseFloat(Std.int(color & 0xFF000000) >> 24) * inv255;
 				if (!p.alpha) {
 					continue;
 				}

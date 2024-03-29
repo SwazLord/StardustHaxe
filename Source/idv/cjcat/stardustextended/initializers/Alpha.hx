@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.initializers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.math.Random;
 import idv.cjcat.stardustextended.math.UniformRandom;
@@ -38,8 +39,10 @@ class Alpha extends Initializer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_random];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(_random);
+		return relatedObjects;
 	}
 
 	override public function getXMLTagName():String {
@@ -49,7 +52,7 @@ class Alpha extends Initializer {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("random", _random.name);
+		xml.set("random", Std.string(_random.name));
 
 		return xml;
 	}
@@ -57,8 +60,8 @@ class Alpha extends Initializer {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.random.length()) {
-			random = try cast(builder.getElementByName(xml.att.random), Random) catch (e:Dynamic) null;
+		if (xml.exists("random")) {
+			random = try cast(builder.getElementByName(xml.get("random")), Random) catch (e:Dynamic) null;
 		}
 	}
 }

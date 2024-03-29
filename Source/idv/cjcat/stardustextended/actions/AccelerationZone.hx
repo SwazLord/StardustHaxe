@@ -136,9 +136,9 @@ class AccelerationZone extends Action implements IZoneContainer {
 			zoneCollection.parseFromStardustXML(xml, builder);
 		}
 		inverted = (xml.att.inverted == "true");
-		acceleration = as3hx.Compat.parseFloat(xml.att.acceleration);
+		acceleration = Std.parseFloat(xml.att.acceleration);
 		useParticleDirection = (xml.att.useParticleDirection == "true");
-		_direction.x = as3hx.Compat.parseFloat(xml.att.directionX);
-		_direction.y = as3hx.Compat.parseFloat(xml.att.directionY);
+		_direction.x = Std.parseFloat(xml.att.directionX);
+		_direction.y = Std.parseFloat(xml.att.directionY);
 	}
 }

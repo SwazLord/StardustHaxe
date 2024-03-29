@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.initializers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.math.Random;
 import idv.cjcat.stardustextended.math.UniformRandom;
@@ -38,8 +39,10 @@ class Omega extends Initializer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_random];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(_random);
+		return relatedObjects;
 	}
 
 	override public function getXMLTagName():String {

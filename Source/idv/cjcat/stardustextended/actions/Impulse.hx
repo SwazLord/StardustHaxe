@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -63,8 +64,10 @@ class Impulse extends Action {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_field];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
+		relatedObjects.push(_field);
+		return relatedObjects;
 	}
 
 	override public function getXMLTagName():String {
@@ -74,7 +77,7 @@ class Impulse extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("field", field.name);
+		xml.set("field", field.name);
 
 		return xml;
 	}
@@ -82,8 +85,8 @@ class Impulse extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.field.length()) {
-			field = try cast(builder.getElementByName(xml.att.field), Field) catch (e:Dynamic) null;
+		if (xml.exists("field")) {
+			field = try cast(builder.getElementByName(xml.get("field")), Field) catch (e:Dynamic) null;
 		}
 	}
 }

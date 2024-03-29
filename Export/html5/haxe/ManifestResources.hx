@@ -73,8 +73,15 @@ import sys.FileSystem;
 
 		var data, manifest, library, bundle;
 
+		data = '{"name":null,"assets":"aoy4:pathy30:assets%2FcoinShower_simple.sdey4:sizei17139y4:typey6:BINARYy2:idR1y7:preloadtgh","rootPath":null,"version":2,"libraryArgs":[],"libraryType":null}';
+		manifest = AssetManifest.parse (data, rootPath);
+		library = AssetLibrary.fromManifest (manifest);
+		Assets.registerLibrary ("default", library);
 		
 
+		library = Assets.getLibrary ("default");
+		if (library != null) preloadLibraries.push (library);
+		else preloadLibraryNames.push ("default");
 		
 
 	}
@@ -85,10 +92,14 @@ import sys.FileSystem;
 #if !display
 #if flash
 
+@:keep @:bind @:noCompletion #if display private #end class __ASSET__assets_coinshower_simple_sde extends null { }
+@:keep @:bind @:noCompletion #if display private #end class __ASSET__manifest_default_json extends null { }
 
 
 #elseif (desktop || cpp)
 
+@:keep @:file("Assets/coinShower_simple.sde") @:noCompletion #if display private #end class __ASSET__assets_coinshower_simple_sde extends haxe.io.Bytes {}
+@:keep @:file("") @:noCompletion #if display private #end class __ASSET__manifest_default_json extends haxe.io.Bytes {}
 
 
 

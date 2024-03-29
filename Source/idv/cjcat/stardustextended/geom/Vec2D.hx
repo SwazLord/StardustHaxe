@@ -14,7 +14,7 @@ class Vec2D extends Point {
 
 	// public var length(get, never):Float;
 
-	override function get_length():Float {
+	override public function get_length():Float {
 		return Math.sqrt(x * x + y * y);
 	}
 

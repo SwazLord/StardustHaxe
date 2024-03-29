@@ -146,10 +146,10 @@ class RandomDrift extends Action {
 			massless = (xml.att.massless == "true");
 		}
 		if (xml.att.maxX.length()) {
-			_maxX = as3hx.Compat.parseFloat(xml.att.maxX);
+			_maxX = Std.parseFloat(xml.att.maxX);
 		}
 		if (xml.att.maxY.length()) {
-			_maxY = as3hx.Compat.parseFloat(xml.att.maxY);
+			_maxY = Std.parseFloat(xml.att.maxY);
 		}
 		if (xml.att.randomX.length()) {
 			randomX = try cast(builder.getElementByName(xml.att.randomX), Random) catch (e:Dynamic) null;

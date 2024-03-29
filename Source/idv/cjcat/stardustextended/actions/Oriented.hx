@@ -70,10 +70,10 @@ class Oriented extends Action {
 		super.parseXML(xml, builder);
 
 		if (xml.att.factor.length()) {
-			factor = as3hx.Compat.parseFloat(xml.att.factor);
+			factor = Std.parseFloat(xml.att.factor);
 		}
 		if (xml.att.offset.length()) {
-			offset = as3hx.Compat.parseFloat(xml.att.offset);
+			offset = Std.parseFloat(xml.att.offset);
 		}
 	}
 }

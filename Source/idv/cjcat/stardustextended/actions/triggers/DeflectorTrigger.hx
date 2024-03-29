@@ -32,7 +32,7 @@ class DeflectorTrigger extends Trigger {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 		if (deflector != null) {
-			xml.setAttribute("deflector", deflector.name);
+			xml.set("deflector", Std.string(deflector.name));
 		}
 		return xml;
 	}

@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.events;
 
+import openfl.events.Event;
 import idv.cjcat.stardustextended.emitters.Emitter;
 
 class StardustEmitterStepEndEvent extends Event {

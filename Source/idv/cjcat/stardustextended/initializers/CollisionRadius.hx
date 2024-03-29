@@ -35,7 +35,7 @@ class CollisionRadius extends Initializer {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.setAttribute("radius", radius);
+		xml.set("radius", Std.string(radius));
 
 		return xml;
 	}
@@ -43,8 +43,8 @@ class CollisionRadius extends Initializer {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.radius.length()) {
-			radius = as3hx.Compat.parseFloat(xml.att.radius);
+		if (xml.exists("radius")) {
+			radius = Std.parseFloat(xml.get("radius"));
 		}
 	}
 }
