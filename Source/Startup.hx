@@ -14,7 +14,8 @@ class Startup extends Sprite {
 	public function new () {
 		
 		super ();
-		
+		stage.color = 0x565656;
+		stage.frameRate = 60;
 		starling = new Starling (Game, stage);
 		starling.start ();
 		

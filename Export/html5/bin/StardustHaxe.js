@@ -924,7 +924,7 @@ ApplicationMain.main = function() {
 ApplicationMain.create = function(config) {
 	var app = new openfl_display_Application();
 	ManifestResources.init(config);
-	app.meta.h["build"] = "6";
+	app.meta.h["build"] = "7";
 	app.meta.h["company"] = "Company Name";
 	app.meta.h["file"] = "StardustHaxe";
 	app.meta.h["name"] = "StardustHaxe";
@@ -3789,6 +3789,8 @@ openfl_display_Sprite.prototype = $extend(openfl_display_DisplayObjectContainer.
 });
 var Startup = function() {
 	openfl_display_Sprite.call(this);
+	this.stage.set_color(5658198);
+	this.stage.set_frameRate(60);
 	this.starling = new starling_core_Starling(Game,this.stage);
 	this.starling.start();
 };
@@ -7490,7 +7492,7 @@ var Game = function() {
 	this.infoTF = new starling_text_TextField(250,30,"");
 	this.infoTF.get_format().setTo("Verdana",14,16777215);
 	this.addChild(this.infoTF);
-	Game.assetInstance = openfl_utils_Assets.getBytes("assets/coinShower_simple.sde");
+	Game.assetInstance = openfl_utils_Assets.getBytes("assets/bigExplosion.sde");
 	this.player = new com_funkypandagame_stardustplayer_SimPlayer();
 	this.loader = new com_funkypandagame_stardustplayer_SimLoader();
 	this.loader.addEventListener("complete",$bind(this,this.onSimLoaded));
@@ -7507,7 +7509,7 @@ Game.prototype = $extend(starling_display_Sprite.prototype,{
 	,project: null
 	,cnt: null
 	,onSimLoaded: function(event) {
-		haxe_Log.trace("sim loaded",{ fileName : "Source/Game.hx", lineNumber : 49, className : "Game", methodName : "onSimLoaded"});
+		haxe_Log.trace("sim loaded",{ fileName : "Source/Game.hx", lineNumber : 58, className : "Game", methodName : "onSimLoaded"});
 		this.loader.removeEventListener("complete",$bind(this,this.onSimLoaded));
 		this.project = this.loader.createProjectInstance();
 		this.player.setProject(this.project);
@@ -7619,7 +7621,7 @@ ManifestResources.init = function(config) {
 		ManifestResources.rootPath = "./";
 	}
 	var bundle;
-	var data = "{\"name\":null,\"assets\":\"aoy4:pathy30:assets%2FcoinShower_simple.sdey4:sizei17139y4:typey6:BINARYy2:idR1y7:preloadtgh\",\"rootPath\":null,\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	var data = "{\"name\":null,\"assets\":\"aoy4:pathy25:assets%2FbigExplosion.sdey4:sizei179264y4:typey6:BINARYy2:idR1y7:preloadtgoR0y25:assets%2Fblazing_fire.sdeR2i58003R3R4R5R7R6tgoR0y30:assets%2FcoinShower_simple.sdeR2i17102R3R4R5R8R6tgoR0y19:assets%2FdryIce.sdeR2i217385R3R4R5R9R6tgoR0y23:assets%2FexampleSim.sdeR2i1724R3R4R5R10R6tgoR0y22:assets%2Ffireworks.sdeR2i8171R3R4R5R11R6tgoR0y25:assets%2FglitterBurst.sdeR2i4178R3R4R5R12R6tgoR0y26:assets%2FgravityFields.sdeR2i1782R3R4R5R13R6tgoR0y19:assets%2Frocket.sdeR2i65429R3R4R5R14R6tgoR0y21:assets%2Fsnowfall.sdeR2i1825R3R4R5R15R6tgh\",\"rootPath\":null,\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
 	var manifest = lime_utils_AssetManifest.parse(data,ManifestResources.rootPath);
 	var library = lime_utils_AssetLibrary.fromManifest(manifest);
 	lime_utils_Assets.registerLibrary("default",library);
@@ -37283,7 +37285,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 431778;
+	this.version = 450964;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
