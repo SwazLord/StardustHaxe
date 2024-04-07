@@ -1,5 +1,8 @@
 package idv.cjcat.stardustextended.flashdisplay.handlers;
 
+import openfl.Vector;
+import openfl.display.DisplayObject;
+import openfl.display.DisplayObjectContainer;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.handlers.ParticleHandler;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -44,7 +47,7 @@ class DisplayObjectHandler extends ParticleHandler {
 		displayObj = cast((particle.target), DisplayObject);
 		displayObj.blendMode = _blendMode;
 
-		if (!forceParentChange && displayObj.parent) {
+		if (!forceParentChange && displayObj.parent != null) {
 			return;
 		}
 
@@ -65,7 +68,7 @@ class DisplayObjectHandler extends ParticleHandler {
 		displayObj.parent.removeChild(displayObj);
 	}
 
-	override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
+	override public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {
 		for (particle in particles) {
 			displayObj = cast((particle.target), DisplayObject);
 
@@ -96,8 +99,8 @@ class DisplayObjectHandler extends ParticleHandler {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("addChildMode", addChildMode);
-		xml.set("forceParentChange", forceParentChange);
+		xml.set("addChildMode", Std.string(addChildMode));
+		xml.set("forceParentChange", Std.string(forceParentChange));
 		xml.set("blendMode", _blendMode);
 
 		return xml;
@@ -106,14 +109,14 @@ class DisplayObjectHandler extends ParticleHandler {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.addChildMode.length()) {
-			addChildMode = Std.int(xml.att.addChildMode);
+		if (xml.exists("addChildMode")) {
+			addChildMode = Std.int(Std.parseFloat(xml.get("addChildMode")));
 		}
-		if (xml.att.forceParentChange.length()) {
-			forceParentChange = (xml.att.forceParentChange == "true");
+		if (xml.exists("forceParentChange")) {
+			forceParentChange = (xml.get("forceParentChange") == "true");
 		}
-		if (xml.att.blendMode.length()) {
-			blendMode = (xml.att.blendMode);
+		if (xml.exists("blendMode")) {
+			blendMode = (xml.get("blendMode"));
 		}
 	}
 }

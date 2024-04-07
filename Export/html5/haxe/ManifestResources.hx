@@ -73,7 +73,7 @@ import sys.FileSystem;
 
 		var data, manifest, library, bundle;
 
-		data = '{"name":null,"assets":"aoy4:pathy25:assets%2FbigExplosion.sdey4:sizei179264y4:typey6:BINARYy2:idR1y7:preloadtgoR0y25:assets%2Fblazing_fire.sdeR2i58003R3R4R5R7R6tgoR0y30:assets%2FcoinShower_simple.sdeR2i17102R3R4R5R8R6tgoR0y19:assets%2FdryIce.sdeR2i217385R3R4R5R9R6tgoR0y23:assets%2FexampleSim.sdeR2i1724R3R4R5R10R6tgoR0y22:assets%2Ffireworks.sdeR2i8171R3R4R5R11R6tgoR0y25:assets%2FglitterBurst.sdeR2i4178R3R4R5R12R6tgoR0y26:assets%2FgravityFields.sdeR2i1782R3R4R5R13R6tgoR0y19:assets%2Frocket.sdeR2i65429R3R4R5R14R6tgoR0y21:assets%2Fsnowfall.sdeR2i1825R3R4R5R15R6tgh","rootPath":null,"version":2,"libraryArgs":[],"libraryType":null}';
+		data = '{"name":null,"assets":"aoy4:pathy25:assets%2FbigExplosion.sdey4:sizei179264y4:typey6:BINARYy2:idR1y7:preloadtgoR0y25:assets%2Fblazing_fire.sdeR2i58003R3R4R5R7R6tgoR0y30:assets%2FcoinShower_simple.sdeR2i17070R3R4R5R8R6tgoR0y19:assets%2FdryIce.sdeR2i217385R3R4R5R9R6tgoR0y23:assets%2FexampleSim.sdeR2i1724R3R4R5R10R6tgoR0y22:assets%2Ffireworks.sdeR2i8171R3R4R5R11R6tgoR0y25:assets%2FglitterBurst.sdeR2i4178R3R4R5R12R6tgoR0y26:assets%2FgravityFields.sdeR2i1782R3R4R5R13R6tgoR0y19:assets%2Frocket.sdeR2i65429R3R4R5R14R6tgoR0y21:assets%2Fsnowfall.sdeR2i1825R3R4R5R15R6tgh","rootPath":null,"version":2,"libraryArgs":[],"libraryType":null}';
 		manifest = AssetManifest.parse (data, rootPath);
 		library = AssetLibrary.fromManifest (manifest);
 		Assets.registerLibrary ("default", library);

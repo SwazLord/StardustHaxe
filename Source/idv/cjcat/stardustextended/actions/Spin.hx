@@ -25,7 +25,7 @@ class Spin extends Action {
 
 	public function new(_multiplier:Float = 1) {
 		super();
-		_priority = -4;
+		priority = -4;
 		multiplier = _multiplier;
 	}
 

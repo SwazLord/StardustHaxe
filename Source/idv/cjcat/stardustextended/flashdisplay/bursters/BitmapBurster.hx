@@ -1,5 +1,10 @@
 package idv.cjcat.stardustextended.flashdisplay.bursters;
 
+import openfl.display.Sprite;
+import openfl.display.Bitmap;
+import openfl.geom.Matrix;
+import openfl.Vector;
+import openfl.display.BitmapData;
 import idv.cjcat.stardustextended.particles.Particle;
 
 /**
@@ -47,14 +52,14 @@ class BitmapBurster extends Burster {
 		this.offsetY = offsetY;
 	}
 
-	override public function createParticles(currentTime:Float):Array<Particle> {
+	override public function createParticles(currentTime:Float):Vector<Particle> {
 		if (bitmapData == null) {
 			return null;
 		}
 
 		var rows:Int = Math.ceil(bitmapData.height / cellHeight);
 		var columns:Int = Math.ceil(bitmapData.width / cellWidth);
-		var particles:Array<Particle> = factory.createParticles(rows * columns, currentTime);
+		var particles:Vector<Particle> = factory.createParticles(rows * columns, currentTime);
 
 		var index:Int = 0;
 		var matrix:Matrix = new Matrix();

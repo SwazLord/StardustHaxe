@@ -116,10 +116,10 @@ class BoundingBox extends Deflector {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("x", x);
-		xml.set("y", y);
-		xml.set("width", width);
-		xml.set("height", height);
+		xml.set("x", Std.string(x));
+		xml.set("y", Std.string(y));
+		xml.set("width", Std.string(width));
+		xml.set("height", Std.string(height));
 
 		return xml;
 	}
@@ -127,17 +127,17 @@ class BoundingBox extends Deflector {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			x = Std.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			y = Std.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			y = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.width.length()) {
-			width = Std.parseFloat(xml.att.width);
+		if (xml.exists("width")) {
+			width = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.height.length()) {
-			height = Std.parseFloat(xml.att.height);
+		if (xml.exists("height")) {
+			height = Std.parseFloat(xml.get("height"));
 		}
 	}
 }

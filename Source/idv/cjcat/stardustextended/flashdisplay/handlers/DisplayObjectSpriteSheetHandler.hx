@@ -1,5 +1,10 @@
 package idv.cjcat.stardustextended.flashdisplay.handlers;
 
+import openfl.display.DisplayObject;
+import openfl.geom.ColorTransform;
+import openfl.display.DisplayObjectContainer;
+import openfl.Vector;
+import openfl.display.BitmapData;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
@@ -19,7 +24,7 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 	private var _pool:DisplayObjectPool;
 	private var _totalFrames:Int;
 	private var _isSpriteSheet:Bool;
-	private var _images:Array<BitmapData>;
+	private var _images:Vector<BitmapData>;
 
 	public function new(container:DisplayObjectContainer = null, blendMode:String = "normal", addChildMode:Int = 0) {
 		super(container, blendMode, addChildMode);
@@ -27,7 +32,7 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 		_pool.reset(CenteredBitmap, null);
 	}
 
-	override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
+	override public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {
 		super.stepEnd(emitter, particles, time);
 		for (particle in particles) {
 			var bmp:CenteredBitmap = cast((particle.target), CenteredBitmap);
@@ -81,7 +86,7 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 		}
 	}
 
-	public function setImages(images:Array<BitmapData>):Void {
+	public function setImages(images:Vector<BitmapData>):Void {
 		_images = images;
 		makeSpriteSheetCache();
 	}
@@ -139,17 +144,17 @@ class DisplayObjectSpriteSheetHandler extends DisplayObjectHandler implements IS
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.set("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
-		xml.set("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
-		xml.set("smoothing", _smoothing);
+		xml.set("spriteSheetAnimationSpeed", Std.string(_spriteSheetAnimationSpeed));
+		xml.set("spriteSheetStartAtRandomFrame", Std.string(_spriteSheetStartAtRandomFrame));
+		xml.set("smoothing", Std.string(_smoothing));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		_spriteSheetAnimationSpeed = xml.att.spriteSheetAnimationSpeed;
-		_spriteSheetStartAtRandomFrame = (xml.att.spriteSheetStartAtRandomFrame == "true");
-		_smoothing = (xml.att.smoothing == "true");
+		_spriteSheetAnimationSpeed = Std.parseFloat(xml.get("spriteSheetAnimationSpeed"));
+		_spriteSheetStartAtRandomFrame = (xml.get("spriteSheetStartAtRandomFrame") == "true");
+		_smoothing = (xml.get("smoothing") == "true");
 		makeSpriteSheetCache();
 	}
 }

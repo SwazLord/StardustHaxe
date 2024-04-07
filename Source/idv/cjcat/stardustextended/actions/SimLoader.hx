@@ -1,5 +1,8 @@
 package com.funkypandagame.stardustplayer;
 
+import com.funkypandagame.stardustplayer.RawEmitterData;
+import com.funkypandagame.stardustplayer.SDEConstants;
+import com.funkypandagame.stardustplayer.ISimLoader;
 import openfl.Vector;
 import org.as3commons.zip.IZipFile;
 import haxe.Json;

@@ -40,7 +40,7 @@ class DeathZone extends Action implements IZoneContainer {
 
 	public function new(zones:Vector<Zone> = null, inverted:Bool = false) {
 		super();
-		_priority = -6;
+		priority = -6;
 
 		zoneCollection = new ZoneCollection();
 		if (zones != null) {
@@ -65,7 +65,7 @@ class DeathZone extends Action implements IZoneContainer {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		return cast(zoneCollection.zones.slice());
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {

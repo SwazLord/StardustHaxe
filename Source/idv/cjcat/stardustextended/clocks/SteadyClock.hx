@@ -74,9 +74,8 @@ class SteadyClock extends Clock {
 	}
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(_initialDelay);
-		return relatedObjects;
+		
+		return new Vector<StardustElement>([_initialDelay]);
 	}
 
 	override public function toXML():Xml {

@@ -65,7 +65,7 @@ class AccelerationZone extends Action implements IZoneContainer {
 
 	public function new(zones:Vector<Zone> = null, _inverted:Bool = false) {
 		super();
-		_priority = -6;
+		priority = -6;
 
 		inverted = _inverted;
 		acceleration = 200;
@@ -110,7 +110,7 @@ class AccelerationZone extends Action implements IZoneContainer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 	override public function getRelatedObjects():Vector<StardustElement> {
-		return cast(zoneCollection.zones.slice());
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {

@@ -1,5 +1,10 @@
 package idv.cjcat.stardustextended.flashdisplay.handlers;
 
+import openfl.Vector;
+import openfl.display.DisplayObject;
+import openfl.display.BitmapData;
+import openfl.geom.ColorTransform;
+import openfl.geom.Matrix;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.math.StardustMath;
 import idv.cjcat.stardustextended.handlers.ParticleHandler;
@@ -30,7 +35,7 @@ class BitmapHandler extends ParticleHandler {
 	private var mat:Matrix = new Matrix();
 	private var colorTransform:ColorTransform = new ColorTransform(1, 1, 1);
 
-	override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
+	override public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {
 		for (particle in particles) {
 			displayObj = cast((particle.target), DisplayObject);
 
@@ -63,8 +68,8 @@ class BitmapHandler extends ParticleHandler {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.blendMode.length()) {
-			blendMode = xml.att.blendMode;
+		if (xml.exists("blendMode")) {
+			blendMode = xml.get("blendMode");
 		}
 	}
 }

@@ -25,7 +25,7 @@ class Move extends Action {
 
 	public function new(multiplier:Float = 1) {
 		super();
-		_priority = -4;
+		priority = -4;
 
 		this.multiplier = multiplier;
 	}

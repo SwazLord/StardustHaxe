@@ -39,7 +39,7 @@ class XMLBuilder {
 		final relatedElements:Map<String, StardustElement> = new Map<String, StardustElement>();
 		traverseRelatedObjects(rootElement, relatedElements);
 
-		var relatedElementsArray:Array<StardustElement> = new Array<StardustElement>();
+		var relatedElementsArray:Vector<StardustElement> = new Vector<StardustElement>();
 		var element:StardustElement;
 		for (element in relatedElements) {
 			relatedElementsArray.push(element);
@@ -129,7 +129,7 @@ class XMLBuilder {
 	 * Registers multiple classes.
 	 * @param    classes
 	 */
-	public function registerClasses(classes:Array<Class<Dynamic>>):Void {
+	public function registerClasses(classes:Vector<Class<Dynamic>>):Void {
 		for (c in classes) {
 			registerClass(c);
 		}

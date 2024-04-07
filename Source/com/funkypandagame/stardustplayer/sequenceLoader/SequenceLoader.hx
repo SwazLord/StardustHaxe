@@ -1,13 +1,14 @@
 package com.funkypandagame.stardustplayer.sequenceLoader;
 
+import openfl.Vector;
 import openfl.display.DisplayObject;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
 
 class SequenceLoader extends EventDispatcher implements ISequenceLoader {
-	private var waitingJobs:Array<LoadByteArrayJob>;
+	private var waitingJobs:Vector<LoadByteArrayJob>;
 	private var currentJob:LoadByteArrayJob;
-	private var completedJobs:Array<LoadByteArrayJob>;
+	private var completedJobs:Vector<LoadByteArrayJob>;
 
 	public function new() {
 		super();
@@ -15,15 +16,15 @@ class SequenceLoader extends EventDispatcher implements ISequenceLoader {
 	}
 
 	private function initialize():Void {
-		waitingJobs = new Array<LoadByteArrayJob>();
-		completedJobs = new Array<LoadByteArrayJob>();
+		waitingJobs = new Vector<LoadByteArrayJob>();
+		completedJobs = new Vector<LoadByteArrayJob>();
 	}
 
 	public function addJob(loadJob:LoadByteArrayJob):Void {
 		waitingJobs.push(loadJob);
 	}
 
-	public function getCompletedJobs():Array<LoadByteArrayJob> {
+	public function getCompletedJobs():Vector<LoadByteArrayJob> {
 		return completedJobs;
 	}
 
@@ -65,9 +66,9 @@ class SequenceLoader extends EventDispatcher implements ISequenceLoader {
 		for (job2 in waitingJobs) {
 			job2.destroy();
 		}
-		waitingJobs = new Array<LoadByteArrayJob>();
+		waitingJobs = new Vector<LoadByteArrayJob>();
 		currentJob = null;
-		completedJobs = new Array<LoadByteArrayJob>();
+		completedJobs = new Vector<LoadByteArrayJob>();
 
 		initialize();
 	}

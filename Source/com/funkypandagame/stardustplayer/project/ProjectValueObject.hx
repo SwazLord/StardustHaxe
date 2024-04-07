@@ -36,8 +36,8 @@ class ProjectValueObject {
 	}
 
 	/** Convenience function to get all emitters */
-	public function get_emittersArr():Array<Emitter> {
-		var emitterVec:Array<Emitter> = [];
+	public function get_emittersArr():Vector<Emitter> {
+		var emitterVec:Vector<Emitter> = new Vector<Emitter>();
 		for (emVO in emitters) {
 			emitterVec.push(emVO.emitter);
 		}

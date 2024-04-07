@@ -65,9 +65,7 @@ class Impulse extends Action {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(_field);
-		return relatedObjects;
+		return new Vector<StardustElement>([_field]);
 	}
 
 	override public function getXMLTagName():String {

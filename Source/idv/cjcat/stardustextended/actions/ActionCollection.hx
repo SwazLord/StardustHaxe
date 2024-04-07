@@ -49,9 +49,9 @@ class ActionCollection implements ActionCollector {
 
 	// descending priority sort
 	private static function prioritySort(el1:Action, el2:Action):Int {
-		if (el1._priority > el2._priority) {
+		if (el1.priority > el2.priority) {
 			return -1;
-		} else if (el1._priority < el2._priority) {
+		} else if (el1.priority < el2.priority) {
 			return 1;
 		}
 

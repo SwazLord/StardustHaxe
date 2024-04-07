@@ -23,13 +23,13 @@ import idv.cjcat.stardustextended.geom.MotionData2DPool;
  * </p>
  */
 class VelocityField extends Action implements IFieldContainer {
-	public var fields(get, set):Array<Field>;
+	public var fields(get, set):Vector<Field>;
 
 	private var field:Field;
 
 	public function new(_field:Field = null) {
 		super();
-		_priority = -2;
+		priority = -2;
 		if (field != null) {
 			field = _field;
 		} else {
@@ -37,14 +37,14 @@ class VelocityField extends Action implements IFieldContainer {
 		}
 	}
 
-	private function get_fields():Array<Field> {
+	private function get_fields():Vector<Field> {
 		if (field != null) {
-			return [field];
+			return new Vector<Field>([field]);
 		}
-		return new Array<Field>();
+		return new Vector<Field>();
 	}
 
-	private function set_fields(value:Array<Field>):Array<Field> {
+	private function set_fields(value:Vector<Field>):Vector<Field> {
 		if (value != null && value.length > 0) {
 			field = value[0];
 		} else {
@@ -67,9 +67,7 @@ class VelocityField extends Action implements IFieldContainer {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(field);
-		return relatedObjects;
+		return new Vector<StardustElement>([field]);
 	}
 
 	override public function getXMLTagName():String {

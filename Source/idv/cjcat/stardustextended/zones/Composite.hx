@@ -56,7 +56,7 @@ class Composite extends Zone {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		return cast(zoneCollection.zones.slice());
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {

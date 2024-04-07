@@ -47,7 +47,7 @@ class MutualAction extends Action {
 	/**
 	 * Tells the emitter that this action needs sorted particles.
 	 */
-	final override private function get_needsSortedParticles():Bool {
+	final override public function get_needsSortedParticles():Bool {
 		return active;
 	}
 
@@ -61,7 +61,7 @@ class MutualAction extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("maxDistance", maxDistance);
+		xml.set("maxDistance", Std.string(maxDistance));
 
 		return xml;
 	}
@@ -69,8 +69,8 @@ class MutualAction extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.maxDistance.length()) {
-			maxDistance = Std.parseFloat(xml.att.maxDistance);
+		if (xml.exists("maxDistance")) {
+			maxDistance = Std.parseFloat(xml.get("maxDistance"));
 		}
 	}
 }

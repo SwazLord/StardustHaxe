@@ -88,10 +88,10 @@ class MutualGravity extends MutualAction {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("strength", strength);
-		xml.set("epsilon", epsilon);
-		xml.set("attenuationPower", attenuationPower);
-		xml.set("massless", massless);
+		xml.set("strength", Std.string(strength));
+		xml.set("epsilon", Std.string(epsilon));
+		xml.set("attenuationPower", Std.string(attenuationPower));
+		xml.set("massless", Std.string(massless));
 
 		return xml;
 	}
@@ -99,17 +99,17 @@ class MutualGravity extends MutualAction {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.strength.length()) {
-			strength = Std.parseFloat(xml.att.strength);
+		if (xml.exists("strength")) {
+			strength = Std.parseFloat(xml.get("strength"));
 		}
-		if (xml.att.epsilon.length()) {
-			epsilon = Std.parseFloat(xml.att.epsilon);
+		if (xml.exists("epsilon")) {
+			epsilon = Std.parseFloat(xml.get("epsilon"));
 		}
-		if (xml.att.attenuationPower.length()) {
-			attenuationPower = Std.parseFloat(xml.att.attenuationPower);
+		if (xml.exists("attenuationPower")) {
+			attenuationPower = Std.parseFloat(xml.get("attenuationPower"));
 		}
-		if (xml.att.massless.length()) {
-			massless = (xml.att.massless == "true");
+		if (xml.exists("massless")) {
+			massless = (xml.get("massless") == "true");
 		}
 	}
 }

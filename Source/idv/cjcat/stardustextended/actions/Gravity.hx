@@ -15,26 +15,26 @@ import idv.cjcat.stardustextended.xml.XMLBuilder;
  * @see idv.cjcat.stardustextended.fields.Field
  */
 class Gravity extends Action implements IFieldContainer {
-	private var _fields:Array<Field>;
+	private var _fields:Vector<Field>;
 
-	public function new(fields:Array<Field> = null) {
+	public function new(fields:Vector<Field> = null) {
 		super();
-		_priority = -3;
+		priority = -3;
 		if (fields != null) {
 			_fields = fields;
 		} else {
-			_fields = new Array<Field>();
+			_fields = new Vector<Field>();
 			_fields.push(new UniformField(0, 1));
 		}
 	}
 
-	public var fields(get, set):Array<Field>;
+	public var fields(get, set):Vector<Field>;
 
-	public function get_fields():Array<Field> {
+	public function get_fields():Vector<Field> {
 		return _fields;
 	}
 
-	public function set_fields(value:Array<Field>):Array<Field> {
+	public function set_fields(value:Vector<Field>):Vector<Field> {
 		return _fields = value;
 	}
 
@@ -61,7 +61,7 @@ class Gravity extends Action implements IFieldContainer {
 	 * Removes all gravity fields from the simulation.
 	 */
 	public function clearFields():Void {
-		_fields = new Array<Field>();
+		_fields = new Vector<Field>();
 	}
 
 	private var _updateMd2D:MotionData2D;

@@ -17,11 +17,12 @@
 
 package idv.cjcat.stardustextended.utils;
 
+import openfl.Vector;
 import openfl.utils.ByteArray;
 
 class Base64 {
-	private static var _encodeChars:Array<Int> = InitEncoreChar();
-	private static var _decodeChars:Array<Int> = InitDecodeChar();
+	private static var _encodeChars:Vector<Int> = InitEncoreChar();
+	private static var _decodeChars:Vector<Int> = InitDecodeChar();
 
 	public static function encode(data:ByteArray):String {
 		var out:ByteArray = new ByteArray();
@@ -123,8 +124,8 @@ class Base64 {
 		return byteString;
 	}
 
-	public static function InitEncoreChar():Array<Int> {
-		var encodeChars:Array<Int> = new Array<Int>();
+	public static function InitEncoreChar():Vector<Int> {
+		var encodeChars:Vector<Int> = new Vector<Int>();
 
 		// We could push the number directly
 		// but I think it's nice to see the characters (with no overhead on encode/decode)
@@ -136,8 +137,8 @@ class Base64 {
 		return encodeChars;
 	}
 
-	public static function InitDecodeChar():Array<Int> {
-		var decodeChars:Array<Int> = [
+	public static function InitDecodeChar():Vector<Int> {
+		var decodeChars:Vector<Int> = new Vector<Int>([
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
@@ -154,7 +155,7 @@ class Base64 {
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 			-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-		];
+		]);
 
 		return decodeChars;
 	}

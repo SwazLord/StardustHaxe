@@ -29,7 +29,7 @@ class DisplayObjectClass extends Initializer {
 		if (displayObjectClass == null) {
 			return;
 		}
-		p.target = construct(displayObjectClass, constructorParams);
+		p.target = Construct.construct(displayObjectClass, constructorParams);
 	}
 
 	// Xml

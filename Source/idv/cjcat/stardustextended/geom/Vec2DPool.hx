@@ -1,7 +1,9 @@
 package idv.cjcat.stardustextended.geom;
 
+import openfl.Vector;
+
 class Vec2DPool {
-	private static var _recycled:Array<Vec2D> = [];
+	private static var _recycled:Vector<Vec2D> = new Vector<Vec2D>();
 
 	inline public static function get(x:Float = 0, y:Float = 0):Vec2D {
 		var obj:Vec2D;

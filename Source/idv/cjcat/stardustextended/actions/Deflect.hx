@@ -34,7 +34,7 @@ class Deflect extends Action {
 
 	public function new() {
 		super();
-		_priority = -5;
+		priority = -5;
 		_deflectors = new Vector<Deflector>();
 	}
 

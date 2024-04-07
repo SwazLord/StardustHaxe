@@ -31,7 +31,7 @@ class Spawn extends Action {
 
 	public function new(inheritDirection:Bool = true, inheritVelocity:Bool = false, trigger:Trigger = null) {
 		super();
-		_priority = -10;
+		priority = -10;
 		this.inheritDirection = inheritDirection;
 		this.inheritVelocity = inheritVelocity;
 		this.trigger = trigger;
@@ -94,9 +94,7 @@ class Spawn extends Action {
 	}
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(_trigger);
-		return relatedObjects;
+		return new Vector<StardustElement>([_trigger]);
 	}
 
 	override public function toXML():Xml {

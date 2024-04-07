@@ -35,7 +35,7 @@ class RandomDrift extends Action {
 
 	public function new(maxX:Float = 10, maxY:Float = 10, randomX:Random = null, randomY:Random = null) {
 		super();
-		_priority = -3;
+		priority = -3;
 
 		this.massless = true;
 		this.randomX = randomX;

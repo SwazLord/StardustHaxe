@@ -56,7 +56,7 @@ class Velocity extends Initializer implements IZoneContainer {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		return cast(zoneCollection.zones.slice());
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {

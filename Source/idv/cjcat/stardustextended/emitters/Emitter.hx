@@ -35,12 +35,15 @@ class Emitter extends StardustElement implements ActionCollector implements Init
 	private var newParticles:Vector<Particle> = new Vector<Particle>();
 	private var _particles:Vector<Particle> = new Vector<Particle>();
 
+	public var particles(get, never):Vector<Particle>;
+
 	/**
 	 * Returns every managed particle for custom parameter manipulation.
 	 * The returned Vector is not a copy.
 	 * @return
 	 */
-	@:keep @:inline public final function get_particles():Vector<Particle> {
+	@:keep
+	inline public final function get_particles():Vector<Particle> {
 		return _particles;
 	}
 
@@ -143,7 +146,8 @@ class Emitter extends StardustElement implements ActionCollector implements Init
 	 * </p>
 	 * @param time The time elapsed since the last step in seconds
 	 */
-	@:keep @:inline public final function step(time:Float):Void {
+	@:keep
+	inline public final function step(time:Float):Void {
 		if (time <= 0) {
 			return;
 		}

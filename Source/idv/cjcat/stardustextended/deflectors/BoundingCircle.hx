@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.deflectors;
 
+import openfl.geom.Point;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 import idv.cjcat.stardustextended.geom.MotionData4D;
@@ -86,9 +87,9 @@ class BoundingCircle extends Deflector {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("x", x);
-		xml.set("y", y);
-		xml.set("radius", radius);
+		xml.set("x", Std.string(x));
+		xml.set("y", Std.string(y));
+		xml.set("radius", Std.string(radius));
 
 		return xml;
 	}
@@ -96,14 +97,14 @@ class BoundingCircle extends Deflector {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.x.length()) {
-			x = Std.parseFloat(xml.att.x);
+		if (xml.exists("x")) {
+			x = Std.parseFloat(xml.get("x"));
 		}
-		if (xml.att.y.length()) {
-			y = Std.parseFloat(xml.att.y);
+		if (xml.exists("y")) {
+			y = Std.parseFloat(xml.get("y"));
 		}
-		if (xml.att.radius.length()) {
-			radius = Std.parseFloat(xml.att.radius);
+		if (xml.exists("radius")) {
+			radius = Std.parseFloat(xml.get("radius"));
 		}
 	}
 }

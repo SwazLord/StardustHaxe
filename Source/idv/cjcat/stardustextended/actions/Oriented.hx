@@ -27,7 +27,7 @@ class Oriented extends Action {
 
 	public function new(factor:Float = 1, offset:Float = 0) {
 		super();
-		_priority = -6;
+		priority = -6;
 
 		this.factor = factor;
 		this.offset = offset;

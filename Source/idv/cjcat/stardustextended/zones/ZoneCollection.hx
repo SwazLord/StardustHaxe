@@ -14,7 +14,7 @@ class ZoneCollection {
 		var numZones:UInt = zones.length;
 		if (numZones > 1) {
 			var sumArea:Float = 0;
-			var areas:Array<Float> = new Array<Float>();
+			var areas:Vector<Float> = new Vector<Float>();
 			for (i in 0...numZones) {
 				sumArea += cast(zones[i], Zone).getArea();
 				areas.push(sumArea);

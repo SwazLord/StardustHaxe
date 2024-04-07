@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.actions.waypoints.Waypoint;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -13,7 +14,7 @@ import idv.cjcat.stardustextended.geom.Vec2DPool;
  * @see idv.cjcat.stardustextended.actions.waypoints.Waypoint
  */
 class FollowWaypoints extends Action {
-	public var waypoints(get, set):Array<Waypoint>;
+	public var waypoints(get, set):Vector<Waypoint>;
 
 	/**
 	 * Whether the particles head for the first waypoint after passing through the last waypoint.
@@ -26,10 +27,10 @@ class FollowWaypoints extends Action {
 	 */
 	public var massless:Bool;
 
-	private var _waypoints:Array<Waypoint>;
+	private var _waypoints:Vector<Waypoint>;
 	private var _timeDeltaOneSec:Float;
 
-	public function new(waypoints:Array<Waypoint> = null, loop:Bool = false, massless:Bool = true) {
+	public function new(waypoints:Vector<Waypoint> = null, loop:Bool = false, massless:Bool = true) {
 		super();
 		this.loop = loop;
 		this.massless = massless;
@@ -37,7 +38,7 @@ class FollowWaypoints extends Action {
 		if (waypoints != null) {
 			_waypoints = waypoints;
 		} else {
-			_waypoints = new Array<Waypoint>();
+			_waypoints = new Vector<Waypoint>();
 			_waypoints.push(new Waypoint(0, 0));
 		}
 	}
@@ -45,13 +46,13 @@ class FollowWaypoints extends Action {
 	/**
 	 * An array of waypoints.
 	 */
-	private function get_waypoints():Array<Waypoint> {
+	private function get_waypoints():Vector<Waypoint> {
 		return _waypoints;
 	}
 
-	private function set_waypoints(value:Array<Waypoint>):Array<Waypoint> {
+	private function set_waypoints(value:Vector<Waypoint>):Vector<Waypoint> {
 		if (value == null) {
-			value = new Array<Waypoint>();
+			value = new Vector<Waypoint>();
 		}
 		_waypoints = value;
 		return value;
@@ -69,7 +70,7 @@ class FollowWaypoints extends Action {
 	 * Removes all waypoints from the waypoint array.
 	 */
 	public function clearWaypoints():Void {
-		_waypoints = new Array<Waypoint>();
+		_waypoints = new Vector<Waypoint>();
 	}
 
 	override public function preUpdate(emitter:Emitter, time:Float):Void {

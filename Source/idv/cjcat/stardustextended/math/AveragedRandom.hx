@@ -39,9 +39,8 @@ class AveragedRandom extends Random {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(randomObj);
-		return relatedObjects;
+		
+		return new Vector<StardustElement>([randomObj]);
 	}
 
 	override public function getXMLTagName():String {

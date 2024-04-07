@@ -37,16 +37,16 @@ class Game extends Sprite {
 		infoTF.format.setTo("Verdana", 14, Color.WHITE);
 		addChild(infoTF);
 
-		// assetInstance = Assets.getBytes("assets/coinShower_simple.sde");
+		assetInstance = Assets.getBytes("assets/coinShower_simple.sde");
 		// assetInstance = Assets.getBytes("assets/exampleSim.sde");
 		// assetInstance = Assets.getBytes("assets/snowfall.sde");
 		// assetInstance = Assets.getBytes("assets/blazing_fire.sde");
 		// assetInstance = Assets.getBytes("assets/gravityFields.sde");
 		// assetInstance = Assets.getBytes("assets/fireworks.sde");
 		// assetInstance = Assets.getBytes("assets/rocket.sde");
-		// assetInstance = Assets.getBytes("assets/dryIce.sde");
+		//assetInstance = Assets.getBytes("assets/dryIce.sde");
 		// assetInstance = Assets.getBytes("assets/glitterBurst.sde");
-		assetInstance = Assets.getBytes("assets/bigExplosion.sde");
+		// assetInstance = Assets.getBytes("assets/bigExplosion.sde");
 
 		player = new SimPlayer();
 		loader = new SimLoader();

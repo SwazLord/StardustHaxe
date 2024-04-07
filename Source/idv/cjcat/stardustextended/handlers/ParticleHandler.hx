@@ -21,7 +21,7 @@ class ParticleHandler extends StardustElement {
 	 * @param    particles
 	 * @param    time
 	 */
-	public function stepBegin(emitter:Emitter, particles:Array<Particle>, time:Float):Void {}
+	public function stepBegin(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {}
 
 	/**
 	 * [Abstract Method] Invoked when each emitter step ends. Particles are at their final position and ready to be

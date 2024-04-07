@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions.triggers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.emitters.Emitter;
@@ -13,20 +14,20 @@ import idv.cjcat.stardustextended.zones.ZoneCollection;
  * This trigger is triggered when a particle is contained in a zone.
  */
 class ZoneTrigger extends Trigger implements IZoneContainer {
-	public var zones(get, set):Array<Zone>;
+	public var zones(get, set):Vector<Zone>;
 
 	private var zoneCollection:ZoneCollection;
 
-	private function get_zones():Array<Zone> {
+	private function get_zones():Vector<Zone> {
 		return zoneCollection.zones;
 	}
 
-	private function set_zones(value:Array<Zone>):Array<Zone> {
+	private function set_zones(value:Vector<Zone>):Vector<Zone> {
 		zoneCollection.zones = value;
 		return value;
 	}
 
-	public function new(zones:Array<Zone> = null) {
+	public function new(zones:Vector<Zone> = null) {
 		super();
 		zoneCollection = new ZoneCollection();
 		if (zones != null) {
@@ -43,8 +44,8 @@ class ZoneTrigger extends Trigger implements IZoneContainer {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return zoneCollection.zones;
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return cast zoneCollection.zones;
 	}
 
 	override public function getXMLTagName():String {
@@ -59,9 +60,9 @@ class ZoneTrigger extends Trigger implements IZoneContainer {
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		if (xml.att.zone.length()) {
+		if (xml.exists("zone")) {
 			trace("WARNING: the simulation contains a deprecated property 'zone' for " + getXMLTagName());
-			zoneCollection.zones = try cast(builder.getElementByName(xml.att.zone), Zone) catch (e:Dynamic) null;
+			zoneCollection.zones = cast builder.getElementByName(xml.get("zone"));
 		} else {
 			zoneCollection.parseFromStardustXML(xml, builder);
 		}

@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.flashdisplay.bursters;
 
+import openfl.Vector;
 import openfl.display.BitmapData;
 import idv.cjcat.stardustextended.particles.Particle;
 import idv.cjcat.stardustextended.utils.ColorUtil;
@@ -23,14 +24,14 @@ class PixelBurster extends Burster {
 		this.offsetY = offsetY;
 	}
 
-	override public function createParticles(currentTime:Float):Array<Particle> {
+	override public function createParticles(currentTime:Float):Vector<Particle> {
 		if (bitmapData == null) {
 			return null;
 		}
 
 		var rows:Int = bitmapData.height;
 		var columns:Int = bitmapData.width;
-		var particles:Array<Particle> = factory.createParticles(rows * columns, currentTime);
+		var particles:Vector<Particle> = factory.createParticles(rows * columns, currentTime);
 
 		var index:Int = 0;
 		var p:Particle;
@@ -39,8 +40,8 @@ class PixelBurster extends Burster {
 			for (i in 0...columns) {
 				p = particles[index];
 				var color:Int = bitmapData.getPixel32(i, j);
-				p.alpha = Std.parseFloat(Std.int(color & 0xFF000000) >> 24) * inv255;
-				if (!p.alpha) {
+				p.alpha = Std.parseFloat(Std.string(Std.int(color & 0xFF000000) >> 24)) * inv255;
+				if (p.alpha == 0) {
 					continue;
 				}
 				var colorNoAlpha:Int = color & 0xFFFFFF;

@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.flashdisplay.bursters;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.initializers.Initializer;
 import idv.cjcat.stardustextended.initializers.InitializerCollector;
@@ -38,7 +39,7 @@ class Burster implements InitializerCollector {
 	 * Override this method to alter the particles' properties as you see fit.
 	 * @return
 	 */
-	public function createParticles(currentTime:Float):Array<Particle> // abstract method
+	public function createParticles(currentTime:Float):Vector<Particle> // abstract method
 	{
 		return null;
 	}

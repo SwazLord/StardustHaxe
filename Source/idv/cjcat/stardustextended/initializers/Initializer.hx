@@ -23,6 +23,8 @@ import idv.cjcat.stardustextended.xml.XMLBuilder;
 @:meta(Event(name = "ADD", type = "idv.cjcat.stardustextended.events.StardustInitializerEvent"))
 @:meta(Event(name = "REMOVE", type = "idv.cjcat.stardustextended.events.StardustInitializerEvent"))
 class Initializer extends StardustElement {
+	private var _priority:Int;
+
 	public var priority(get, set):Int;
 
 	private var eventDispatcher(default, never):EventDispatcher = new EventDispatcher();
@@ -51,8 +53,6 @@ class Initializer extends StardustElement {
 	 * Denotes if the initializer is active, true by default.
 	 */
 	public var active:Bool;
-
-	private var _priority:Int;
 
 	public function new() {
 		super();

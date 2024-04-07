@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.particles;
 
+import openfl.Vector;
+
 /**
  * This is an object pool for particle objects.
  *
@@ -8,7 +10,7 @@ package idv.cjcat.stardustextended.particles;
  * </p>
  */
 class ParticlePool {
-	private static var _recycled:Array<Particle> = [];
+	private static var _recycled:Vector<Particle> = new Vector<Particle>();
 
 	inline public static function get():Particle {
 		if (_recycled.length > 0) {

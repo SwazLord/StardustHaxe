@@ -23,7 +23,7 @@ class Damping extends Action {
 
 	public function new(damping:Float = 0.05) {
 		super();
-		_priority = -1;
+		priority = -1;
 
 		this.damping = damping;
 	}

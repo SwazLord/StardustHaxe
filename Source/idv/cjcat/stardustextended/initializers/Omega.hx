@@ -40,9 +40,8 @@ class Omega extends Initializer {
 	//------------------------------------------------------------------------------------------------
 
 	override public function getRelatedObjects():Vector<StardustElement> {
-		var relatedObjects:Vector<StardustElement> = new Vector<StardustElement>();
-		relatedObjects.push(_random);
-		return relatedObjects;
+		
+		return new Vector<StardustElement>([_random]);
 	}
 
 	override public function getXMLTagName():String {

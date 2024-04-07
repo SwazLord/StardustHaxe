@@ -1,7 +1,9 @@
 package idv.cjcat.stardustextended.geom;
 
+import openfl.Vector;
+
 class MotionData4DPool {
-	private static var _recycled:Array<MotionData4D> = [];
+	private static var _recycled:Vector<MotionData4D> = new Vector<MotionData4D>();
 
 	inline public static function get(x:Float = 0, y:Float = 0, vx:Float = 0, vy:Float = 0):MotionData4D {
 		var obj:MotionData4D;
