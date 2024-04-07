@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.xml;
 
+import starling.assets.XmlFactory;
+import openfl.Vector;
 import openfl.errors.TypeError;
 import openfl.errors.IllegalOperationError;
 import openfl.errors.Error;
@@ -167,11 +169,14 @@ class XMLBuilder {
 		return elements[name];
 	}
 
-	public function getElementsByClass(cl:Class<Dynamic>):Array<StardustElement> {
-		var ret:Array<StardustElement> = new Array<StardustElement>();
+	public function getElementsByClass(cl:Class<Dynamic>):Vector<StardustElement> {
+		var ret:Vector<StardustElement> = new Vector<StardustElement>();
 		for (key in elements.keys()) {
 			if (Std.isOfType(elements.get(key), cl)) {
+				trace("yes! its of type class " + cl);
 				ret.push(elements[key]);
+			} else {
+				trace("no! its of type class " + cl);
 			}
 		}
 		return ret;
@@ -186,34 +191,39 @@ class XMLBuilder {
 	 * @param    xml
 	 */
 	public function buildFromXML(xml:Xml):Void {
+		trace("xml = " + xml);
+		var firstElement:Xml = xml.firstElement();
 		elements = new Map<String, StardustElement>();
-
 		var element:StardustElement;
-		var access = new haxe.xml.Access(xml);
-		for (tag in access.elements) {
-			for (node in tag.elements) {
+		trace("elementClasses = " + elementClasses);
+		for (tag in firstElement.elements()) {
+			for (node in tag.elements()) {
+				trace("node = " + node.toString());
 				try {
-					var NodeClass:Class<Dynamic> = elementClasses[node.att.name.toString()];
+					trace("node name = " + node.nodeName);
+					var NodeClass:Class<Dynamic> = elementClasses[node.nodeName];
 					element = cast(Type.createInstance(NodeClass, []), StardustElement);
 				} catch (err:TypeError) {
 					throw new Error("Unable to instantiate class "
-						+ node.att.name.toString()
+						+ node.get("name")
 						+ ". Perhaps you forgot to "
 						+ "call XMLBuilder.registerClass for this type? Original error: "
 						+ err.toString());
 				}
-				if (elements[node.att.name] != null) {
-					throw new Error("Duplicate element name: " + node.att.name + " " + element.name);
+				if (elements[node.get("name")] != null) {
+					throw new Error("Duplicate element name: " + node.get("name") + " " + element.name);
 				}
-				elements[node.att.name.toString()] = element;
+				elements[node.get("name")] = element;
 			}
 		}
-		for (tag in access.elements) {
-			for (node in tag.elements) {
-				element = cast(elements[node.att.name.toString()], StardustElement);
-				element.parseXML(node.x, this);
+
+		for (tag in firstElement.elements()) {
+			for (node in tag.elements()) {
+				element = cast(elements[node.get("name")], StardustElement);
+				element.parseXML(node, this);
 			}
 		}
+
 		for (stardustElement in elements) {
 			stardustElement.onXMLInitComplete();
 		}

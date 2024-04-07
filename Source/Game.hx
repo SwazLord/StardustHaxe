@@ -1,3 +1,5 @@
+import openfl.events.Event;
+import openfl.Assets;
 import com.funkypandagame.stardustplayer.SimLoader;
 import com.funkypandagame.stardustplayer.SimPlayer;
 import com.funkypandagame.stardustplayer.emitter.EmitterValueObject;
@@ -12,15 +14,14 @@ import starling.utils.Align;
 import starling.utils.Color;
 
 class Game extends Sprite {
-	@:embed(source = "/../Assets/coinShower_simple.sde", mimeType = "application/octet-stream")
-	private static var Asset:Class;
-
 	private var simContainer:Sprite;
 	private var player:SimPlayer;
 	private var loader:SimLoader;
 	private var infoTF:TextField;
 	private var project:ProjectValueObject;
 	private var cnt:UInt = 0;
+
+	private static var assetInstance:ByteArray;
 
 	public function new() {
 		super();
@@ -36,14 +37,17 @@ class Game extends Sprite {
 		infoTF.format.setTo("Verdana", 14, Color.WHITE);
 		addChild(infoTF);
 
+		assetInstance = Assets.getBytes("assets/coinShower_simple.sde");
+
 		player = new SimPlayer();
 		loader = new SimLoader();
-		loader.addEventListener(flash.events.Event.COMPLETE, onSimLoaded);
-		loader.loadSim(Asset);
+		loader.addEventListener(Event.COMPLETE, onSimLoaded);
+		loader.loadSim(assetInstance);
 	}
 
-	private function onSimLoaded(event:flash.events.Event):Void {
-		loader.removeEventListener(flash.events.Event.COMPLETE, onSimLoaded);
+	private function onSimLoaded(event:Event):Void {
+		trace("sim loaded");
+		loader.removeEventListener(Event.COMPLETE, onSimLoaded);
 		project = loader.createProjectInstance();
 		player.setProject(project);
 		player.setRenderTarget(simContainer);

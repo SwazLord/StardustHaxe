@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.handlers.starling;
 
+import openfl.system.ApplicationDomain;
+import openfl.display3D.Context3DBufferUsage;
 import starling.core.Starling;
 import starling.errors.MissingContextError;
 import openfl.Vector;
@@ -44,7 +46,8 @@ class StarlingParticleBuffers {
 
 		vertexBuffers = new Vector<VertexBuffer3D>();
 
-		if (Type.getClassName(Type.getClass(Context3D)) == "openfl.display3D.Context3D") {
+		if (ApplicationDomain.currentDomain.hasDefinition("openfl.display3D.Context3DBufferUsage")) {
+			// if (Type.getClassName(Type.getClass(Context3D)) == "openfl.display3D.Context3DBufferUsage") {
 			for (i in 0...sNumberOfVertexBuffers) {
 				vertexBuffers[i] = context.createVertexBuffer(numParticles * 4, ELEMENTS_PER_VERTEX, "dynamicDraw");
 			}

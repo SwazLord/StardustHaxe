@@ -50,10 +50,11 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 		if (Std.parseFloat(descriptorJSON.version) < Stardust.VERSION) {
 			trace(' Stardust Sim Loader:WARNING loaded simulation is created with an old version of the editor, it might not run.');
 		}
-
+		trace("loadedZip getFileCount = " + loadedZip.getFileCount());
 		var atlasFound:Bool = false;
 		for (i in 0...loadedZip.getFileCount()) {
 			var loadedFileName:String = loadedZip.getFileAt(i).filename;
+			trace("loaded FileName = ", loadedFileName);
 			if (loadedFileName == SDEConstants.ATLAS_IMAGE_NAME) {
 				var loadAtlasJob:LoadByteArrayJob = new LoadByteArrayJob(loadedFileName, loadedFileName, loadedZip.getFileAt(i).content);
 				sequenceLoader.addJob(loadAtlasJob);
@@ -81,6 +82,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 				var rawData:RawEmitterData = new RawEmitterData();
 				rawData.emitterID = emitterId;
 				rawData.emitterXML = Xml.parse(stardustBA.readUTFBytes(stardustBA.length));
+				trace("rawData emitterXML = " + rawData.emitterXML);
 				rawData.snapshot = snapshot != null ? snapshot.content : null;
 				rawEmitterDatas.push(rawData);
 			}

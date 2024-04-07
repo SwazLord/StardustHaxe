@@ -3,7 +3,7 @@
 	
 	<meta title="StardustHaxe" package="com.sample.stardusthaxe" version="1.0.0" company="Company Name" />
 	<app main="Startup" path="Export" file="StardustHaxe" />
-	
+	<window depth-buffer="true" stencil-buffer="true" />
 	<source path="Source" />
 	
 	<haxelib name="openfl" />

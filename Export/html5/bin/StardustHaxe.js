@@ -924,7 +924,7 @@ ApplicationMain.main = function() {
 ApplicationMain.create = function(config) {
 	var app = new openfl_display_Application();
 	ManifestResources.init(config);
-	app.meta.h["build"] = "5";
+	app.meta.h["build"] = "6";
 	app.meta.h["company"] = "Company Name";
 	app.meta.h["file"] = "StardustHaxe";
 	app.meta.h["name"] = "StardustHaxe";
@@ -7490,10 +7490,11 @@ var Game = function() {
 	this.infoTF = new starling_text_TextField(250,30,"");
 	this.infoTF.get_format().setTo("Verdana",14,16777215);
 	this.addChild(this.infoTF);
+	Game.assetInstance = openfl_utils_Assets.getBytes("assets/coinShower_simple.sde");
 	this.player = new com_funkypandagame_stardustplayer_SimPlayer();
 	this.loader = new com_funkypandagame_stardustplayer_SimLoader();
 	this.loader.addEventListener("complete",$bind(this,this.onSimLoaded));
-	this.loader.loadSim(Game.Asset);
+	this.loader.loadSim(Game.assetInstance);
 };
 $hxClasses["Game"] = Game;
 Game.__name__ = "Game";
@@ -7506,6 +7507,7 @@ Game.prototype = $extend(starling_display_Sprite.prototype,{
 	,project: null
 	,cnt: null
 	,onSimLoaded: function(event) {
+		haxe_Log.trace("sim loaded",{ fileName : "Source/Game.hx", lineNumber : 49, className : "Game", methodName : "onSimLoaded"});
 		this.loader.removeEventListener("complete",$bind(this,this.onSimLoaded));
 		this.project = this.loader.createProjectInstance();
 		this.player.setProject(this.project);
@@ -8355,12 +8357,14 @@ com_funkypandagame_stardustplayer_SimLoader.prototype = $extend(openfl_events_Ev
 		if(parseFloat(this.descriptorJSON.version) < 2.1) {
 			haxe_Log.trace(" Stardust Sim Loader:WARNING loaded simulation is created with an old version of the editor, it might not run.",{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 51, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim"});
 		}
+		haxe_Log.trace("loadedZip getFileCount = " + this.loadedZip.getFileCount(),{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 53, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim"});
 		var atlasFound = false;
 		var _g = 0;
 		var _g1 = this.loadedZip.getFileCount();
 		while(_g < _g1) {
 			var i = _g++;
 			var loadedFileName = this.loadedZip.getFileAt(i).get_filename();
+			haxe_Log.trace("loaded FileName = ",{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 57, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim", customParams : [loadedFileName]});
 			if(loadedFileName == "atlas_0.png") {
 				var loadAtlasJob = new com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob(loadedFileName,loadedFileName,this.loadedZip.getFileAt(i).get_content());
 				this.sequenceLoader.addJob(loadAtlasJob);
@@ -8388,6 +8392,7 @@ com_funkypandagame_stardustplayer_SimLoader.prototype = $extend(openfl_events_Ev
 				var rawData = new com_funkypandagame_stardustplayer_RawEmitterData();
 				rawData.emitterID = emitterId;
 				rawData.emitterXML = Xml.parse(stardustBA.readUTFBytes(openfl_utils_ByteArray.get_length(stardustBA)));
+				haxe_Log.trace("rawData emitterXML = " + Std.string(rawData.emitterXML),{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 85, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "onProjectAtlasLoaded"});
 				rawData.snapshot = snapshot != null ? snapshot.get_content() : null;
 				this.rawEmitterDatas.push(rawData);
 			}
@@ -8544,8 +8549,11 @@ com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__name__ = "com.funkypa
 com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__properties__ = {get_builder:"get_builder"};
 com_funkypandagame_stardustplayer_emitter_EmitterBuilder.buildEmitter = function(sourceXML,uniqueEmitterId) {
 	com_funkypandagame_stardustplayer_emitter_EmitterBuilder.createBuilderIfNeeded();
+	haxe_Log.trace("uniqueEmitterId = " + uniqueEmitterId,{ fileName : "Source/com/funkypandagame/stardustplayer/emitter/EmitterBuilder.hx", lineNumber : 15, className : "com.funkypandagame.stardustplayer.emitter.EmitterBuilder", methodName : "buildEmitter"});
 	com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.buildFromXML(sourceXML);
-	var emitter = com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter)[0];
+	var star_ele = com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter);
+	haxe_Log.trace("star_ele = " + (star_ele == null ? "null" : star_ele != null ? star_ele.toString() : null),{ fileName : "Source/com/funkypandagame/stardustplayer/emitter/EmitterBuilder.hx", lineNumber : 19, className : "com.funkypandagame.stardustplayer.emitter.EmitterBuilder", methodName : "buildEmitter"});
+	var emitter = js_Boot.__cast(com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter).get(0) , idv_cjcat_stardustextended_emitters_Emitter);
 	emitter.name = uniqueEmitterId;
 	return emitter;
 };
@@ -18227,8 +18235,7 @@ idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.createBuffe
 		return;
 	}
 	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers = openfl_Vector.toObjectVector(null);
-	var c = js_Boot.getClass(openfl_display3D_Context3D);
-	if(c.__name__ == "openfl.display3D.Context3D") {
+	if(openfl_system_ApplicationDomain.currentDomain.hasDefinition("openfl.display3D.Context3DBufferUsage")) {
 		var _g = 0;
 		var _g1 = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers;
 		while(_g < _g1) {
@@ -19524,7 +19531,7 @@ idv_cjcat_stardustextended_xml_XMLBuilder.prototype = {
 		return this.elements.h[name];
 	}
 	,getElementsByClass: function(cl) {
-		var ret = [];
+		var ret = openfl_Vector.toObjectVector(null);
 		var h = this.elements.h;
 		var key_h = h;
 		var key_keys = Object.keys(h);
@@ -19533,56 +19540,65 @@ idv_cjcat_stardustextended_xml_XMLBuilder.prototype = {
 		while(key_current < key_length) {
 			var key = key_keys[key_current++];
 			if(js_Boot.__instanceof(this.elements.h[key],cl)) {
+				haxe_Log.trace("yes! its of type class " + Std.string(cl),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 176, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "getElementsByClass"});
 				ret.push(this.elements.h[key]);
+			} else {
+				haxe_Log.trace("no! its of type class " + Std.string(cl),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 179, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "getElementsByClass"});
 			}
 		}
 		return ret;
 	}
 	,buildFromXML: function(xml) {
+		haxe_Log.trace("xml = " + Std.string(xml),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 194, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
+		var firstElement = xml.firstElement();
 		this.elements = new haxe_ds_StringMap();
 		var element;
-		if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
-			throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
-		}
-		var access = xml;
-		var tag = access.elements();
+		haxe_Log.trace("elementClasses = " + (this.elementClasses == null ? "null" : haxe_ds_StringMap.stringify(this.elementClasses.h)),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 198, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
+		var tag = firstElement.elements();
 		while(tag.hasNext()) {
 			var tag1 = tag.next();
 			var node = tag1.elements();
 			while(node.hasNext()) {
 				var node1 = node.next();
+				haxe_Log.trace("node = " + haxe_xml_Printer.print(node1),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 201, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 				try {
+					if(node1.nodeType != Xml.Element) {
+						throw haxe_Exception.thrown("Bad node type, expected Element but found " + (node1.nodeType == null ? "null" : XmlType.toString(node1.nodeType)));
+					}
+					haxe_Log.trace("node name = " + node1.nodeName,{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 203, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 					var this1 = this.elementClasses;
-					var key = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
-					var NodeClass = this1.h[key];
+					if(node1.nodeType != Xml.Element) {
+						throw haxe_Exception.thrown("Bad node type, expected Element but found " + (node1.nodeType == null ? "null" : XmlType.toString(node1.nodeType)));
+					}
+					var NodeClass = this1.h[node1.nodeName];
 					element = js_Boot.__cast(Type.createInstance(NodeClass,[]) , idv_cjcat_stardustextended_StardustElement);
 				} catch( _g ) {
 					var _g1 = haxe_Exception.caught(_g);
 					if(((_g1) instanceof openfl_errors_TypeError)) {
 						var err = _g1;
-						throw new openfl_errors_Error("Unable to instantiate class " + haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString() + ". Perhaps you forgot to " + "call XMLBuilder.registerClass for this type? Original error: " + err.toString());
+						throw new openfl_errors_Error("Unable to instantiate class " + node1.get("name") + ". Perhaps you forgot to " + "call XMLBuilder.registerClass for this type? Original error: " + err.toString());
 					} else {
 						throw _g;
 					}
 				}
 				var this2 = this.elements;
-				var key1 = haxe_xml__$Access_AttribAccess.resolve(node1,"name");
-				if(this2.h[key1] != null) {
-					throw new openfl_errors_Error("Duplicate element name: " + haxe_xml__$Access_AttribAccess.resolve(node1,"name") + " " + element.name);
+				var key = node1.get("name");
+				if(this2.h[key] != null) {
+					throw new openfl_errors_Error("Duplicate element name: " + node1.get("name") + " " + element.name);
 				}
 				var this3 = this.elements;
-				var k = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
+				var k = node1.get("name");
 				this3.h[k] = element;
 			}
 		}
-		var tag = access.elements();
+		var tag = firstElement.elements();
 		while(tag.hasNext()) {
 			var tag1 = tag.next();
 			var node = tag1.elements();
 			while(node.hasNext()) {
 				var node1 = node.next();
 				var this1 = this.elements;
-				var key = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
+				var key = node1.get("name");
 				element = js_Boot.__cast(this1.h[key] , idv_cjcat_stardustextended_StardustElement);
 				element.parseXML(node1,this);
 			}
@@ -37267,7 +37283,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 624884;
+	this.version = 431778;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
@@ -89594,6 +89610,1532 @@ starling_animation_Tween.prototype = $extend(starling_events_EventDispatcher.pro
 	,__class__: starling_animation_Tween
 	,__properties__: {set_nextTween:"set_nextTween",get_nextTween:"get_nextTween",set_onCompleteArgs:"set_onCompleteArgs",get_onCompleteArgs:"get_onCompleteArgs",set_onRepeatArgs:"set_onRepeatArgs",get_onRepeatArgs:"get_onRepeatArgs",set_onUpdateArgs:"set_onUpdateArgs",get_onUpdateArgs:"get_onUpdateArgs",set_onStartArgs:"set_onStartArgs",get_onStartArgs:"get_onStartArgs",set_onComplete:"set_onComplete",get_onComplete:"get_onComplete",set_onRepeat:"set_onRepeat",get_onRepeat:"get_onRepeat",set_onUpdate:"set_onUpdate",get_onUpdate:"get_onUpdate",set_onStart:"set_onStart",get_onStart:"get_onStart",set_roundToInt:"set_roundToInt",get_roundToInt:"get_roundToInt",set_reverse:"set_reverse",get_reverse:"get_reverse",set_repeatDelay:"set_repeatDelay",get_repeatDelay:"get_repeatDelay",set_repeatCount:"set_repeatCount",get_repeatCount:"get_repeatCount",set_delay:"set_delay",get_delay:"get_delay",get_progress:"get_progress",get_currentTime:"get_currentTime",get_totalTime:"get_totalTime",set_transitionFunc:"set_transitionFunc",get_transitionFunc:"get_transitionFunc",set_transition:"set_transition",get_transition:"get_transition",get_target:"get_target",get_isComplete:"get_isComplete"}
 });
+var starling_assets_AssetFactory = function() {
+	this._mimeTypes = openfl_Vector.toObjectVector(null);
+	this._extensions = openfl_Vector.toObjectVector(null);
+};
+$hxClasses["starling.assets.AssetFactory"] = starling_assets_AssetFactory;
+starling_assets_AssetFactory.__name__ = "starling.assets.AssetFactory";
+starling_assets_AssetFactory.prototype = {
+	_priority: null
+	,_mimeTypes: null
+	,_extensions: null
+	,canHandle: function(reference) {
+		var mimeType = reference.get_mimeType();
+		var extension = reference.get_extension();
+		var isByteArray = ((reference.get_data()) instanceof openfl_utils_ByteArrayData);
+		var supportedMimeType = mimeType != null && this._mimeTypes.indexOf(reference.get_mimeType().toLowerCase(),0) != -1;
+		var supportedExtension = extension != null && this._extensions.indexOf(reference.get_extension().toLowerCase(),0) != -1;
+		if(isByteArray) {
+			if(!supportedMimeType) {
+				return supportedExtension;
+			} else {
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+	}
+	,addMimeTypes: function(args) {
+		var _g = 0;
+		while(_g < args.length) {
+			var mimeType = args[_g];
+			++_g;
+			mimeType = mimeType.toLowerCase();
+			if(this._mimeTypes.indexOf(mimeType,0) == -1) {
+				this._mimeTypes.set(this._mimeTypes.get_length(),mimeType);
+			}
+		}
+	}
+	,addExtensions: function(args) {
+		var _g = 0;
+		while(_g < args.length) {
+			var extension = args[_g];
+			++_g;
+			extension = extension.toLowerCase();
+			if(this._extensions.indexOf(extension,0) == -1) {
+				this._extensions.set(this._extensions.get_length(),extension);
+			}
+		}
+	}
+	,getMimeTypes: function(out) {
+		if(out == null) {
+			out = openfl_Vector.toObjectVector(null);
+		}
+		var _g = 0;
+		var _g1 = this._mimeTypes.get_length();
+		while(_g < _g1) {
+			var i = _g++;
+			out.set(i,this._mimeTypes.get(i));
+		}
+		return out;
+	}
+	,getExtensions: function(out) {
+		if(out == null) {
+			out = openfl_Vector.toObjectVector(null);
+		}
+		var _g = 0;
+		var _g1 = this._extensions.get_length();
+		while(_g < _g1) {
+			var i = _g++;
+			out.set(i,this._extensions.get(i));
+		}
+		return out;
+	}
+	,get_priority: function() {
+		return this._priority;
+	}
+	,set_priority: function(value) {
+		return this._priority = value;
+	}
+	,__class__: starling_assets_AssetFactory
+	,__properties__: {set_priority:"set_priority",get_priority:"get_priority"}
+};
+var starling_assets_AssetFactoryHelper = function() {
+};
+$hxClasses["starling.assets.AssetFactoryHelper"] = starling_assets_AssetFactoryHelper;
+starling_assets_AssetFactoryHelper.__name__ = "starling.assets.AssetFactoryHelper";
+starling_assets_AssetFactoryHelper.prototype = {
+	_dataLoader: null
+	,_getNameFromUrlFunc: null
+	,_getExtensionFromUrlFunc: null
+	,_addPostProcessorFunc: null
+	,_addAssetFunc: null
+	,_onRestoreFunc: null
+	,_logFunc: null
+	,getNameFromUrl: function(url) {
+		if(this._getNameFromUrlFunc != null) {
+			return this._getNameFromUrlFunc(url);
+		} else {
+			return "";
+		}
+	}
+	,getExtensionFromUrl: function(url) {
+		if(this._getExtensionFromUrlFunc != null) {
+			return this._getExtensionFromUrlFunc(url);
+		} else {
+			return "";
+		}
+	}
+	,loadDataFromUrl: function(url,onComplete,onError) {
+		if(this._dataLoader != null) {
+			this._dataLoader.load(url,onComplete,onError);
+		}
+	}
+	,addPostProcessor: function(processor,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(this._addPostProcessorFunc != null) {
+			this._addPostProcessorFunc(processor,priority);
+		}
+	}
+	,onBeginRestore: function() {
+		if(this._onRestoreFunc != null) {
+			this._onRestoreFunc(false);
+		}
+	}
+	,onEndRestore: function() {
+		if(this._onRestoreFunc != null) {
+			this._onRestoreFunc(true);
+		}
+	}
+	,log: function(message) {
+		if(this._logFunc != null) {
+			this._logFunc(message);
+		}
+	}
+	,addComplementaryAsset: function(name,asset,type) {
+		if(this._addAssetFunc != null) {
+			this._addAssetFunc(name,asset,type);
+		}
+	}
+	,executeWhenContextReady: function(call,args) {
+		if(starling_utils_SystemUtil.get_isDesktop()) {
+			starling_utils_Execute.execute(call,args);
+		} else {
+			starling_utils_SystemUtil.executeWhenApplicationIsActive(call,args);
+		}
+	}
+	,set_getNameFromUrlFunc: function(value) {
+		return this._getNameFromUrlFunc = value;
+	}
+	,set_getExtensionFromUrlFunc: function(value) {
+		return this._getExtensionFromUrlFunc = value;
+	}
+	,set_dataLoader: function(value) {
+		return this._dataLoader = value;
+	}
+	,set_logFunc: function(value) {
+		return this._logFunc = value;
+	}
+	,set_addAssetFunc: function(value) {
+		return this._addAssetFunc = value;
+	}
+	,set_onRestoreFunc: function(value) {
+		return this._onRestoreFunc = value;
+	}
+	,set_addPostProcessorFunc: function(value) {
+		return this._addPostProcessorFunc = value;
+	}
+	,__class__: starling_assets_AssetFactoryHelper
+	,__properties__: {set_addPostProcessorFunc:"set_addPostProcessorFunc",set_onRestoreFunc:"set_onRestoreFunc",set_addAssetFunc:"set_addAssetFunc",set_logFunc:"set_logFunc",set_dataLoader:"set_dataLoader",set_getExtensionFromUrlFunc:"set_getExtensionFromUrlFunc",set_getNameFromUrlFunc:"set_getNameFromUrlFunc"}
+};
+var starling_assets_AssetManager = function(scaleFactor) {
+	if(scaleFactor == null) {
+		scaleFactor = 1;
+	}
+	starling_events_EventDispatcher.call(this);
+	this._assets = new haxe_ds_StringMap();
+	this._verbose = true;
+	this._textureOptions = new starling_textures_TextureOptions(scaleFactor);
+	this._queue = openfl_Vector.toObjectVector(null);
+	this._numConnections = 3;
+	this._dataLoader = new starling_assets_DataLoader();
+	this._assetFactories = openfl_Vector.toObjectVector(null);
+	this.registerFactory(new starling_assets_BitmapTextureFactory());
+	this.registerFactory(new starling_assets_AtfTextureFactory());
+	this.registerFactory(new starling_assets_SoundFactory());
+	this.registerFactory(new starling_assets_JsonFactory());
+	this.registerFactory(new starling_assets_XmlFactory());
+	this.registerFactory(new starling_assets_ByteArrayFactory(),-100);
+};
+$hxClasses["starling.assets.AssetManager"] = starling_assets_AssetManager;
+starling_assets_AssetManager.__name__ = "starling.assets.AssetManager";
+starling_assets_AssetManager.__super__ = starling_events_EventDispatcher;
+starling_assets_AssetManager.prototype = $extend(starling_events_EventDispatcher.prototype,{
+	_starling: null
+	,_assets: null
+	,_verbose: null
+	,_numConnections: null
+	,_dataLoader: null
+	,_textureOptions: null
+	,_queue: null
+	,_registerBitmapFontsWithFontFace: null
+	,_assetFactories: null
+	,_numRestoredTextures: null
+	,_numLostTextures: null
+	,dispose: function() {
+		this.purgeQueue();
+		var h = this._assets.h;
+		var store_h = h;
+		var store_keys = Object.keys(h);
+		var store_length = store_keys.length;
+		var store_current = 0;
+		while(store_current < store_length) {
+			var store = store_h[store_keys[store_current++]];
+			var h = store.h;
+			var asset_h = h;
+			var asset_keys = Object.keys(h);
+			var asset_length = asset_keys.length;
+			var asset_current = 0;
+			while(asset_current < asset_length) {
+				var asset = asset_h[asset_keys[asset_current++]];
+				this.disposeAsset(asset);
+			}
+		}
+	}
+	,purge: function() {
+		this.log("Purging all assets, emptying queue");
+		this.purgeQueue();
+		this.dispose();
+		this._assets = new haxe_ds_StringMap();
+	}
+	,enqueue: function(assets) {
+		var _g = 0;
+		while(_g < assets.length) {
+			var asset = assets[_g];
+			++_g;
+			if(asset == null) {
+				continue;
+			} else if(((asset) instanceof Array)) {
+				this.enqueue(asset);
+			} else if(typeof(asset) == "string" || ((asset) instanceof openfl_net_URLRequest) || ((asset) instanceof starling_assets_AssetManager)) {
+				this.enqueueSingle(asset);
+			} else {
+				this.log("Ignoring unsupported asset type: " + asset.__name__);
+			}
+		}
+	}
+	,enqueueSingle: function(asset,name,options) {
+		if(js_Boot.__instanceof(asset,Class)) {
+			asset = Type.createInstance(asset,[]);
+		}
+		var assetReference = new starling_assets_AssetReference(asset);
+		if(name != null) {
+			assetReference.set_name(name);
+		} else {
+			var nameFromUrl = this.getNameFromUrl(assetReference.get_url());
+			if(nameFromUrl != null) {
+				assetReference.set_name(nameFromUrl);
+			} else {
+				assetReference.set_name(this.getUniqueName());
+			}
+		}
+		assetReference.set_extension(this.getExtensionFromUrl(assetReference.get_url()));
+		if(options != null) {
+			assetReference.set_textureOptions(options);
+		} else {
+			assetReference.set_textureOptions(this._textureOptions);
+		}
+		var logName = this.getFilenameFromUrl(assetReference.get_url());
+		if(logName == null) {
+			logName = assetReference.get_name();
+		}
+		this._queue.push(assetReference);
+		this.log("Enqueuing '" + logName + "'");
+		return assetReference.get_name();
+	}
+	,dequeue: function(assetNames) {
+		this._queue = this._queue.filter(function(asset) {
+			return assetNames.indexOf(asset.get_name()) == -1;
+		});
+	}
+	,purgeQueue: function() {
+		this._queue.set_length(0);
+		this._dataLoader.close();
+		this.dispatchEventWith("cancel");
+	}
+	,loadQueue: function(onComplete,onError,onProgress) {
+		var _gthis = this;
+		var self = this;
+		var canceled = false;
+		var queue = this._queue.concat(null);
+		var numAssets = queue.get_length();
+		var numComplete = 0;
+		var numConnections = starling_utils_MathUtil.min(this._numConnections,numAssets) | 0;
+		var assetProgress = openfl_Vector.toFloatVector(null);
+		var postProcessors = openfl_Vector.toObjectVector(null);
+		var factoryHelper = null;
+		var loadNextAsset = null;
+		var onAssetLoaded = null;
+		var onAssetLoadError = null;
+		var onAssetProgress = null;
+		var addPostProcessor = null;
+		var runPostProcessors = null;
+		var onCanceled = null;
+		var finish = null;
+		loadNextAsset = function() {
+			if(canceled) {
+				return;
+			}
+			var j = 0;
+			while(j < numAssets) {
+				if(assetProgress.get(j) < 0) {
+					_gthis.loadFromQueue(queue,assetProgress,j,factoryHelper,onAssetLoaded,onAssetProgress,onAssetLoadError,onError);
+					break;
+				}
+				++j;
+			}
+		};
+		onAssetLoaded = function(name,asset) {
+			var type = null;
+			if(canceled && asset != null) {
+				_gthis.disposeAsset(asset);
+			} else {
+				if(name != null && asset != null) {
+					_gthis.addAsset(name,asset,type);
+				}
+				numComplete += 1;
+				if(numComplete == numAssets) {
+					postProcessors.sort($bind(_gthis,_gthis.compareAssetPostProcessorsPriorities));
+					haxe_Timer.delay(runPostProcessors,1);
+				} else {
+					haxe_Timer.delay(loadNextAsset,1);
+				}
+			}
+		};
+		onAssetLoadError = function(error) {
+			if(!canceled) {
+				starling_utils_Execute.execute(onError,[error]);
+				onAssetLoaded();
+			}
+		};
+		onAssetProgress = function(ratio) {
+			if(!canceled) {
+				starling_utils_Execute.execute(onProgress,[ratio * 0.95]);
+			}
+		};
+		addPostProcessor = function(processorFunc,priority) {
+			var value = new starling_assets_AssetPostProcessor(processorFunc,priority);
+			postProcessors.push(value);
+		};
+		runPostProcessors = function() {
+			if(!canceled) {
+				if(postProcessors.get_length() > 0) {
+					try {
+						postProcessors.shift().execute(self);
+					} catch( _g ) {
+						var _g1 = haxe_Exception.caught(_g);
+						if(((_g1) instanceof openfl_errors_Error)) {
+							var e = _g1;
+							starling_utils_Execute.execute(onError,[e.get_message()]);
+						} else {
+							throw _g;
+						}
+					}
+					haxe_Timer.delay(runPostProcessors,1);
+				} else {
+					finish();
+				}
+			}
+		};
+		onCanceled = function() {
+			canceled = true;
+			_gthis.removeEventListener("cancel",onCanceled);
+		};
+		finish = function() {
+			onCanceled();
+			starling_utils_Execute.execute(onProgress,[1.0]);
+			starling_utils_Execute.execute(onComplete,[self]);
+		};
+		if(this._queue.get_length() == 0) {
+			finish();
+			return;
+		}
+		this.addEventListener("cancel",onCanceled);
+		factoryHelper = new starling_assets_AssetFactoryHelper();
+		factoryHelper.set_getNameFromUrlFunc($bind(this,this.getNameFromUrl));
+		factoryHelper.set_getExtensionFromUrlFunc($bind(this,this.getExtensionFromUrl));
+		factoryHelper.set_addPostProcessorFunc(addPostProcessor);
+		factoryHelper.set_addAssetFunc($bind(this,this.addAsset));
+		factoryHelper.set_onRestoreFunc($bind(this,this.onAssetRestored));
+		factoryHelper.set_dataLoader(this._dataLoader);
+		factoryHelper.set_logFunc($bind(this,this.log));
+		this._starling = starling_core_Starling.get_current();
+		this._queue.set_length(0);
+		var _g = 0;
+		var _g1 = numAssets;
+		while(_g < _g1) {
+			var i = _g++;
+			assetProgress.set(i,-1);
+		}
+		var _g = 0;
+		var _g1 = numConnections;
+		while(_g < _g1) {
+			var i = _g++;
+			loadNextAsset();
+		}
+	}
+	,loadFromQueue: function(queue,progressRatios,index,helper,onComplete,onProgress,onError,onIntermediateError) {
+		var _gthis = this;
+		var referenceCount = queue.get_length();
+		var reference = queue.get(index);
+		progressRatios.set(index,0);
+		var onLoadComplete = null;
+		var onLoadProgress = null;
+		var onLoadError = null;
+		var onFactoryError = null;
+		var onAnyError = null;
+		var onManagerComplete = null;
+		onLoadComplete = function(data,mimeType,name,extension) {
+			if(_gthis._starling != null) {
+				_gthis._starling.makeCurrent();
+			}
+			onLoadProgress(1.0);
+			if(data != null) {
+				reference.set_data(data);
+			}
+			if(name != null) {
+				reference.set_name(name);
+			}
+			if(extension != null) {
+				reference.set_extension(extension);
+			}
+			if(mimeType != null) {
+				reference.set_mimeType(mimeType);
+			}
+			var assetFactory = _gthis.getFactoryFor(reference);
+			if(assetFactory == null) {
+				starling_utils_Execute.execute(onAnyError,["Warning: no suitable factory found for '" + reference.get_name() + "'"]);
+			} else {
+				assetFactory.create(reference,helper,onComplete,onFactoryError);
+			}
+		};
+		onLoadProgress = function(ratio) {
+			progressRatios.set(index,ratio);
+			var totalRatio = 0;
+			var multiplier = 1.0 / referenceCount;
+			var _g = 0;
+			var _g1 = referenceCount;
+			while(_g < _g1) {
+				var k = _g++;
+				var r = progressRatios.get(k);
+				if(r > 0) {
+					totalRatio += multiplier * r;
+				}
+			}
+			starling_utils_Execute.execute(onProgress,[starling_utils_MathUtil.min(totalRatio,1.0)]);
+		};
+		onLoadError = function(error) {
+			onLoadProgress(1.0);
+			starling_utils_Execute.execute(onAnyError,["Error loading " + reference.get_name() + ": " + error]);
+		};
+		onAnyError = function(error) {
+			_gthis.log(error);
+			starling_utils_Execute.execute(onError,[error,reference]);
+		};
+		onFactoryError = function(error) {
+			starling_utils_Execute.execute(onAnyError,["Error creating " + reference.get_name() + ": " + error]);
+		};
+		onManagerComplete = function() {
+			onComplete(reference.get_name(),reference.get_data());
+		};
+		if(reference.get_url() != null) {
+			this._dataLoader.load(reference.get_url(),onLoadComplete,onLoadError,onLoadProgress);
+		} else if(((reference.get_data()) instanceof starling_assets_AssetManager)) {
+			(js_Boot.__cast(reference.get_data() , starling_assets_AssetManager)).loadQueue(onManagerComplete,onIntermediateError,onLoadProgress);
+		} else {
+			haxe_Timer.delay(function() {
+				onLoadComplete(reference.get_data());
+			},1);
+		}
+	}
+	,getFactoryFor: function(asset) {
+		var numFactories = this._assetFactories.get_length();
+		var _g = 0;
+		var _g1 = numFactories;
+		while(_g < _g1) {
+			var i = _g++;
+			var factory = this._assetFactories.get(i);
+			if(factory.canHandle(asset)) {
+				return factory;
+			}
+		}
+		return null;
+	}
+	,onAssetRestored: function(finished) {
+		if(finished) {
+			this._numRestoredTextures++;
+			if(this._starling != null) {
+				this._starling.get_stage().setRequiresRedraw();
+			}
+			if(this._numRestoredTextures == this._numLostTextures) {
+				this.dispatchEventWith("texturesRestored");
+			}
+		} else {
+			this._numLostTextures++;
+		}
+	}
+	,addAsset: function(name,asset,type) {
+		if(type == null) {
+			type = starling_assets_AssetType.fromAsset(asset);
+		}
+		var store = this._assets.h[type];
+		if(store == null) {
+			store = new haxe_ds_StringMap();
+			this._assets.h[type] = store;
+		}
+		this.log("Adding " + type + " '" + name + "'");
+		var prevAsset = store.h[name];
+		if(prevAsset != null && prevAsset != asset) {
+			this.log("Warning: name was already in use; disposing the previous " + type);
+			this.disposeAsset(prevAsset);
+		}
+		var v = asset;
+		store.h[name] = v;
+	}
+	,getAsset: function(type,name,recursive) {
+		if(recursive == null) {
+			recursive = true;
+		}
+		if(recursive) {
+			var managerStore = this._assets.h[starling_assets_AssetType.ASSET_MANAGER];
+			if(managerStore != null) {
+				var h = managerStore.h;
+				var manager_h = h;
+				var manager_keys = Object.keys(h);
+				var manager_length = manager_keys.length;
+				var manager_current = 0;
+				while(manager_current < manager_length) {
+					var manager = manager_h[manager_keys[manager_current++]];
+					manager = js_Boot.__cast(manager , starling_assets_AssetManager);
+					var asset = manager.getAsset(type,name,true);
+					if(asset != null) {
+						return asset;
+					}
+				}
+			}
+			if(type == starling_assets_AssetType.TEXTURE) {
+				var atlasStore = this._assets.h[starling_assets_AssetType.TEXTURE_ATLAS];
+				if(atlasStore != null) {
+					var h = atlasStore.h;
+					var atlas_h = h;
+					var atlas_keys = Object.keys(h);
+					var atlas_length = atlas_keys.length;
+					var atlas_current = 0;
+					while(atlas_current < atlas_length) {
+						var atlas = atlas_h[atlas_keys[atlas_current++]];
+						atlas = js_Boot.__cast(atlas , starling_textures_TextureAtlas);
+						var texture = atlas.getTexture(name);
+						if(texture != null) {
+							return texture;
+						}
+					}
+				}
+			}
+		}
+		var store = this._assets.h[type];
+		if(store != null) {
+			return store.h[name];
+		} else {
+			return null;
+		}
+	}
+	,getAssetNames: function(assetType,prefix,recursive,out) {
+		if(recursive == null) {
+			recursive = true;
+		}
+		if(prefix == null) {
+			prefix = "";
+		}
+		if(out == null) {
+			out = openfl_Vector.toObjectVector(null);
+		}
+		if(recursive) {
+			var managerStore = this._assets.h[starling_assets_AssetType.ASSET_MANAGER];
+			if(managerStore != null) {
+				var h = managerStore.h;
+				var manager_h = h;
+				var manager_keys = Object.keys(h);
+				var manager_length = manager_keys.length;
+				var manager_current = 0;
+				while(manager_current < manager_length) {
+					var manager = manager_h[manager_keys[manager_current++]];
+					manager = js_Boot.__cast(manager , starling_assets_AssetManager);
+					manager.getAssetNames(assetType,prefix,true,out);
+				}
+			}
+			if(assetType == starling_assets_AssetType.TEXTURE) {
+				var atlasStore = this._assets.h[starling_assets_AssetType.TEXTURE_ATLAS];
+				if(atlasStore != null) {
+					var h = atlasStore.h;
+					var atlas_h = h;
+					var atlas_keys = Object.keys(h);
+					var atlas_length = atlas_keys.length;
+					var atlas_current = 0;
+					while(atlas_current < atlas_length) {
+						var atlas = atlas_h[atlas_keys[atlas_current++]];
+						atlas = js_Boot.__cast(atlas , starling_textures_TextureAtlas);
+						atlas.getNames(prefix,out);
+					}
+				}
+			}
+		}
+		this.getDictionaryKeys(this._assets.h[assetType],prefix,out);
+		out.sort($bind(this,this.compareString));
+		return out;
+	}
+	,removeAsset: function(assetType,name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		var store = this._assets.h[assetType];
+		if(store != null) {
+			var asset = store.h[name];
+			if(asset != null) {
+				this.log("Removing " + assetType + " '" + name + "'");
+				if(dispose) {
+					this.disposeAsset(asset);
+				}
+				if(Object.prototype.hasOwnProperty.call(store.h,name)) {
+					delete(store.h[name]);
+				}
+			}
+		}
+	}
+	,getTexture: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.TEXTURE,name);
+		if(((asset) instanceof starling_textures_Texture)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getTextures: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		if(out == null) {
+			out = openfl_Vector.toObjectVector(null);
+		}
+		var name = this.getTextureNames(prefix,starling_assets_AssetManager.sNames).iterator();
+		while(name.hasNext()) {
+			var name1 = name.next();
+			out.set(out.get_length(),this.getTexture(name1));
+		}
+		starling_assets_AssetManager.sNames.set_length(0);
+		return out;
+	}
+	,getTextureNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.TEXTURE,prefix,true,out);
+	}
+	,getTextureAtlas: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.TEXTURE_ATLAS,name);
+		if(((asset) instanceof starling_textures_TextureAtlas)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getTextureAtlasNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.TEXTURE_ATLAS,prefix,true,out);
+	}
+	,getSound: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.SOUND,name);
+		if(((asset) instanceof openfl_media_Sound)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getSoundNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.SOUND,prefix,true,out);
+	}
+	,playSound: function(name,startTime,loops,transform) {
+		if(loops == null) {
+			loops = 0;
+		}
+		if(startTime == null) {
+			startTime = 0;
+		}
+		var sound = this.getSound(name);
+		if(sound != null) {
+			return sound.play(startTime,loops,transform);
+		} else {
+			return null;
+		}
+	}
+	,getXml: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.XML_DOCUMENT,name);
+		if(((asset) instanceof Xml)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getXmlNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.XML_DOCUMENT,prefix,true,out);
+	}
+	,getObject: function(name) {
+		return this.getAsset(starling_assets_AssetType.OBJECT,name);
+	}
+	,getObjectNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.OBJECT,prefix,true,out);
+	}
+	,getByteArray: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.BYTE_ARRAY,name);
+		if(((asset) instanceof openfl_utils_ByteArrayData)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getByteArrayNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.BYTE_ARRAY,prefix,true,out);
+	}
+	,getBitmapFont: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.BITMAP_FONT,name);
+		if(((asset) instanceof starling_text_BitmapFont)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getBitmapFontNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.BITMAP_FONT,prefix,true,out);
+	}
+	,getAssetManager: function(name) {
+		var asset = this.getAsset(starling_assets_AssetType.ASSET_MANAGER,name);
+		if(((asset) instanceof starling_assets_AssetManager)) {
+			return asset;
+		} else {
+			return null;
+		}
+	}
+	,getAssetManagerNames: function(prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		return this.getAssetNames(starling_assets_AssetType.ASSET_MANAGER,prefix,true,out);
+	}
+	,removeTexture: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.TEXTURE,name,dispose);
+	}
+	,removeTextureAtlas: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.TEXTURE_ATLAS,name,dispose);
+	}
+	,removeSound: function(name) {
+		this.removeAsset(starling_assets_AssetType.SOUND,name);
+	}
+	,removeXml: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.XML_DOCUMENT,name,dispose);
+	}
+	,removeObject: function(name) {
+		this.removeAsset(starling_assets_AssetType.OBJECT,name);
+	}
+	,removeByteArray: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.BYTE_ARRAY,name,dispose);
+	}
+	,removeBitmapFont: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.BITMAP_FONT,name,dispose);
+	}
+	,removeAssetManager: function(name,dispose) {
+		if(dispose == null) {
+			dispose = true;
+		}
+		this.removeAsset(starling_assets_AssetType.ASSET_MANAGER,name,dispose);
+	}
+	,registerFactory: function(factory,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		factory.set_priority(priority);
+		this._assetFactories.push(factory);
+		this._assetFactories.sort($bind(this,this.compareAssetFactoriesPriorities));
+	}
+	,unregisterFactory: function(factory) {
+		var index = this._assetFactories.indexOf(factory,0);
+		if(index != -1) {
+			this._assetFactories.removeAt(index);
+		}
+	}
+	,getFilenameFromUrl: function(url) {
+		if(url != null) {
+			if(starling_assets_AssetManager.NAME_REGEX.match(decodeURIComponent(url.split("+").join(" ")))) {
+				return starling_assets_AssetManager.NAME_REGEX.matched(1);
+			}
+		}
+		return null;
+	}
+	,getNameFromUrl: function(url) {
+		if(url != null) {
+			if(starling_assets_AssetManager.NAME_REGEX.match(decodeURIComponent(url.split("+").join(" ")))) {
+				return starling_assets_AssetManager.NAME_REGEX.matched(2);
+			}
+		}
+		return null;
+	}
+	,getExtensionFromUrl: function(url) {
+		if(url != null) {
+			if(starling_assets_AssetManager.NAME_REGEX.match(decodeURIComponent(url.split("+").join(" ")))) {
+				if(starling_assets_AssetManager.NAME_REGEX.matched(3) != null) {
+					return starling_assets_AssetManager.NAME_REGEX.matched(3);
+				}
+			}
+		}
+		return "";
+	}
+	,disposeAsset: function(asset) {
+		if(((asset) instanceof openfl_utils_ByteArrayData)) {
+			var byteArray = asset;
+			byteArray.clear();
+		}
+		if(Object.prototype.hasOwnProperty.call(asset,"dispose")) {
+			var disposeMethod = Reflect.field(asset,"dispose");
+			disposeMethod.apply(asset,[]);
+		}
+	}
+	,log: function(message) {
+		if(this._verbose) {
+			haxe_Log.trace("[AssetManager]",{ fileName : "starling/assets/AssetManager.hx", lineNumber : 1042, className : "starling.assets.AssetManager", methodName : "log", customParams : [message]});
+		}
+	}
+	,getDictionaryKeys: function(dictionary,prefix,out) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		if(out == null) {
+			out = openfl_Vector.toObjectVector(null);
+		}
+		if(dictionary != null) {
+			var h = dictionary.h;
+			var name_h = h;
+			var name_keys = Object.keys(h);
+			var name_length = name_keys.length;
+			var name_current = 0;
+			while(name_current < name_length) {
+				var name = name_keys[name_current++];
+				if(name.indexOf(prefix) == 0) {
+					out.push(name);
+				}
+			}
+			out.sort($bind(this,this.compareString));
+		}
+		return out;
+	}
+	,getUniqueName: function() {
+		return starling_assets_AssetManager.NO_NAME + "-" + starling_assets_AssetManager.sNoNameCount++;
+	}
+	,compareString: function(a,b) {
+		if(a < b) {
+			return -1;
+		} else if(a > b) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	,compareAssetFactoriesPriorities: function(a,b) {
+		if(a.get_priority() == b.get_priority()) {
+			return 0;
+		}
+		if(a.get_priority() > b.get_priority()) {
+			return -1;
+		} else {
+			return 1;
+		}
+	}
+	,compareAssetPostProcessorsPriorities: function(a,b) {
+		if(a.get_priority() == b.get_priority()) {
+			return 0;
+		}
+		if(a.get_priority() > b.get_priority()) {
+			return -1;
+		} else {
+			return 1;
+		}
+	}
+	,get_verbose: function() {
+		return this._verbose;
+	}
+	,set_verbose: function(value) {
+		return this._verbose = value;
+	}
+	,get_numQueuedAssets: function() {
+		return this._queue.get_length();
+	}
+	,get_numConnections: function() {
+		return this._numConnections;
+	}
+	,set_numConnections: function(value) {
+		return this._numConnections = starling_utils_MathUtil.min(1,value) | 0;
+	}
+	,get_textureOptions: function() {
+		return this._textureOptions;
+	}
+	,set_textureOptions: function(value) {
+		this._textureOptions.copyFrom(value);
+		return this._textureOptions;
+	}
+	,get_dataLoader: function() {
+		return this._dataLoader;
+	}
+	,set_dataLoader: function(value) {
+		return this._dataLoader = value;
+	}
+	,get_registerBitmapFontsWithFontFace: function() {
+		return this._registerBitmapFontsWithFontFace;
+	}
+	,set_registerBitmapFontsWithFontFace: function(value) {
+		return this._registerBitmapFontsWithFontFace = value;
+	}
+	,__class__: starling_assets_AssetManager
+	,__properties__: {set_registerBitmapFontsWithFontFace:"set_registerBitmapFontsWithFontFace",get_registerBitmapFontsWithFontFace:"get_registerBitmapFontsWithFontFace",set_dataLoader:"set_dataLoader",get_dataLoader:"get_dataLoader",set_textureOptions:"set_textureOptions",get_textureOptions:"get_textureOptions",set_numConnections:"set_numConnections",get_numConnections:"get_numConnections",get_numQueuedAssets:"get_numQueuedAssets",set_verbose:"set_verbose",get_verbose:"get_verbose"}
+});
+var starling_assets_AssetPostProcessor = function(callback,priority) {
+	if(callback == null) {
+		throw new openfl_errors_ArgumentError("callback must be a function " + "accepting one 'AssetStore' parameter");
+	}
+	this._callback = callback;
+	this._priority = priority;
+};
+$hxClasses["starling.assets.AssetPostProcessor"] = starling_assets_AssetPostProcessor;
+starling_assets_AssetPostProcessor.__name__ = "starling.assets.AssetPostProcessor";
+starling_assets_AssetPostProcessor.prototype = {
+	_priority: null
+	,_callback: null
+	,execute: function(store) {
+		this._callback(store);
+	}
+	,get_priority: function() {
+		return this._priority;
+	}
+	,__class__: starling_assets_AssetPostProcessor
+	,__properties__: {get_priority:"get_priority"}
+};
+var starling_assets_AssetReference = function(data) {
+	this._data = data;
+	this._textureOptions = new starling_textures_TextureOptions();
+	if(typeof(data) == "string") {
+		this._url = data;
+	} else {
+		var urlProp = Reflect.getProperty(data,"url");
+		if(urlProp != null) {
+			this._url = urlProp;
+		}
+	}
+};
+$hxClasses["starling.assets.AssetReference"] = starling_assets_AssetReference;
+starling_assets_AssetReference.__name__ = "starling.assets.AssetReference";
+starling_assets_AssetReference.prototype = {
+	_name: null
+	,_url: null
+	,_data: null
+	,_mimeType: null
+	,_extension: null
+	,_textureOptions: null
+	,get_name: function() {
+		return this._name;
+	}
+	,set_name: function(value) {
+		return this._name = value;
+	}
+	,get_url: function() {
+		return this._url;
+	}
+	,set_url: function(value) {
+		return this._url = value;
+	}
+	,get_data: function() {
+		return this._data;
+	}
+	,set_data: function(value) {
+		return this._data = value;
+	}
+	,get_mimeType: function() {
+		return this._mimeType;
+	}
+	,set_mimeType: function(value) {
+		return this._mimeType = value;
+	}
+	,get_extension: function() {
+		return this._extension;
+	}
+	,set_extension: function(value) {
+		return this._extension = value;
+	}
+	,get_textureOptions: function() {
+		return this._textureOptions;
+	}
+	,set_textureOptions: function(value) {
+		this._textureOptions.copyFrom(value);
+		return this._textureOptions;
+	}
+	,__class__: starling_assets_AssetReference
+	,__properties__: {set_textureOptions:"set_textureOptions",get_textureOptions:"get_textureOptions",set_extension:"set_extension",get_extension:"get_extension",set_mimeType:"set_mimeType",get_mimeType:"get_mimeType",set_data:"set_data",get_data:"get_data",set_url:"set_url",get_url:"get_url",set_name:"set_name",get_name:"get_name"}
+};
+var starling_assets_AssetType = function() { };
+$hxClasses["starling.assets.AssetType"] = starling_assets_AssetType;
+starling_assets_AssetType.__name__ = "starling.assets.AssetType";
+starling_assets_AssetType.fromAsset = function(asset) {
+	if(((asset) instanceof starling_textures_Texture)) {
+		return starling_assets_AssetType.TEXTURE;
+	} else if(((asset) instanceof starling_textures_TextureAtlas)) {
+		return starling_assets_AssetType.TEXTURE_ATLAS;
+	} else if(((asset) instanceof openfl_media_Sound)) {
+		return starling_assets_AssetType.SOUND;
+	} else if(((asset) instanceof Xml)) {
+		return starling_assets_AssetType.XML_DOCUMENT;
+	} else if(((asset) instanceof openfl_utils_ByteArrayData)) {
+		return starling_assets_AssetType.BYTE_ARRAY;
+	} else if(((asset) instanceof starling_text_BitmapFont)) {
+		return starling_assets_AssetType.BITMAP_FONT;
+	} else if(((asset) instanceof starling_assets_AssetManager)) {
+		return starling_assets_AssetType.ASSET_MANAGER;
+	} else {
+		return starling_assets_AssetType.OBJECT;
+	}
+};
+var starling_assets_AtfTextureFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addExtensions(["atf"]);
+};
+$hxClasses["starling.assets.AtfTextureFactory"] = starling_assets_AtfTextureFactory;
+starling_assets_AtfTextureFactory.__name__ = "starling.assets.AtfTextureFactory";
+starling_assets_AtfTextureFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_AtfTextureFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		if(((reference.get_data()) instanceof openfl_utils_ByteArrayData)) {
+			return starling_textures_AtfData.isAtfData(reference.get_data());
+		} else {
+			return false;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		var onReloadError = null;
+		var createTexture = null;
+		onReloadError = function(error) {
+			helper.log("Texture restoration failed for " + reference.get_url() + ". " + error);
+			helper.onEndRestore();
+		};
+		createTexture = function() {
+			var texture = null;
+			var onReady = reference.get_textureOptions().get_onReady();
+			reference.get_textureOptions().set_onReady(function(_) {
+				starling_utils_Execute.execute(onReady,[texture]);
+				onComplete(reference.get_name(),texture);
+			});
+			var url = reference.get_url();
+			try {
+				texture = starling_textures_Texture.fromData(reference.get_data(),reference.get_textureOptions());
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				var e = haxe_Exception.caught(_g).unwrap();
+				onError(e);
+			}
+			if(url != null && texture != null) {
+				texture.get_root().set_onRestore(function(_) {
+					helper.onBeginRestore();
+					helper.loadDataFromUrl(url,function(data,mimeType,name,extension) {
+						helper.executeWhenContextReady(function() {
+							try {
+								texture.get_root().uploadAtfData(data);
+							} catch( _g ) {
+								haxe_NativeStackTrace.lastError = _g;
+								var e = haxe_Exception.caught(_g).unwrap();
+								helper.log("Texture restoration failed: " + Std.string(e));
+							}
+							helper.onEndRestore();
+						});
+					},onReloadError);
+				});
+			}
+			reference.set_data(null);
+		};
+		helper.executeWhenContextReady(createTexture);
+	}
+	,__class__: starling_assets_AtfTextureFactory
+});
+var starling_assets_BitmapTextureFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addMimeTypes(["image/png","image/jpg","image/jpeg","image/gif","image/webp"]);
+	this.addExtensions(["png","jpg","jpeg","gif","webp"]);
+};
+$hxClasses["starling.assets.BitmapTextureFactory"] = starling_assets_BitmapTextureFactory;
+starling_assets_BitmapTextureFactory.__name__ = "starling.assets.BitmapTextureFactory";
+starling_assets_BitmapTextureFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_BitmapTextureFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		if(starling_assets_AssetFactory.prototype.canHandle.call(this,reference) || ((reference.get_data()) instanceof openfl_display_Bitmap) || ((reference.get_data()) instanceof openfl_display_BitmapData)) {
+			return true;
+		} else if(((reference.get_data()) instanceof openfl_utils_ByteArrayData)) {
+			var byteData = reference.get_data();
+			if(!(starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_PNG) || starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_JPG) || starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_GIF))) {
+				return starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_WEBP);
+			} else {
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		var _gthis = this;
+		var texture = null;
+		var url = reference.get_url();
+		var data = reference.get_data();
+		var name = reference.get_name();
+		var options = reference.get_textureOptions();
+		var onReady = reference.get_textureOptions().get_onReady();
+		var onBitmapDataCreated = null;
+		var createFromBitmapData = null;
+		var complete = null;
+		var restoreTexture = null;
+		var reload = null;
+		var onReloadError = null;
+		onBitmapDataCreated = function(bitmapData) {
+			helper.executeWhenContextReady(createFromBitmapData,[bitmapData]);
+		};
+		createFromBitmapData = function(bitmapData) {
+			options.set_onReady(complete);
+			try {
+				texture = starling_textures_Texture.fromData(bitmapData,options);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				var e = haxe_Exception.caught(_g).unwrap();
+				onError(e);
+			}
+			if(texture != null && url != null) {
+				texture.get_root().set_onRestore(restoreTexture);
+			}
+		};
+		complete = function(_) {
+			starling_utils_Execute.execute(onReady,[texture]);
+			onComplete(name,texture);
+		};
+		restoreTexture = function(_) {
+			helper.onBeginRestore();
+			reload(url,function(bitmapData) {
+				helper.executeWhenContextReady(function() {
+					try {
+						texture.get_root().uploadBitmapData(bitmapData);
+					} catch( _g ) {
+						haxe_NativeStackTrace.lastError = _g;
+						var e = haxe_Exception.caught(_g).unwrap();
+						helper.log("Texture restoration failed: " + Std.string(e));
+					}
+					helper.onEndRestore();
+				});
+			});
+		};
+		reload = function(url,onComplete) {
+			helper.loadDataFromUrl(url,function(data,mimeType,name,extension) {
+				_gthis.createBitmapDataFromByteArray(data,onComplete,onReloadError);
+			},onReloadError);
+		};
+		onReloadError = function(error) {
+			helper.log("Texture restoration failed for " + url + ". " + error);
+			helper.onEndRestore();
+		};
+		if(((data) instanceof openfl_display_Bitmap) && (js_Boot.__cast(data , openfl_display_Bitmap)).get_bitmapData() != null) {
+			onBitmapDataCreated((js_Boot.__cast(data , openfl_display_Bitmap)).get_bitmapData());
+		} else if(((data) instanceof openfl_display_BitmapData)) {
+			onBitmapDataCreated(data);
+		} else if(((data) instanceof openfl_utils_ByteArrayData)) {
+			this.createBitmapDataFromByteArray(data,onBitmapDataCreated,onError);
+		}
+		data = null;
+		reference.set_data(data);
+	}
+	,createBitmapDataFromByteArray: function(data,onComplete,onError) {
+		var loaderInfo = null;
+		var onIoError = null;
+		var onLoaderComplete = null;
+		var complete = null;
+		var cleanup = null;
+		onIoError = function(event) {
+			cleanup();
+			starling_utils_Execute.execute(onError,[event.text]);
+		};
+		onLoaderComplete = function(event) {
+			complete((js_Boot.__cast(event.target.content , openfl_display_Bitmap)).get_bitmapData());
+		};
+		complete = function(bitmapData) {
+			cleanup();
+			starling_utils_Execute.execute(onComplete,[bitmapData]);
+		};
+		cleanup = function() {
+			loaderInfo.removeEventListener("ioError",onIoError);
+			loaderInfo.removeEventListener("complete",onLoaderComplete);
+		};
+		var loader = new openfl_display_Loader();
+		loaderInfo = loader.contentLoaderInfo;
+		loaderInfo.addEventListener("ioError",onIoError);
+		loaderInfo.addEventListener("complete",onLoaderComplete);
+		var loaderContext = new openfl_system_LoaderContext();
+		loader.loadBytes(data,loaderContext);
+	}
+	,__class__: starling_assets_BitmapTextureFactory
+});
+var starling_assets_ByteArrayFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addExtensions(["bin"]);
+	this.addMimeTypes(["application/octet-stream"]);
+};
+$hxClasses["starling.assets.ByteArrayFactory"] = starling_assets_ByteArrayFactory;
+starling_assets_ByteArrayFactory.__name__ = "starling.assets.ByteArrayFactory";
+starling_assets_ByteArrayFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_ByteArrayFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		return ((reference.get_data()) instanceof openfl_utils_ByteArrayData);
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		var byteArray = reference.get_data();
+		onComplete(reference.get_name(),byteArray);
+	}
+	,__class__: starling_assets_ByteArrayFactory
+});
+var starling_assets_DataLoader = function() {
+	this._urlLoaders = new haxe_ds_ObjectMap();
+};
+$hxClasses["starling.assets.DataLoader"] = starling_assets_DataLoader;
+starling_assets_DataLoader.__name__ = "starling.assets.DataLoader";
+starling_assets_DataLoader.getHttpHeader = function(headers,headerName) {
+	if(headers != null) {
+		var _g = 0;
+		while(_g < headers.length) {
+			var header = headers[_g];
+			++_g;
+			if(header.name == headerName) {
+				return header.value;
+			}
+		}
+	}
+	return null;
+};
+starling_assets_DataLoader.prototype = {
+	_urlLoaders: null
+	,load: function(url,onComplete,onError,onProgress) {
+		var _gthis = this;
+		var loader = null;
+		var message;
+		var mimeType = null;
+		var httpStatus = 0;
+		var request = null;
+		var cleanup = null;
+		var onHttpResponseStatus = null;
+		var onLoadError = null;
+		var onLoadProgress = null;
+		var onLoadComplete = null;
+		cleanup = function() {
+			loader.removeEventListener("ioError",onLoadError);
+			loader.removeEventListener("securityError",onLoadError);
+			loader.removeEventListener(starling_assets_DataLoader.HTTP_RESPONSE_STATUS,onHttpResponseStatus);
+			loader.removeEventListener("progress",onLoadProgress);
+			loader.removeEventListener("complete",onLoadComplete);
+			_gthis._urlLoaders.remove(loader);
+		};
+		onHttpResponseStatus = function(event) {
+			httpStatus = event.status;
+			mimeType = starling_assets_DataLoader.getHttpHeader(event.responseHeaders,"Content-Type");
+		};
+		onLoadError = function(event) {
+			cleanup();
+			message = event.type + " - " + event.text;
+			starling_utils_Execute.execute(onError,[message]);
+		};
+		onLoadProgress = function(event) {
+			if(onProgress != null && event.bytesTotal > 0) {
+				onProgress(event.bytesLoaded / event.bytesTotal);
+			}
+		};
+		onLoadComplete = function(event) {
+			cleanup();
+			if(httpStatus < 400) {
+				starling_utils_Execute.execute(onComplete,[loader.data,mimeType]);
+			} else {
+				starling_utils_Execute.execute(onError,["Unexpected HTTP status '" + httpStatus + "'. URL: " + request.url]);
+			}
+		};
+		request = new openfl_net_URLRequest(url);
+		loader = new openfl_net_URLLoader();
+		loader.dataFormat = 0;
+		loader.addEventListener("ioError",onLoadError);
+		loader.addEventListener("securityError",onLoadError);
+		loader.addEventListener(starling_assets_DataLoader.HTTP_RESPONSE_STATUS,onHttpResponseStatus);
+		loader.addEventListener("progress",onLoadProgress);
+		loader.addEventListener("complete",onLoadComplete);
+		loader.load(request);
+		this._urlLoaders.set(loader,true);
+	}
+	,close: function() {
+		var loader = this._urlLoaders.keys();
+		while(loader.hasNext()) {
+			var loader1 = loader.next();
+			try {
+				loader1.close();
+			} catch( _g ) {
+				if(!((haxe_Exception.caught(_g)) instanceof openfl_errors_Error)) {
+					throw _g;
+				}
+			}
+		}
+		this._urlLoaders = new haxe_ds_ObjectMap();
+	}
+	,__class__: starling_assets_DataLoader
+};
+var starling_assets_JsonFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addExtensions(["json"]);
+	this.addMimeTypes(["application/json","text/json"]);
+};
+$hxClasses["starling.assets.JsonFactory"] = starling_assets_JsonFactory;
+starling_assets_JsonFactory.__name__ = "starling.assets.JsonFactory";
+starling_assets_JsonFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_JsonFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		if(!starling_assets_AssetFactory.prototype.canHandle.call(this,reference)) {
+			if(((reference.get_data()) instanceof openfl_utils_ByteArrayData)) {
+				if(!starling_utils_ByteArrayUtil.startsWithString(reference.get_data(),"{")) {
+					return starling_utils_ByteArrayUtil.startsWithString(reference.get_data(),"[");
+				} else {
+					return true;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		try {
+			var bytes = reference.get_data();
+			var object = JSON.parse(bytes.readUTFBytes(openfl_utils_ByteArray.get_length(bytes)));
+			onComplete(reference.get_name(),object);
+		} catch( _g ) {
+			var _g1 = haxe_Exception.caught(_g);
+			if(((_g1) instanceof openfl_errors_Error)) {
+				var e = _g1;
+				onError("Could not parse JSON: " + e.get_message());
+			} else {
+				throw _g;
+			}
+		}
+	}
+	,__class__: starling_assets_JsonFactory
+});
+var starling_assets_SoundFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addMimeTypes(["audio/mp3","audio/mpeg3","audio/mpeg","audio/ogg"]);
+	this.addExtensions(["mp3","mpeg","ogg","wav"]);
+};
+$hxClasses["starling.assets.SoundFactory"] = starling_assets_SoundFactory;
+starling_assets_SoundFactory.__name__ = "starling.assets.SoundFactory";
+starling_assets_SoundFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_SoundFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		if(((reference.get_data()) instanceof openfl_media_Sound) || starling_assets_AssetFactory.prototype.canHandle.call(this,reference)) {
+			return true;
+		} else if(((reference.get_data()) instanceof openfl_utils_ByteArrayData)) {
+			var byteData = reference.get_data();
+			if(!starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_SoundFactory.MAGIC_NUMBERS_A)) {
+				return starling_utils_ByteArrayUtil.startsWithBytes(byteData,starling_assets_SoundFactory.MAGIC_NUMBERS_B);
+			} else {
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		var sound = null;
+		try {
+			if(((reference.get_data()) instanceof openfl_media_Sound)) {
+				sound = js_Boot.__cast(reference.get_data() , openfl_media_Sound);
+			} else {
+				var bytes = ((reference.get_data()) instanceof openfl_utils_ByteArrayData) ? reference.get_data() : null;
+				if(bytes != null) {
+					sound = new openfl_media_Sound();
+					sound.loadCompressedDataFromByteArray(bytes,openfl_utils_ByteArray.get_length(bytes));
+				}
+			}
+			onComplete(reference.get_name(),sound);
+		} catch( _g ) {
+			var _g1 = haxe_Exception.caught(_g);
+			if(((_g1) instanceof openfl_errors_Error)) {
+				var e = _g1;
+				onError("Could not load sound data: " + e.get_message());
+				return;
+			} else {
+				throw _g;
+			}
+		}
+	}
+	,__class__: starling_assets_SoundFactory
+});
+var starling_assets_XmlFactory = function() {
+	starling_assets_AssetFactory.call(this);
+	this.addMimeTypes(["application/xml","text/xml"]);
+	this.addExtensions(["xml","fnt"]);
+};
+$hxClasses["starling.assets.XmlFactory"] = starling_assets_XmlFactory;
+starling_assets_XmlFactory.__name__ = "starling.assets.XmlFactory";
+starling_assets_XmlFactory.__super__ = starling_assets_AssetFactory;
+starling_assets_XmlFactory.prototype = $extend(starling_assets_AssetFactory.prototype,{
+	canHandle: function(reference) {
+		if(!starling_assets_AssetFactory.prototype.canHandle.call(this,reference)) {
+			if(((reference.get_data()) instanceof openfl_utils_ByteArrayData)) {
+				return starling_utils_ByteArrayUtil.startsWithString(reference.get_data(),"<");
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+	,create: function(reference,helper,onComplete,onError) {
+		var xml = null;
+		var textureAtlasPostProcessor = null;
+		var bitmapFontPostProcessor = null;
+		textureAtlasPostProcessor = function(store) {
+			var name = helper.getNameFromUrl(xml.firstElement().get("imagePath"));
+			var texture = store.getTexture(name);
+			if(texture != null) {
+				store.addAsset(name,new starling_textures_TextureAtlas(texture,xml));
+			} else {
+				helper.log("Cannot create atlas: texture '" + name + "' is missing.");
+			}
+		};
+		bitmapFontPostProcessor = function(store) {
+			var textureName = helper.getNameFromUrl(xml.firstElement().elementsNamed("pages").next().elementsNamed("page").next().get("file"));
+			var texture = store.getTexture(textureName);
+			var fontName = store.get_registerBitmapFontsWithFontFace() ? xml.elementsNamed("info").next().get("face") : textureName;
+			if(texture != null) {
+				var bitmapFont = new starling_text_BitmapFont(texture,xml);
+				store.addAsset(fontName,bitmapFont);
+				starling_text_TextField.registerCompositor(bitmapFont,fontName);
+			} else {
+				helper.log("Cannot create bitmap font: texture '" + textureName + "' is missing.");
+			}
+		};
+		var bytes = null;
+		try {
+			if(((reference.get_data()) instanceof Xml)) {
+				xml = js_Boot.__cast(reference.get_data() , Xml);
+			} else {
+				bytes = ((reference.get_data()) instanceof openfl_utils_ByteArrayData) ? reference.get_data() : null;
+				if(bytes != null) {
+					xml = Xml.parse(bytes.toString());
+				}
+			}
+			var _this = xml.firstElement();
+			if(_this.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Bad node type, expected Element but found " + (_this.nodeType == null ? "null" : XmlType.toString(_this.nodeType)));
+			}
+			var rootNode = _this.nodeName;
+			if(rootNode == "TextureAtlas") {
+				helper.addPostProcessor(textureAtlasPostProcessor,100);
+			} else if(rootNode == "font") {
+				helper.addPostProcessor(bitmapFontPostProcessor);
+			}
+			onComplete(reference.get_name(),xml);
+			bytes = null;
+			reference.set_data(bytes);
+		} catch( _g ) {
+			var _g1 = haxe_Exception.caught(_g);
+			if(((_g1) instanceof openfl_errors_Error)) {
+				var e = _g1;
+				bytes = null;
+				reference.set_data(bytes);
+				onError("Could not parse XML: " + e.get_message());
+				return;
+			} else {
+				throw _g;
+			}
+		}
+	}
+	,__class__: starling_assets_XmlFactory
+});
 var starling_core_Starling = function(rootClass,stage,viewPort,stage3D,renderMode,profile,sharedContext) {
 	if(profile == null) {
 		profile = "auto";
@@ -100645,6 +102187,68 @@ starling_utils_Align.isValidVertical = function(align) {
 		return true;
 	}
 };
+var starling_utils_ByteArrayUtil = function() { };
+$hxClasses["starling.utils.ByteArrayUtil"] = starling_utils_ByteArrayUtil;
+starling_utils_ByteArrayUtil.__name__ = "starling.utils.ByteArrayUtil";
+starling_utils_ByteArrayUtil.startsWithString = function(bytes,string) {
+	var start = 0;
+	var length = openfl_utils_ByteArray.get_length(bytes);
+	var wantedBytes = new openfl_utils_ByteArrayData(0);
+	wantedBytes.writeUTFBytes(string);
+	if(length >= 4 && (bytes.b[0] == 0 && bytes.b[1] == 0 && bytes.b[2] == 254 && bytes.b[3] == 255) || bytes.b[0] == 255 && bytes.b[1] == 254 && bytes.b[2] == 0 && bytes.b[3] == 0) {
+		start = 4;
+	} else if(length >= 3 && bytes.b[0] == 239 && bytes.b[1] == 187 && bytes.b[2] == 191) {
+		start = 3;
+	} else if(length >= 2 && (bytes.b[0] == 254 && bytes.b[1] == 255) || bytes.b[0] == 255 && bytes.b[1] == 254) {
+		start = 2;
+	}
+	var _g = start;
+	var _g1 = length;
+	while(_g < _g1) {
+		var i = _g++;
+		var byte = bytes.b[i];
+		if(byte != 0 && byte != 10 && byte != 13 && byte != 32) {
+			return starling_utils_ByteArrayUtil.compareByteArrays(bytes,i,wantedBytes,0,openfl_utils_ByteArray.get_length(wantedBytes));
+		}
+	}
+	return false;
+};
+starling_utils_ByteArrayUtil.startsWithBytes = function(byteArray,firstBytes) {
+	if(UInt.gt(firstBytes.length,openfl_utils_ByteArray.get_length(byteArray))) {
+		return false;
+	}
+	var len = firstBytes.length;
+	var _g = 0;
+	var _g1 = len;
+	while(_g < _g1) {
+		var i = _g++;
+		if(byteArray.b[i] != firstBytes[i]) {
+			return false;
+		}
+	}
+	return true;
+};
+starling_utils_ByteArrayUtil.compareByteArrays = function(a,indexA,b,indexB,numBytes) {
+	if(numBytes == null) {
+		numBytes = -1;
+	}
+	var b1 = indexA + numBytes - openfl_utils_ByteArray.get_length(a);
+	var b2 = indexB + numBytes - openfl_utils_ByteArray.get_length(b);
+	if(numBytes < 0) {
+		numBytes = starling_utils_MathUtil.min(UInt.toFloat(openfl_utils_ByteArray.get_length(a) - indexA),UInt.toFloat(openfl_utils_ByteArray.get_length(b) - indexB)) | 0;
+	} else if(b1 > 0 || b2 > 0) {
+		throw new openfl_errors_RangeError();
+	}
+	var _g = 0;
+	var _g1 = numBytes;
+	while(_g < _g1) {
+		var i = _g++;
+		if(a.b[indexA + i] != b.b[indexB + i]) {
+			return false;
+		}
+	}
+	return true;
+};
 var starling_utils_Color = function() { };
 $hxClasses["starling.utils.Color"] = starling_utils_Color;
 starling_utils_Color.__name__ = "starling.utils.Color";
@@ -104601,6 +106205,25 @@ starling_animation_Transitions.EASE_IN_OUT_BOUNCE = "easeInOutBounce";
 starling_animation_Transitions.EASE_OUT_IN_BOUNCE = "easeOutInBounce";
 starling_animation_Tween.HINT_MARKER = "#";
 starling_animation_Tween.sTweenPool = openfl_Vector.toObjectVector(null);
+starling_assets_AssetManager.NAME_REGEX = new EReg("(([^?/\\\\]+?)(?:\\.([\\w\\-]+))?)(?:\\?.*)?$","");
+starling_assets_AssetManager.NO_NAME = "unnamed";
+starling_assets_AssetManager.sNoNameCount = 0;
+starling_assets_AssetManager.sNames = openfl_Vector.toObjectVector(null);
+starling_assets_AssetType.TEXTURE = "texture";
+starling_assets_AssetType.TEXTURE_ATLAS = "textureAtlas";
+starling_assets_AssetType.SOUND = "sound";
+starling_assets_AssetType.XML_DOCUMENT = "xml";
+starling_assets_AssetType.OBJECT = "object";
+starling_assets_AssetType.BYTE_ARRAY = "byteArray";
+starling_assets_AssetType.BITMAP_FONT = "bitmapFont";
+starling_assets_AssetType.ASSET_MANAGER = "assetManager";
+starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_JPG = [255,216];
+starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_PNG = [137,80,78,71,13,10,26,10];
+starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_GIF = [71,73,70,56];
+starling_assets_BitmapTextureFactory.MAGIC_NUMBERS_WEBP = [82,73,70,70];
+starling_assets_DataLoader.HTTP_RESPONSE_STATUS = "httpResponseStatus";
+starling_assets_SoundFactory.MAGIC_NUMBERS_A = [255,251];
+starling_assets_SoundFactory.MAGIC_NUMBERS_B = [73,68,51];
 starling_core_Starling.VERSION = "0.0.0";
 starling_core_Starling.sAll = openfl_Vector.toObjectVector(null);
 starling_core_StatsDisplay.UPDATE_INTERVAL = 0.5;
