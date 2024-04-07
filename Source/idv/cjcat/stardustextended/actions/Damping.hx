@@ -23,7 +23,7 @@ class Damping extends Action {
 
 	public function new(damping:Float = 0.05) {
 		super();
-		priority = -1;
+		_priority = -1;
 
 		this.damping = damping;
 	}
@@ -52,7 +52,7 @@ class Damping extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("damping", damping);
+		xml.set("damping", Std.string(damping));
 
 		return xml;
 	}
@@ -60,8 +60,8 @@ class Damping extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.damping.length()) {
-			damping = Std.parseFloat(xml.att.damping);
+		if (xml.exists("damping")) {
+			damping = Std.parseFloat(xml.get("damping"));
 		}
 	}
 }

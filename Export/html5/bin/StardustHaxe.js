@@ -923,7 +923,8 @@ ApplicationMain.main = function() {
 };
 ApplicationMain.create = function(config) {
 	var app = new openfl_display_Application();
-	app.meta.h["build"] = "4";
+	ManifestResources.init(config);
+	app.meta.h["build"] = "5";
 	app.meta.h["company"] = "Company Name";
 	app.meta.h["file"] = "StardustHaxe";
 	app.meta.h["name"] = "StardustHaxe";
@@ -959,6 +960,20 @@ ApplicationMain.create = function(config) {
 		ApplicationMain.start(stage);
 	};
 	preloader.onComplete.add(tmp);
+	var _g = 0;
+	var _g1 = ManifestResources.preloadLibraries;
+	while(_g < _g1.length) {
+		var library = _g1[_g];
+		++_g;
+		app.__preloader.addLibrary(library);
+	}
+	var _g = 0;
+	var _g1 = ManifestResources.preloadLibraryNames;
+	while(_g < _g1.length) {
+		var name = _g1[_g];
+		++_g;
+		app.__preloader.addLibraryName(name);
+	}
 	app.__preloader.load();
 	var result = app.exec();
 };
@@ -1288,6 +1303,9 @@ haxe_ds_StringMap.prototype = {
 	}
 	,keyValueIterator: function() {
 		return new haxe_ds__$StringMap_StringMapKeyValueIterator(this.h);
+	}
+	,toString: function() {
+		return haxe_ds_StringMap.stringify(this.h);
 	}
 	,__class__: haxe_ds_StringMap
 };
@@ -5717,7 +5735,8 @@ openfl_geom_Point.polar = function(len,angle) {
 	return new openfl_geom_Point(len * Math.cos(angle),len * Math.sin(angle));
 };
 openfl_geom_Point.prototype = {
-	x: null
+	_length: null
+	,x: null
 	,y: null
 	,add: function(v) {
 		return new openfl_geom_Point(v.x + this.x,v.y + this.y);
@@ -5771,8 +5790,12 @@ openfl_geom_Point.prototype = {
 	,get_length: function() {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
+	,set_length: function(value) {
+		this._length = value;
+		return value;
+	}
 	,__class__: openfl_geom_Point
-	,__properties__: {get_length:"get_length"}
+	,__properties__: {set_length:"set_length",get_length:"get_length"}
 };
 var openfl_geom_Vector3D = function(x,y,z,w) {
 	if(w == null) {
@@ -7456,13 +7479,47 @@ starling_display_Sprite.prototype = $extend(starling_display_DisplayObjectContai
 	__class__: starling_display_Sprite
 });
 var Game = function() {
+	this.cnt = 0;
 	starling_display_Sprite.call(this);
+	starling_core_Starling.get_current().showStatsAt("left","bottom");
+	this.simContainer = new starling_display_Sprite();
+	this.simContainer.set_touchable(false);
+	this.addChild(this.simContainer);
+	this.simContainer.set_x(300);
+	this.simContainer.set_y(300);
+	this.infoTF = new starling_text_TextField(250,30,"");
+	this.infoTF.get_format().setTo("Verdana",14,16777215);
+	this.addChild(this.infoTF);
+	this.player = new com_funkypandagame_stardustplayer_SimPlayer();
+	this.loader = new com_funkypandagame_stardustplayer_SimLoader();
+	this.loader.addEventListener("complete",$bind(this,this.onSimLoaded));
+	this.loader.loadSim(Game.Asset);
 };
 $hxClasses["Game"] = Game;
 Game.__name__ = "Game";
 Game.__super__ = starling_display_Sprite;
 Game.prototype = $extend(starling_display_Sprite.prototype,{
-	__class__: Game
+	simContainer: null
+	,player: null
+	,loader: null
+	,infoTF: null
+	,project: null
+	,cnt: null
+	,onSimLoaded: function(event) {
+		this.loader.removeEventListener("complete",$bind(this,this.onSimLoaded));
+		this.project = this.loader.createProjectInstance();
+		this.player.setProject(this.project);
+		this.player.setRenderTarget(this.simContainer);
+		this.addEventListener("enterFrame",$bind(this,this.onEnterFrame));
+	}
+	,onEnterFrame: function(event) {
+		this.player.stepSimulation(event.get_passedTime());
+		this.cnt++;
+		if((UInt.toFloat(this.cnt) % UInt.toFloat(60) | 0) == 0) {
+			this.infoTF.set_text("particles: " + this.project.get_numberOfParticles());
+		}
+	}
+	,__class__: Game
 });
 var HxOverrides = function() { };
 $hxClasses["HxOverrides"] = HxOverrides;
@@ -7530,6 +7587,46 @@ Lambda.array = function(it) {
 		a.push(i1);
 	}
 	return a;
+};
+Lambda.indexOf = function(it,v) {
+	var i = 0;
+	var v2 = $getIterator(it);
+	while(v2.hasNext()) {
+		var v21 = v2.next();
+		if(v == v21) {
+			return i;
+		}
+		++i;
+	}
+	return -1;
+};
+var ManifestResources = function() { };
+$hxClasses["ManifestResources"] = ManifestResources;
+ManifestResources.__name__ = "ManifestResources";
+ManifestResources.init = function(config) {
+	ManifestResources.preloadLibraries = [];
+	ManifestResources.preloadLibraryNames = [];
+	ManifestResources.rootPath = null;
+	if(config != null && Object.prototype.hasOwnProperty.call(config,"rootPath")) {
+		ManifestResources.rootPath = Reflect.field(config,"rootPath");
+		if(!StringTools.endsWith(ManifestResources.rootPath,"/")) {
+			ManifestResources.rootPath += "/";
+		}
+	}
+	if(ManifestResources.rootPath == null) {
+		ManifestResources.rootPath = "./";
+	}
+	var bundle;
+	var data = "{\"name\":null,\"assets\":\"aoy4:pathy30:assets%2FcoinShower_simple.sdey4:sizei17139y4:typey6:BINARYy2:idR1y7:preloadtgh\",\"rootPath\":null,\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	var manifest = lime_utils_AssetManifest.parse(data,ManifestResources.rootPath);
+	var library = lime_utils_AssetLibrary.fromManifest(manifest);
+	lime_utils_Assets.registerLibrary("default",library);
+	library = lime_utils_Assets.getLibrary("default");
+	if(library != null) {
+		ManifestResources.preloadLibraries.push(library);
+	} else {
+		ManifestResources.preloadLibraryNames.push("default");
+	}
 };
 Math.__name__ = "Math";
 var Reflect = function() { };
@@ -7872,6 +7969,15 @@ UInt.gt = function(a,b) {
 		return a > b;
 	}
 };
+UInt.gte = function(a,b) {
+	var aNeg = a < 0;
+	var bNeg = b < 0;
+	if(aNeg != bNeg) {
+		return aNeg;
+	} else {
+		return a >= b;
+	}
+};
 UInt.toFloat = function(this1) {
 	var int = this1;
 	if(int < 0) {
@@ -7979,6 +8085,15 @@ Xml.prototype = {
 		}
 		this.attributeMap.h[att] = value;
 	}
+	,remove: function(att) {
+		if(this.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (this.nodeType == null ? "null" : XmlType.toString(this.nodeType)));
+		}
+		var _this = this.attributeMap;
+		if(Object.prototype.hasOwnProperty.call(_this.h,att)) {
+			delete(_this.h[att]);
+		}
+	}
 	,exists: function(att) {
 		if(this.nodeType != Xml.Element) {
 			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (this.nodeType == null ? "null" : XmlType.toString(this.nodeType)));
@@ -7990,6 +8105,23 @@ Xml.prototype = {
 			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (this.nodeType == null ? "null" : XmlType.toString(this.nodeType)));
 		}
 		return new haxe_ds__$StringMap_StringMapKeyIterator(this.attributeMap.h);
+	}
+	,elements: function() {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element or Document but found " + (this.nodeType == null ? "null" : XmlType.toString(this.nodeType)));
+		}
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.children;
+		while(_g1 < _g2.length) {
+			var child = _g2[_g1];
+			++_g1;
+			if(child.nodeType == Xml.Element) {
+				_g.push(child);
+			}
+		}
+		var ret = _g;
+		return new haxe_iterators_ArrayIterator(ret);
 	}
 	,elementsNamed: function(name) {
 		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) {
@@ -8057,6 +8189,830 @@ Xml.prototype = {
 	}
 	,__class__: Xml
 };
+var com_funkypandagame_stardustplayer_ISimLoader = function() { };
+$hxClasses["com.funkypandagame.stardustplayer.ISimLoader"] = com_funkypandagame_stardustplayer_ISimLoader;
+com_funkypandagame_stardustplayer_ISimLoader.__name__ = "com.funkypandagame.stardustplayer.ISimLoader";
+com_funkypandagame_stardustplayer_ISimLoader.__isInterface__ = true;
+com_funkypandagame_stardustplayer_ISimLoader.__interfaces__ = [openfl_events_IEventDispatcher];
+com_funkypandagame_stardustplayer_ISimLoader.prototype = {
+	loadSim: null
+	,createProjectInstance: null
+	,dispose: null
+	,__class__: com_funkypandagame_stardustplayer_ISimLoader
+};
+var com_funkypandagame_stardustplayer_Particle2DSnapshot = function() {
+};
+$hxClasses["com.funkypandagame.stardustplayer.Particle2DSnapshot"] = com_funkypandagame_stardustplayer_Particle2DSnapshot;
+com_funkypandagame_stardustplayer_Particle2DSnapshot.__name__ = "com.funkypandagame.stardustplayer.Particle2DSnapshot";
+com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision = function(num) {
+	return (num * 1000 | 0) * 0.001;
+};
+com_funkypandagame_stardustplayer_Particle2DSnapshot.prototype = {
+	x: null
+	,y: null
+	,vx: null
+	,vy: null
+	,rotation: null
+	,omega: null
+	,initLife: null
+	,initScale: null
+	,initAlpha: null
+	,life: null
+	,scale: null
+	,alpha: null
+	,mass: null
+	,isDead: null
+	,colorR: null
+	,colorG: null
+	,colorB: null
+	,currentAnimationFrame: null
+	,storeParticle: function(p2d) {
+		this.x = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.x);
+		this.y = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.y);
+		this.vx = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.vx);
+		this.vy = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.vy);
+		this.rotation = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.rotation);
+		this.omega = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.omega);
+		this.initLife = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.initLife);
+		this.initScale = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.initScale);
+		this.initAlpha = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.initAlpha);
+		this.life = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.life);
+		this.scale = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.scale);
+		this.alpha = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.alpha);
+		this.mass = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.mass);
+		this.isDead = p2d.isDead;
+		this.colorR = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.colorR);
+		this.colorG = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.colorG);
+		this.colorB = com_funkypandagame_stardustplayer_Particle2DSnapshot.toLowPrecision(p2d.colorB);
+		this.currentAnimationFrame = p2d.currentAnimationFrame;
+	}
+	,writeDataTo: function(p2d) {
+		p2d.x = this.x;
+		p2d.y = this.y;
+		p2d.vx = this.vx;
+		p2d.vy = this.vy;
+		p2d.rotation = this.rotation;
+		p2d.omega = this.omega;
+		p2d.initLife = this.initLife;
+		p2d.initScale = this.initScale;
+		p2d.initAlpha = this.initAlpha;
+		p2d.life = this.life;
+		p2d.scale = this.scale;
+		p2d.alpha = this.alpha;
+		p2d.mass = this.mass;
+		p2d.isDead = this.isDead;
+		p2d.colorR = this.colorR;
+		p2d.colorG = this.colorG;
+		p2d.colorB = this.colorB;
+		p2d.currentAnimationFrame = this.currentAnimationFrame;
+	}
+	,__class__: com_funkypandagame_stardustplayer_Particle2DSnapshot
+};
+var com_funkypandagame_stardustplayer_RawEmitterData = function() {
+};
+$hxClasses["com.funkypandagame.stardustplayer.RawEmitterData"] = com_funkypandagame_stardustplayer_RawEmitterData;
+com_funkypandagame_stardustplayer_RawEmitterData.__name__ = "com.funkypandagame.stardustplayer.RawEmitterData";
+com_funkypandagame_stardustplayer_RawEmitterData.prototype = {
+	emitterID: null
+	,emitterXML: null
+	,snapshot: null
+	,__class__: com_funkypandagame_stardustplayer_RawEmitterData
+};
+var com_funkypandagame_stardustplayer_SDEConstants = function() {
+};
+$hxClasses["com.funkypandagame.stardustplayer.SDEConstants"] = com_funkypandagame_stardustplayer_SDEConstants;
+com_funkypandagame_stardustplayer_SDEConstants.__name__ = "com.funkypandagame.stardustplayer.SDEConstants";
+com_funkypandagame_stardustplayer_SDEConstants.getXMLName = function(id) {
+	return "stardustEmitter_" + id + ".xml";
+};
+com_funkypandagame_stardustplayer_SDEConstants.getParticleSnapshotName = function(id) {
+	return "emitterSnapshot_" + id + ".bytearray";
+};
+com_funkypandagame_stardustplayer_SDEConstants.isEmitterXMLName = function(filename) {
+	return HxOverrides.substr(filename,0,16) == "stardustEmitter_";
+};
+com_funkypandagame_stardustplayer_SDEConstants.getEmitterID = function(XMLFilename) {
+	return HxOverrides.substr(XMLFilename,16,null).split(".")[0];
+};
+com_funkypandagame_stardustplayer_SDEConstants.getSubTexturePrefix = function(emitterId) {
+	return "emitter_" + emitterId + "_image_";
+};
+com_funkypandagame_stardustplayer_SDEConstants.getSubTextureName = function(emitterId,imageNumber,numberOfImagesInAtlas) {
+	return com_funkypandagame_stardustplayer_SDEConstants.getSubTexturePrefix(emitterId) + com_funkypandagame_stardustplayer_SDEConstants.intToSortableStr(imageNumber,numberOfImagesInAtlas);
+};
+com_funkypandagame_stardustplayer_SDEConstants.intToSortableStr = function(val,maxValue) {
+	var digitValue = 1;
+	var digits = 0;
+	var tempMaxValue = maxValue;
+	while(tempMaxValue >= 10) {
+		++digits;
+		digitValue *= 10;
+		tempMaxValue = tempMaxValue / 10 | 0;
+	}
+	digitValue = digitValue / 10 | 0;
+	var ret = "";
+	var tempVal = val;
+	var _g = 0;
+	var _g1 = digits;
+	while(_g < _g1) {
+		var i = _g++;
+		var digit = tempVal / digitValue | 0;
+		ret += digit;
+		tempVal -= digit * digitValue;
+		digitValue = digitValue / 10 | 0;
+	}
+	return ret;
+};
+com_funkypandagame_stardustplayer_SDEConstants.prototype = {
+	__class__: com_funkypandagame_stardustplayer_SDEConstants
+};
+var com_funkypandagame_stardustplayer_SimLoader = function(target) {
+	this.rawEmitterDatas = [];
+	this.projectLoaded = false;
+	this.sequenceLoader = new com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader();
+	openfl_events_EventDispatcher.call(this,target);
+};
+$hxClasses["com.funkypandagame.stardustplayer.SimLoader"] = com_funkypandagame_stardustplayer_SimLoader;
+com_funkypandagame_stardustplayer_SimLoader.__name__ = "com.funkypandagame.stardustplayer.SimLoader";
+com_funkypandagame_stardustplayer_SimLoader.__interfaces__ = [com_funkypandagame_stardustplayer_ISimLoader];
+com_funkypandagame_stardustplayer_SimLoader.__super__ = openfl_events_EventDispatcher;
+com_funkypandagame_stardustplayer_SimLoader.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	sequenceLoader: null
+	,projectLoaded: null
+	,loadedZip: null
+	,descriptorJSON: null
+	,rawEmitterDatas: null
+	,atlas: null
+	,loadSim: function(data) {
+		this.projectLoaded = false;
+		this.sequenceLoader.clearAllJobs();
+		this.loadedZip = new org_as3commons_zip_Zip();
+		this.loadedZip.loadBytes(data);
+		this.descriptorJSON = JSON.parse(this.loadedZip.getFileByName("descriptor.json").getContentAsString());
+		if(this.descriptorJSON == null) {
+			throw new openfl_errors_Error("descriptor.json" + " not found.");
+		}
+		if(parseFloat(this.descriptorJSON.version) < 2.1) {
+			haxe_Log.trace(" Stardust Sim Loader:WARNING loaded simulation is created with an old version of the editor, it might not run.",{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 51, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim"});
+		}
+		var atlasFound = false;
+		var _g = 0;
+		var _g1 = this.loadedZip.getFileCount();
+		while(_g < _g1) {
+			var i = _g++;
+			var loadedFileName = this.loadedZip.getFileAt(i).get_filename();
+			if(loadedFileName == "atlas_0.png") {
+				var loadAtlasJob = new com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob(loadedFileName,loadedFileName,this.loadedZip.getFileAt(i).get_content());
+				this.sequenceLoader.addJob(loadAtlasJob);
+				this.sequenceLoader.addEventListener("complete",$bind(this,this.onProjectAtlasLoaded));
+				this.sequenceLoader.loadSequence();
+				atlasFound = true;
+				break;
+			}
+		}
+		if(!atlasFound) {
+			throw new openfl_errors_Error("atlas_0.png" + " not found, cannot load this file ");
+		}
+	}
+	,onProjectAtlasLoaded: function(event) {
+		this.sequenceLoader.removeEventListener("complete",$bind(this,this.onProjectAtlasLoaded));
+		var _g = 0;
+		var _g1 = this.loadedZip.getFileCount();
+		while(_g < _g1) {
+			var i = _g++;
+			var loadedFileName = this.loadedZip.getFileAt(i).get_filename();
+			if(com_funkypandagame_stardustplayer_SDEConstants.isEmitterXMLName(loadedFileName)) {
+				var emitterId = com_funkypandagame_stardustplayer_SDEConstants.getEmitterID(loadedFileName);
+				var stardustBA = this.loadedZip.getFileByName(loadedFileName).get_content();
+				var snapshot = this.loadedZip.getFileByName(com_funkypandagame_stardustplayer_SDEConstants.getParticleSnapshotName(emitterId));
+				var rawData = new com_funkypandagame_stardustplayer_RawEmitterData();
+				rawData.emitterID = emitterId;
+				rawData.emitterXML = Xml.parse(stardustBA.readUTFBytes(openfl_utils_ByteArray.get_length(stardustBA)));
+				rawData.snapshot = snapshot != null ? snapshot.get_content() : null;
+				this.rawEmitterDatas.push(rawData);
+			}
+		}
+		var job = this.sequenceLoader.getCompletedJobs().pop();
+		var atlasXMLBA = this.loadedZip.getFileByName("atlas_0.xml").get_content();
+		var atlasXML = Xml.parse(atlasXMLBA.readUTFBytes(openfl_utils_ByteArray.get_length(atlasXMLBA)));
+		var atlasBD = (js_Boot.__cast(job.get_content() , openfl_display_Bitmap)).get_bitmapData();
+		this.atlas = new starling_textures_TextureAtlas(starling_textures_Texture.fromBitmapData(atlasBD,false),atlasXML);
+		this.loadedZip = null;
+		this.sequenceLoader.clearAllJobs();
+		this.projectLoaded = true;
+		this.dispatchEvent(new openfl_events_Event("complete"));
+	}
+	,createProjectInstance: function() {
+		if(!this.projectLoaded) {
+			throw new openfl_errors_Error("ERROR: Project is not loaded, call loadSim(), and then wait for the Event.COMPLETE event.");
+		}
+		var project = new com_funkypandagame_stardustplayer_project_ProjectValueObject(parseFloat(this.descriptorJSON.version));
+		var _g = 0;
+		var _g1 = this.rawEmitterDatas;
+		while(_g < _g1.length) {
+			var rawData = _g1[_g];
+			++_g;
+			var emitter = com_funkypandagame_stardustplayer_emitter_EmitterBuilder.buildEmitter(rawData.emitterXML,rawData.emitterID);
+			emitter.name = rawData.emitterID;
+			var emitterVO = new com_funkypandagame_stardustplayer_emitter_EmitterValueObject(emitter);
+			project.emitters.h[rawData.emitterID] = emitterVO;
+			if(rawData.snapshot != null) {
+				emitterVO.emitterSnapshot = rawData.snapshot;
+				emitterVO.addParticlesFromSnapshot();
+			}
+			var allTextures = openfl_Vector.toObjectVector(null);
+			var textures = this.atlas.getTextures(com_funkypandagame_stardustplayer_SDEConstants.getSubTexturePrefix(emitterVO.get_id()));
+			var texture = textures.iterator();
+			while(texture.hasNext()) {
+				var texture1 = texture.next();
+				allTextures.push(js_Boot.__cast(texture1 , starling_textures_SubTexture));
+			}
+			(js_Boot.__cast(emitterVO.emitter.particleHandler , idv_cjcat_stardustextended_handlers_starling_StarlingHandler)).setTextures(allTextures);
+		}
+		var _g = 0;
+		var _g1 = project.get_emittersArr();
+		while(_g < _g1.length) {
+			var em = _g1[_g];
+			++_g;
+			var action = em.get_actions().iterator();
+			while(action.hasNext()) {
+				var action1 = action.next();
+				if(((action1) instanceof idv_cjcat_stardustextended_actions_Spawn) && (js_Boot.__cast(action1 , idv_cjcat_stardustextended_actions_Spawn)).get_spawnerEmitterId() != null) {
+					var spawnAction = js_Boot.__cast(action1 , idv_cjcat_stardustextended_actions_Spawn);
+					var h = project.emitters.h;
+					var emVO_h = h;
+					var emVO_keys = Object.keys(h);
+					var emVO_length = emVO_keys.length;
+					var emVO_current = 0;
+					while(emVO_current < emVO_length) {
+						var emVO = emVO_h[emVO_keys[emVO_current++]];
+						if(spawnAction.get_spawnerEmitterId() == emVO.get_id()) {
+							spawnAction.set_spawnerEmitter(emVO.emitter);
+						}
+					}
+				}
+			}
+		}
+		return project;
+	}
+	,dispose: function() {
+		this.sequenceLoader.clearAllJobs();
+		this.projectLoaded = false;
+		this.descriptorJSON = null;
+		if(this.atlas != null) {
+			this.atlas.dispose();
+			this.atlas = null;
+		}
+		var _g = 0;
+		var _g1 = this.rawEmitterDatas;
+		while(_g < _g1.length) {
+			var rawEmitterData = _g1[_g];
+			++_g;
+			if(rawEmitterData.snapshot != null) {
+				rawEmitterData.snapshot.clear();
+			}
+		}
+		this.rawEmitterDatas = [];
+	}
+	,__class__: com_funkypandagame_stardustplayer_SimLoader
+});
+var com_funkypandagame_stardustplayer_SimPlayer = function() {
+};
+$hxClasses["com.funkypandagame.stardustplayer.SimPlayer"] = com_funkypandagame_stardustplayer_SimPlayer;
+com_funkypandagame_stardustplayer_SimPlayer.__name__ = "com.funkypandagame.stardustplayer.SimPlayer";
+com_funkypandagame_stardustplayer_SimPlayer.prototype = {
+	_project: null
+	,_renderTarget: null
+	,setProject: function(sim) {
+		if(sim == null) {
+			haxe_Log.trace("WARNING: A simulation can not be null",{ fileName : "Source/com/funkypandagame/stardustplayer/SimPlayer.hx", lineNumber : 16, className : "com.funkypandagame.stardustplayer.SimPlayer", methodName : "setProject"});
+		}
+		this._project = sim;
+		this.setupSimulation();
+	}
+	,setRenderTarget: function(renderTarget) {
+		if(renderTarget == null) {
+			haxe_Log.trace("renderTarget cannot be null",{ fileName : "Source/com/funkypandagame/stardustplayer/SimPlayer.hx", lineNumber : 24, className : "com.funkypandagame.stardustplayer.SimPlayer", methodName : "setRenderTarget"});
+		}
+		this._renderTarget = renderTarget;
+		this.setupSimulation();
+	}
+	,setupSimulation: function() {
+		if(this._renderTarget == null || this._project == null) {
+			return;
+		}
+		var h = this._project.emitters.h;
+		var emitter_h = h;
+		var emitter_keys = Object.keys(h);
+		var emitter_length = emitter_keys.length;
+		var emitter_current = 0;
+		while(emitter_current < emitter_length) {
+			var emitter = emitter_h[emitter_keys[emitter_current++]];
+			var tmp = js_Boot.__cast(emitter.emitter.particleHandler , idv_cjcat_stardustextended_handlers_starling_StarlingHandler);
+			var tmp1;
+			try {
+				tmp1 = js_Boot.__cast(this._renderTarget , starling_display_DisplayObjectContainer);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp1 = null;
+			}
+			tmp.set_container(tmp1);
+		}
+	}
+	,getProject: function() {
+		return this._project;
+	}
+	,stepSimulation: function(deltaTime) {
+		if(this._project == null || this._renderTarget == null) {
+			throw new openfl_errors_Error("The simulation and its render target must be set.");
+		}
+		var h = this._project.emitters.h;
+		var emVO_h = h;
+		var emVO_keys = Object.keys(h);
+		var emVO_length = emVO_keys.length;
+		var emVO_current = 0;
+		while(emVO_current < emVO_length) {
+			var emVO = emVO_h[emVO_keys[emVO_current++]];
+			emVO.emitter.step(deltaTime);
+		}
+	}
+	,__class__: com_funkypandagame_stardustplayer_SimPlayer
+};
+var com_funkypandagame_stardustplayer_emitter_EmitterBuilder = function() { };
+$hxClasses["com.funkypandagame.stardustplayer.emitter.EmitterBuilder"] = com_funkypandagame_stardustplayer_emitter_EmitterBuilder;
+com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__name__ = "com.funkypandagame.stardustplayer.emitter.EmitterBuilder";
+com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__properties__ = {get_builder:"get_builder"};
+com_funkypandagame_stardustplayer_emitter_EmitterBuilder.buildEmitter = function(sourceXML,uniqueEmitterId) {
+	com_funkypandagame_stardustplayer_emitter_EmitterBuilder.createBuilderIfNeeded();
+	com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.buildFromXML(sourceXML);
+	var emitter = com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter)[0];
+	emitter.name = uniqueEmitterId;
+	return emitter;
+};
+com_funkypandagame_stardustplayer_emitter_EmitterBuilder.get_builder = function() {
+	com_funkypandagame_stardustplayer_emitter_EmitterBuilder.createBuilderIfNeeded();
+	return com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder;
+};
+com_funkypandagame_stardustplayer_emitter_EmitterBuilder.createBuilderIfNeeded = function() {
+	if(com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder == null) {
+		com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder = new idv_cjcat_stardustextended_xml_XMLBuilder();
+		com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.registerClassesFromClassPackage(idv_cjcat_stardustextended_CommonClassPackage.getInstance());
+		com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.registerClass(idv_cjcat_stardustextended_handlers_starling_StarlingHandler);
+	}
+};
+var com_funkypandagame_stardustplayer_emitter_EmitterValueObject = function(_emitter) {
+	this.emitter = _emitter;
+};
+$hxClasses["com.funkypandagame.stardustplayer.emitter.EmitterValueObject"] = com_funkypandagame_stardustplayer_emitter_EmitterValueObject;
+com_funkypandagame_stardustplayer_emitter_EmitterValueObject.__name__ = "com.funkypandagame.stardustplayer.emitter.EmitterValueObject";
+com_funkypandagame_stardustplayer_emitter_EmitterValueObject.prototype = {
+	emitter: null
+	,emitterSnapshot: null
+	,get_id: function() {
+		return this.emitter.name;
+	}
+	,get_textures: function() {
+		return (js_Boot.__cast(this.emitter.particleHandler , idv_cjcat_stardustextended_handlers_starling_StarlingHandler)).get_textures();
+	}
+	,addParticlesFromSnapshot: function() {
+		openfl_Lib.registerClassAlias(com_funkypandagame_stardustplayer_Particle2DSnapshot.__name__,com_funkypandagame_stardustplayer_Particle2DSnapshot);
+		this.emitterSnapshot.position = 0;
+		var particlesData = this.emitterSnapshot.readObject();
+		var factory = new idv_cjcat_stardustextended_particles_PooledParticleFactory();
+		var count = particlesData.length;
+		var particles = null;
+		if(particles == null) {
+			particles = openfl_Vector.toObjectVector(null);
+		}
+		if(count > 0) {
+			var i;
+			var _g = 0;
+			var _g1 = count;
+			while(_g < _g1) {
+				var i = _g++;
+				var particle = idv_cjcat_stardustextended_particles_ParticlePool._recycled.length > 0 ? idv_cjcat_stardustextended_particles_ParticlePool._recycled.pop() : new idv_cjcat_stardustextended_particles_Particle();
+				particle.initLife = particle.life = particle.currentAnimationFrame = 0;
+				particle.initScale = particle.scale = 1;
+				particle.initAlpha = particle.alpha = 1;
+				particle.mass = 1;
+				particle.isDead = false;
+				particle.collisionRadius = 0;
+				particle.colorR = 1;
+				particle.colorB = 1;
+				particle.colorG = 1;
+				particle.x = 0;
+				particle.y = 0;
+				particle.vx = 0;
+				particle.vy = 0;
+				particle.rotation = 0;
+				particle.omega = 0;
+				particles.push(particle);
+			}
+			var initializers = factory._initializerCollection.get_initializers();
+			var len = initializers.get_length();
+			var _g = 0;
+			var _g1 = len;
+			while(_g < _g1) {
+				var i = _g++;
+				initializers.get(i).doInitialize(particles,0);
+			}
+		}
+		var particles1 = particles;
+		var _g = 0;
+		var _g1 = particlesData.length;
+		while(_g < _g1) {
+			var j = _g++;
+			(js_Boot.__cast(particlesData[j] , com_funkypandagame_stardustplayer_Particle2DSnapshot)).writeDataTo(particles1.get(j));
+		}
+		this.emitter.addParticles(particles1);
+	}
+	,__class__: com_funkypandagame_stardustplayer_emitter_EmitterValueObject
+	,__properties__: {get_textures:"get_textures",get_id:"get_id"}
+};
+var com_funkypandagame_stardustplayer_project_ProjectValueObject = function(_version) {
+	this.emitters = new haxe_ds_StringMap();
+	this.version = _version;
+};
+$hxClasses["com.funkypandagame.stardustplayer.project.ProjectValueObject"] = com_funkypandagame_stardustplayer_project_ProjectValueObject;
+com_funkypandagame_stardustplayer_project_ProjectValueObject.__name__ = "com.funkypandagame.stardustplayer.project.ProjectValueObject";
+com_funkypandagame_stardustplayer_project_ProjectValueObject.prototype = {
+	version: null
+	,emitters: null
+	,get_numberOfEmitters: function() {
+		var numEmitters = 0;
+		var h = this.emitters.h;
+		var emitter_h = h;
+		var emitter_keys = Object.keys(h);
+		var emitter_length = emitter_keys.length;
+		var emitter_current = 0;
+		while(emitter_current < emitter_length) {
+			var emitter = emitter_h[emitter_keys[emitter_current++]];
+			++numEmitters;
+		}
+		return numEmitters;
+	}
+	,_numberOfParticles: null
+	,get_numberOfParticles: function() {
+		var numParticles = 0;
+		var h = this.emitters.h;
+		var emVO_h = h;
+		var emVO_keys = Object.keys(h);
+		var emVO_length = emVO_keys.length;
+		var emVO_current = 0;
+		while(emVO_current < emVO_length) {
+			var emVO = emVO_h[emVO_keys[emVO_current++]];
+			numParticles += emVO.emitter.get_numParticles();
+		}
+		return numParticles;
+	}
+	,get_emittersArr: function() {
+		var emitterVec = [];
+		var h = this.emitters.h;
+		var emVO_h = h;
+		var emVO_keys = Object.keys(h);
+		var emVO_length = emVO_keys.length;
+		var emVO_current = 0;
+		while(emVO_current < emVO_length) {
+			var emVO = emVO_h[emVO_keys[emVO_current++]];
+			emitterVec.push(emVO.emitter);
+		}
+		return emitterVec;
+	}
+	,resetSimulation: function() {
+		var h = this.emitters.h;
+		var emitterValueObject_h = h;
+		var emitterValueObject_keys = Object.keys(h);
+		var emitterValueObject_length = emitterValueObject_keys.length;
+		var emitterValueObject_current = 0;
+		while(emitterValueObject_current < emitterValueObject_length) {
+			var emitterValueObject = emitterValueObject_h[emitterValueObject_keys[emitterValueObject_current++]];
+			emitterValueObject.emitter.reset();
+		}
+	}
+	,set_fps: function(val) {
+		var h = this.emitters.h;
+		var emitterValueObject_h = h;
+		var emitterValueObject_keys = Object.keys(h);
+		var emitterValueObject_length = emitterValueObject_keys.length;
+		var emitterValueObject_current = 0;
+		while(emitterValueObject_current < emitterValueObject_length) {
+			var emitterValueObject = emitterValueObject_h[emitterValueObject_keys[emitterValueObject_current++]];
+			emitterValueObject.emitter.set_fps(val);
+		}
+	}
+	,get_fps: function() {
+		return this.get_emittersArr()[0].get_fps();
+	}
+	,destroy: function() {
+		var h = this.emitters.h;
+		var emitterValueObject_h = h;
+		var emitterValueObject_keys = Object.keys(h);
+		var emitterValueObject_length = emitterValueObject_keys.length;
+		var emitterValueObject_current = 0;
+		while(emitterValueObject_current < emitterValueObject_length) {
+			var emitterValueObject = emitterValueObject_h[emitterValueObject_keys[emitterValueObject_current++]];
+			emitterValueObject.emitter.clearParticles();
+			emitterValueObject.emitter.clearActions();
+			emitterValueObject.emitter.clearInitializers();
+			emitterValueObject.emitterSnapshot = null;
+			var renderer = (js_Boot.__cast(emitterValueObject.emitter.particleHandler , idv_cjcat_stardustextended_handlers_starling_StarlingHandler)).get_renderer();
+			var mParticles = openfl_Vector.toObjectVector(null);
+			renderer.mNumParticles = mParticles.get_length();
+			renderer.vertexes.fixed = false;
+			renderer.vertexes.set_length(renderer.mNumParticles * 32);
+			renderer.vertexes.fixed = true;
+			var _g = 0;
+			var _g1 = renderer.mNumParticles;
+			while(_g < _g1) {
+				var _i = _g++;
+				renderer.vertexID = _i << 2;
+				renderer.particle = mParticles.get(_i);
+				renderer.particleAlpha = renderer.particle.alpha;
+				if(renderer.premultiplyAlpha) {
+					renderer.red = renderer.particle.colorR * renderer.particleAlpha;
+					renderer.green = renderer.particle.colorG * renderer.particleAlpha;
+					renderer.blue = renderer.particle.colorB * renderer.particleAlpha;
+				} else {
+					renderer.red = renderer.particle.colorR;
+					renderer.green = renderer.particle.colorG;
+					renderer.blue = renderer.particle.colorB;
+				}
+				renderer._rotation = renderer.particle.rotation * idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.DEGREES_TO_RADIANS;
+				renderer.xPos = renderer.particle.x;
+				renderer.yPos = renderer.particle.y;
+				renderer.frame = renderer.frames.get(renderer.particle.currentAnimationFrame);
+				renderer.bottomRightX = renderer.frame.bottomRightX;
+				renderer.bottomRightY = renderer.frame.bottomRightY;
+				renderer.topLeftX = renderer.frame.topLeftX;
+				renderer.topLeftY = renderer.frame.topLeftY;
+				renderer.xOffset = renderer.frame.particleHalfWidth * renderer.particle.scale;
+				renderer.yOffset = renderer.frame.particleHalfHeight * renderer.particle.scale;
+				renderer.position = renderer.vertexID << 3;
+				var tmp;
+				if(renderer._rotation != 0) {
+					var f = renderer._rotation;
+					tmp = !isNaN(f);
+				} else {
+					tmp = false;
+				}
+				if(tmp) {
+					renderer.angle = (renderer._rotation * 325.94932345220164765467394738691 | 0) & 2047;
+					renderer.cos = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT.get(renderer.angle);
+					renderer.sin = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT.get(renderer.angle);
+					renderer.cosX = renderer.cos * renderer.xOffset;
+					renderer.cosY = renderer.cos * renderer.yOffset;
+					renderer.sinX = renderer.sin * renderer.xOffset;
+					renderer.sinY = renderer.sin * renderer.yOffset;
+					renderer.vertexes.set(renderer.position,renderer.xPos - renderer.cosX + renderer.sinY);
+					renderer.vertexes.set(++renderer.position,renderer.yPos - renderer.sinX - renderer.cosY);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftX);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos + renderer.cosX + renderer.sinY);
+					renderer.vertexes.set(++renderer.position,renderer.yPos + renderer.sinX - renderer.cosY);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightX);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos - renderer.cosX - renderer.sinY);
+					renderer.vertexes.set(++renderer.position,renderer.yPos - renderer.sinX + renderer.cosY);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftX);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos + renderer.cosX - renderer.sinY);
+					renderer.vertexes.set(++renderer.position,renderer.yPos + renderer.sinX + renderer.cosY);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightX);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightY);
+				} else {
+					renderer.vertexes.set(renderer.position,renderer.xPos - renderer.xOffset);
+					renderer.vertexes.set(++renderer.position,renderer.yPos - renderer.yOffset);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftX);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos + renderer.xOffset);
+					renderer.vertexes.set(++renderer.position,renderer.yPos - renderer.yOffset);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightX);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos - renderer.xOffset);
+					renderer.vertexes.set(++renderer.position,renderer.yPos + renderer.yOffset);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.topLeftX);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightY);
+					renderer.vertexes.set(++renderer.position,renderer.xPos + renderer.xOffset);
+					renderer.vertexes.set(++renderer.position,renderer.yPos + renderer.yOffset);
+					renderer.vertexes.set(++renderer.position,renderer.red);
+					renderer.vertexes.set(++renderer.position,renderer.green);
+					renderer.vertexes.set(++renderer.position,renderer.blue);
+					renderer.vertexes.set(++renderer.position,renderer.particleAlpha);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightX);
+					renderer.vertexes.set(++renderer.position,renderer.bottomRightY);
+				}
+			}
+			if(renderer.get_parent() != null) {
+				renderer.get_parent().removeChild(renderer);
+			}
+			var this1 = this.emitters;
+			var key = emitterValueObject.get_id();
+			var _this = this1;
+			if(Object.prototype.hasOwnProperty.call(_this.h,key)) {
+				delete(_this.h[key]);
+			}
+		}
+	}
+	,__class__: com_funkypandagame_stardustplayer_project_ProjectValueObject
+	,__properties__: {get_numberOfParticles:"get_numberOfParticles"}
+};
+var com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader = function() { };
+$hxClasses["com.funkypandagame.stardustplayer.sequenceLoader.ISequenceLoader"] = com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader;
+com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader.__name__ = "com.funkypandagame.stardustplayer.sequenceLoader.ISequenceLoader";
+com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader.__isInterface__ = true;
+com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader.__interfaces__ = [openfl_events_IEventDispatcher];
+com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader.prototype = {
+	addJob: null
+	,getCompletedJobs: null
+	,getJobContentByName: null
+	,getJobByName: null
+	,removeCompletedJobByName: null
+	,clearAllJobs: null
+	,loadSequence: null
+	,__class__: com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader
+};
+var com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob = function(jobName,fileName,data) {
+	openfl_events_EventDispatcher.call(this);
+	this._loader = new openfl_display_Loader();
+	this._loader.contentLoaderInfo.addEventListener("ioError",$bind(this,this.onError));
+	this._data = data;
+	this.jobName = jobName;
+	this.fileName = fileName;
+};
+$hxClasses["com.funkypandagame.stardustplayer.sequenceLoader.LoadByteArrayJob"] = com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob;
+com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob.__name__ = "com.funkypandagame.stardustplayer.sequenceLoader.LoadByteArrayJob";
+com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob.__super__ = openfl_events_EventDispatcher;
+com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	_data: null
+	,_loader: null
+	,jobName: null
+	,fileName: null
+	,load: function() {
+		this._loader.contentLoaderInfo.addEventListener("complete",$bind(this,this.onLoadComplete));
+		this._loader.loadBytes(this._data);
+	}
+	,onLoadComplete: function(event) {
+		this._loader.contentLoaderInfo.removeEventListener("complete",$bind(this,this.onLoadComplete));
+		this.dispatchEvent(new openfl_events_Event("complete"));
+	}
+	,get_byteArray: function() {
+		return this._data;
+	}
+	,get_content: function() {
+		return this._loader.content;
+	}
+	,destroy: function() {
+		try {
+			this._loader.unloadAndStop();
+		} catch( _g ) {
+			if(!((haxe_Exception.caught(_g)) instanceof openfl_errors_Error)) {
+				throw _g;
+			}
+		}
+		this._loader.contentLoaderInfo.removeEventListener("complete",$bind(this,this.onLoadComplete));
+		this._loader.contentLoaderInfo.removeEventListener("ioError",$bind(this,this.onError));
+		this._data = null;
+		this._loader = null;
+		this.jobName = null;
+		this.fileName = null;
+	}
+	,onError: function(event) {
+		haxe_Log.trace("Stardust sim loader: Error loading simulation",{ fileName : "Source/com/funkypandagame/stardustplayer/sequenceLoader/LoadByteArrayJob.hx", lineNumber : 61, className : "com.funkypandagame.stardustplayer.sequenceLoader.LoadByteArrayJob", methodName : "onError", customParams : [event]});
+	}
+	,__class__: com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob
+	,__properties__: {get_content:"get_content",get_byteArray:"get_byteArray"}
+});
+var com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader = function() {
+	openfl_events_EventDispatcher.call(this);
+	this.initialize();
+};
+$hxClasses["com.funkypandagame.stardustplayer.sequenceLoader.SequenceLoader"] = com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader;
+com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader.__name__ = "com.funkypandagame.stardustplayer.sequenceLoader.SequenceLoader";
+com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader.__interfaces__ = [com_funkypandagame_stardustplayer_sequenceLoader_ISequenceLoader];
+com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader.__super__ = openfl_events_EventDispatcher;
+com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	waitingJobs: null
+	,currentJob: null
+	,completedJobs: null
+	,initialize: function() {
+		this.waitingJobs = [];
+		this.completedJobs = [];
+	}
+	,addJob: function(loadJob) {
+		this.waitingJobs.push(loadJob);
+	}
+	,getCompletedJobs: function() {
+		return this.completedJobs;
+	}
+	,getJobContentByName: function(name) {
+		var numCompletedJobs = this.completedJobs.length;
+		var _g = 0;
+		var _g1 = numCompletedJobs;
+		while(_g < _g1) {
+			var i = _g++;
+			if(this.completedJobs[i].jobName == name) {
+				return this.completedJobs[i].get_content();
+			}
+		}
+		return null;
+	}
+	,getJobByName: function(name) {
+		var numCompletedJobs = this.completedJobs.length;
+		var _g = 0;
+		var _g1 = numCompletedJobs;
+		while(_g < _g1) {
+			var i = _g++;
+			if(this.completedJobs[i].jobName == name) {
+				return this.completedJobs[i];
+			}
+		}
+		return null;
+	}
+	,removeCompletedJobByName: function(jobName) {
+		var numCompletedJobs = this.completedJobs.length - 1 | 0;
+		var i = numCompletedJobs;
+		while(i > -1) {
+			if(this.completedJobs[i].jobName == jobName) {
+				this.completedJobs.splice(i,1);
+			}
+			--i;
+		}
+	}
+	,clearAllJobs: function() {
+		var _g = 0;
+		var _g1 = this.completedJobs;
+		while(_g < _g1.length) {
+			var job = _g1[_g];
+			++_g;
+			job.destroy();
+		}
+		var _g = 0;
+		var _g1 = this.waitingJobs;
+		while(_g < _g1.length) {
+			var job2 = _g1[_g];
+			++_g;
+			job2.destroy();
+		}
+		this.waitingJobs = [];
+		this.currentJob = null;
+		this.completedJobs = [];
+		this.initialize();
+	}
+	,loadSequence: function() {
+		if(this.waitingJobs.length > 0) {
+			this.loadNextInSequence();
+		} else {
+			this.dispatchEvent(new openfl_events_Event("complete"));
+		}
+	}
+	,loadNextInSequence: function() {
+		if(this.currentJob != null) {
+			this.completedJobs.unshift(this.currentJob);
+		}
+		this.currentJob = this.waitingJobs.pop();
+		this.currentJob.addEventListener("complete",$bind(this,this.loadComplete));
+		this.currentJob.load();
+	}
+	,loadComplete: function(event) {
+		this.currentJob.removeEventListener("complete",$bind(this,this.loadComplete));
+		if(this.waitingJobs.length > 0) {
+			this.loadNextInSequence();
+		} else {
+			this.completedJobs.unshift(this.currentJob);
+			this.currentJob = null;
+			this.dispatchEvent(new openfl_events_Event("complete"));
+		}
+	}
+	,__class__: com_funkypandagame_stardustplayer_sequenceLoader_SequenceLoader
+});
 var haxe_StackItem = $hxEnums["haxe.StackItem"] = { __ename__:"haxe.StackItem",__constructs__:null
 	,CFunction: {_hx_name:"CFunction",_hx_index:0,__enum__:"haxe.StackItem",toString:$estr}
 	,Module: ($_=function(m) { return {_hx_index:1,m:m,__enum__:"haxe.StackItem",toString:$estr}; },$_._hx_name="Module",$_.__params__ = ["m"],$_)
@@ -10453,6 +11409,44 @@ haxe_iterators_MapKeyValueIterator.prototype = {
 	}
 	,__class__: haxe_iterators_MapKeyValueIterator
 };
+var haxe_xml__$Access_NodeAccess = {};
+haxe_xml__$Access_NodeAccess.resolve = function(this1,name) {
+	var x = this1.elementsNamed(name).next();
+	if(x == null) {
+		var xname;
+		if(this1.nodeType == Xml.Document) {
+			xname = "Document";
+		} else {
+			if(this1.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Bad node type, expected Element but found " + (this1.nodeType == null ? "null" : XmlType.toString(this1.nodeType)));
+			}
+			xname = this1.nodeName;
+		}
+		throw haxe_Exception.thrown(xname + " is missing element " + name);
+	}
+	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) {
+		throw haxe_Exception.thrown("Invalid nodeType " + (x.nodeType == null ? "null" : XmlType.toString(x.nodeType)));
+	}
+	return x;
+};
+var haxe_xml__$Access_AttribAccess = {};
+haxe_xml__$Access_AttribAccess.resolve = function(this1,name) {
+	if(this1.nodeType == Xml.Document) {
+		throw haxe_Exception.thrown("Cannot access document attribute " + name);
+	}
+	var v = this1.get(name);
+	if(v == null) {
+		if(this1.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (this1.nodeType == null ? "null" : XmlType.toString(this1.nodeType)));
+		}
+		throw haxe_Exception.thrown(this1.nodeName + " is missing attribute " + name);
+	}
+	return v;
+};
+var haxe_xml__$Access_HasNodeAccess = {};
+haxe_xml__$Access_HasNodeAccess.resolve = function(this1,name) {
+	return this1.elementsNamed(name).hasNext();
+};
 var haxe_xml_XmlParserException = function(message,xml,position) {
 	this.xml = xml;
 	this.message = message;
@@ -11658,6 +12652,8148 @@ haxe_zip_Reader.prototype = {
 		return l;
 	}
 	,__class__: haxe_zip_Reader
+};
+var idv_cjcat_stardustextended_xml_ClassPackage = function() {
+	this.classes = [];
+	this.populateClasses();
+};
+$hxClasses["idv.cjcat.stardustextended.xml.ClassPackage"] = idv_cjcat_stardustextended_xml_ClassPackage;
+idv_cjcat_stardustextended_xml_ClassPackage.__name__ = "idv.cjcat.stardustextended.xml.ClassPackage";
+idv_cjcat_stardustextended_xml_ClassPackage.prototype = {
+	classes: null
+	,getClasses: function() {
+		return this.classes.slice();
+	}
+	,populateClasses: function() {
+	}
+	,__class__: idv_cjcat_stardustextended_xml_ClassPackage
+};
+var idv_cjcat_stardustextended_CommonClassPackage = function() {
+	idv_cjcat_stardustextended_xml_ClassPackage.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.CommonClassPackage"] = idv_cjcat_stardustextended_CommonClassPackage;
+idv_cjcat_stardustextended_CommonClassPackage.__name__ = "idv.cjcat.stardustextended.CommonClassPackage";
+idv_cjcat_stardustextended_CommonClassPackage.getInstance = function() {
+	if(idv_cjcat_stardustextended_CommonClassPackage._instance == null) {
+		idv_cjcat_stardustextended_CommonClassPackage._instance = new idv_cjcat_stardustextended_CommonClassPackage();
+	}
+	return idv_cjcat_stardustextended_CommonClassPackage._instance;
+};
+idv_cjcat_stardustextended_CommonClassPackage.__super__ = idv_cjcat_stardustextended_xml_ClassPackage;
+idv_cjcat_stardustextended_CommonClassPackage.prototype = $extend(idv_cjcat_stardustextended_xml_ClassPackage.prototype,{
+	populateClasses: function() {
+		this.classes.push(idv_cjcat_stardustextended_actions_AlphaCurve);
+		this.classes.push(idv_cjcat_stardustextended_actions_DeathLife);
+		this.classes.push(idv_cjcat_stardustextended_actions_Die);
+		this.classes.push(idv_cjcat_stardustextended_actions_ScaleCurve);
+		this.classes.push(idv_cjcat_stardustextended_actions_RandomDrift);
+		this.classes.push(idv_cjcat_stardustextended_actions_Accelerate);
+		this.classes.push(idv_cjcat_stardustextended_actions_Damping);
+		this.classes.push(idv_cjcat_stardustextended_actions_DeathZone);
+		this.classes.push(idv_cjcat_stardustextended_actions_Deflect);
+		this.classes.push(idv_cjcat_stardustextended_actions_Explode);
+		this.classes.push(idv_cjcat_stardustextended_actions_Gravity);
+		this.classes.push(idv_cjcat_stardustextended_actions_Impulse);
+		this.classes.push(idv_cjcat_stardustextended_actions_Move);
+		this.classes.push(idv_cjcat_stardustextended_actions_NormalDrift);
+		this.classes.push(idv_cjcat_stardustextended_actions_Oriented);
+		this.classes.push(idv_cjcat_stardustextended_actions_Spawn);
+		this.classes.push(idv_cjcat_stardustextended_actions_SpeedLimit);
+		this.classes.push(idv_cjcat_stardustextended_actions_Spin);
+		this.classes.push(idv_cjcat_stardustextended_actions_VelocityField);
+		this.classes.push(idv_cjcat_stardustextended_actions_AccelerationZone);
+		this.classes.push(idv_cjcat_stardustextended_actions_ColorGradient);
+		this.classes.push(idv_cjcat_stardustextended_actions_triggers_DeathTrigger);
+		this.classes.push(idv_cjcat_stardustextended_actions_triggers_LifeTrigger);
+		this.classes.push(idv_cjcat_stardustextended_deflectors_LineDeflector);
+		this.classes.push(idv_cjcat_stardustextended_deflectors_CircleDeflector);
+		this.classes.push(idv_cjcat_stardustextended_deflectors_WrappingBox);
+		this.classes.push(idv_cjcat_stardustextended_fields_BitmapField);
+		this.classes.push(idv_cjcat_stardustextended_fields_RadialField);
+		this.classes.push(idv_cjcat_stardustextended_fields_UniformField);
+		this.classes.push(idv_cjcat_stardustextended_clocks_ImpulseClock);
+		this.classes.push(idv_cjcat_stardustextended_clocks_SteadyClock);
+		this.classes.push(idv_cjcat_stardustextended_emitters_Emitter);
+		this.classes.push(idv_cjcat_stardustextended_actions_Age);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Alpha);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Life);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Mass);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Scale);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Omega);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Rotation);
+		this.classes.push(idv_cjcat_stardustextended_initializers_Velocity);
+		this.classes.push(idv_cjcat_stardustextended_initializers_PositionAnimated);
+		this.classes.push(idv_cjcat_stardustextended_math_UniformRandom);
+		this.classes.push(idv_cjcat_stardustextended_zones_CircleContour);
+		this.classes.push(idv_cjcat_stardustextended_zones_CircleZone);
+		this.classes.push(idv_cjcat_stardustextended_zones_Line);
+		this.classes.push(idv_cjcat_stardustextended_zones_RectContour);
+		this.classes.push(idv_cjcat_stardustextended_zones_RectZone);
+		this.classes.push(idv_cjcat_stardustextended_zones_Sector);
+		this.classes.push(idv_cjcat_stardustextended_zones_SinglePoint);
+		this.classes.push(idv_cjcat_stardustextended_actions_FollowWaypoints);
+		this.classes.push(idv_cjcat_stardustextended_handlers_ParticleHandler);
+	}
+	,__class__: idv_cjcat_stardustextended_CommonClassPackage
+});
+var idv_cjcat_stardustextended_Stardust = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.Stardust"] = idv_cjcat_stardustextended_Stardust;
+idv_cjcat_stardustextended_Stardust.__name__ = "idv.cjcat.stardustextended.Stardust";
+idv_cjcat_stardustextended_Stardust.prototype = {
+	__class__: idv_cjcat_stardustextended_Stardust
+};
+var idv_cjcat_stardustextended_StardustElement = function() {
+	var str = this.getXMLTagName();
+	var val = idv_cjcat_stardustextended_StardustElement.elementCounter.h[str];
+	if(val == null) {
+		idv_cjcat_stardustextended_StardustElement.elementCounter.h[str] = 0;
+	} else {
+		idv_cjcat_stardustextended_StardustElement.elementCounter.h[str] = val++;
+	}
+	this.name = str + "_" + val;
+};
+$hxClasses["idv.cjcat.stardustextended.StardustElement"] = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_StardustElement.__name__ = "idv.cjcat.stardustextended.StardustElement";
+idv_cjcat_stardustextended_StardustElement.prototype = {
+	name: null
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null);
+	}
+	,getXMLTagName: function() {
+		return "StardustElement";
+	}
+	,getXMLTag: function() {
+		var xml = Xml.createElement(this.getXMLTagName());
+		xml.set("name",this.name);
+		return xml;
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.createElement("elements");
+	}
+	,toXML: function() {
+		return this.getXMLTag();
+	}
+	,parseXML: function(xml,builder) {
+	}
+	,onXMLInitComplete: function() {
+	}
+	,__class__: idv_cjcat_stardustextended_StardustElement
+};
+var idv_cjcat_stardustextended_VecPoint = function() {
+	this._data = [];
+};
+$hxClasses["idv.cjcat.stardustextended.VecPoint"] = idv_cjcat_stardustextended_VecPoint;
+idv_cjcat_stardustextended_VecPoint.__name__ = "idv.cjcat.stardustextended.VecPoint";
+idv_cjcat_stardustextended_VecPoint.prototype = {
+	_data: null
+	,push: function(item) {
+		return this._data.push(item);
+	}
+	,get: function(index) {
+		return this._data[index];
+	}
+	,set: function(index,value) {
+		this._data[index] = value;
+	}
+	,length: function() {
+		return this._data.length;
+	}
+	,__class__: idv_cjcat_stardustextended_VecPoint
+};
+var openfl_events_Event = function(type,bubbles,cancelable) {
+	if(cancelable == null) {
+		cancelable = false;
+	}
+	if(bubbles == null) {
+		bubbles = false;
+	}
+	this.type = type;
+	this.bubbles = bubbles;
+	this.cancelable = cancelable;
+	this.eventPhase = 2;
+};
+$hxClasses["openfl.events.Event"] = openfl_events_Event;
+openfl_events_Event.__name__ = "openfl.events.Event";
+openfl_events_Event.prototype = {
+	bubbles: null
+	,cancelable: null
+	,currentTarget: null
+	,eventPhase: null
+	,target: null
+	,type: null
+	,__isCanceled: null
+	,__isCanceledNow: null
+	,__preventDefault: null
+	,clone: function() {
+		var event = new openfl_events_Event(this.type,this.bubbles,this.cancelable);
+		event.eventPhase = this.eventPhase;
+		event.target = this.target;
+		event.currentTarget = this.currentTarget;
+		return event;
+	}
+	,formatToString: function(className,p1,p2,p3,p4,p5) {
+		var parameters = [];
+		if(p1 != null) {
+			parameters.push(p1);
+		}
+		if(p2 != null) {
+			parameters.push(p2);
+		}
+		if(p3 != null) {
+			parameters.push(p3);
+		}
+		if(p4 != null) {
+			parameters.push(p4);
+		}
+		if(p5 != null) {
+			parameters.push(p5);
+		}
+		return $bind(this,this.__formatToString).apply(this,[className,parameters]);
+	}
+	,isDefaultPrevented: function() {
+		return this.__preventDefault;
+	}
+	,preventDefault: function() {
+		if(this.cancelable) {
+			this.__preventDefault = true;
+		}
+	}
+	,stopImmediatePropagation: function() {
+		this.__isCanceled = true;
+		this.__isCanceledNow = true;
+	}
+	,stopPropagation: function() {
+		this.__isCanceled = true;
+	}
+	,toString: function() {
+		return this.__formatToString("Event",["type","bubbles","cancelable"]);
+	}
+	,__formatToString: function(className,parameters) {
+		var output = "[" + className;
+		var arg = null;
+		var _g = 0;
+		while(_g < parameters.length) {
+			var param = parameters[_g];
+			++_g;
+			arg = Reflect.field(this,param);
+			if(typeof(arg) == "string") {
+				output += " " + param + "=\"" + Std.string(arg) + "\"";
+			} else {
+				output += " " + param + "=" + Std.string(arg);
+			}
+		}
+		output += "]";
+		return output;
+	}
+	,__init: function() {
+		this.target = null;
+		this.currentTarget = null;
+		this.bubbles = false;
+		this.cancelable = false;
+		this.eventPhase = 2;
+		this.__isCanceled = false;
+		this.__isCanceledNow = false;
+		this.__preventDefault = false;
+	}
+	,__class__: openfl_events_Event
+};
+var idv_cjcat_stardustextended_events_StardustActionEvent = function(_type) {
+	openfl_events_Event.call(this,_type);
+};
+$hxClasses["idv.cjcat.stardustextended.events.StardustActionEvent"] = idv_cjcat_stardustextended_events_StardustActionEvent;
+idv_cjcat_stardustextended_events_StardustActionEvent.__name__ = "idv.cjcat.stardustextended.events.StardustActionEvent";
+idv_cjcat_stardustextended_events_StardustActionEvent.__super__ = openfl_events_Event;
+idv_cjcat_stardustextended_events_StardustActionEvent.prototype = $extend(openfl_events_Event.prototype,{
+	_action: null
+	,set_action: function(a) {
+		this._action = a;
+		return a;
+	}
+	,get_action: function() {
+		return this._action;
+	}
+	,clone: function() {
+		var copy = new idv_cjcat_stardustextended_events_StardustActionEvent(this.type);
+		copy.set_action(this._action);
+		return copy;
+	}
+	,__class__: idv_cjcat_stardustextended_events_StardustActionEvent
+	,__properties__: {set_action:"set_action",get_action:"get_action"}
+});
+var idv_cjcat_stardustextended_actions_Action = function() {
+	this.eventDispatcher = new openfl_events_EventDispatcher();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this._priority = 0;
+	this.active = true;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Action"] = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Action.__name__ = "idv.cjcat.stardustextended.actions.Action";
+idv_cjcat_stardustextended_actions_Action.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_actions_Action.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	eventDispatcher: null
+	,addEventListener: function(_type,listener,useCapture,priority,useWeakReference) {
+		if(useWeakReference == null) {
+			useWeakReference = false;
+		}
+		if(priority == null) {
+			priority = 0;
+		}
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.addEventListener(_type,listener,useCapture,priority,useWeakReference);
+	}
+	,removeEventListener: function(_type,listener,useCapture) {
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.removeEventListener(_type,listener,useCapture);
+	}
+	,dispatchAddEvent: function() {
+		idv_cjcat_stardustextended_actions_Action.addEvent.set_action(this);
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.addEvent);
+	}
+	,dispatchRemoveEvent: function() {
+		idv_cjcat_stardustextended_actions_Action.removeEvent.set_action(this);
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.removeEvent);
+	}
+	,active: null
+	,_priority: null
+	,preUpdate: function(emitter,time) {
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+	}
+	,postUpdate: function(emitter,time) {
+	}
+	,get_priority: function() {
+		return this._priority;
+	}
+	,set_priority: function(value) {
+		this._priority = value;
+		idv_cjcat_stardustextended_actions_Action.priorityChangeEvent.set_action(this);
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.priorityChangeEvent);
+		return value;
+	}
+	,get_needsSortedParticles: function() {
+		return false;
+	}
+	,getXMLTagName: function() {
+		var c = js_Boot.getClass(this);
+		return c.__name__;
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.createElement("actions");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("active",Std.string(this.active));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("active")) {
+			this.active = xml.get("active") == "true";
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Action
+	,__properties__: {get_needsSortedParticles:"get_needsSortedParticles"}
+});
+var idv_cjcat_stardustextended_actions_Accelerate = function(acceleration) {
+	if(acceleration == null) {
+		acceleration = 60;
+	}
+	this._updateVec = new idv_cjcat_stardustextended_geom_Vec2D(0,0);
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.acceleration = acceleration;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Accelerate"] = idv_cjcat_stardustextended_actions_Accelerate;
+idv_cjcat_stardustextended_actions_Accelerate.__name__ = "idv.cjcat.stardustextended.actions.Accelerate";
+idv_cjcat_stardustextended_actions_Accelerate.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Accelerate.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	acceleration: null
+	,_timeDeltaOneSec: null
+	,preUpdate: function(emitter,time) {
+		this._timeDeltaOneSec = time * 60;
+	}
+	,_finalLength: null
+	,_updateVec: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		this._updateVec.x = particle.vx;
+		this._updateVec.y = particle.vy;
+		if(this._updateVec.get_length() > 0) {
+			this._finalLength = this._updateVec.get_length() + this.acceleration * this._timeDeltaOneSec;
+			if(this._finalLength < 0) {
+				this._finalLength = 0;
+			}
+			this._updateVec.set_length(this._finalLength);
+			particle.vx = this._updateVec.x;
+			particle.vy = this._updateVec.y;
+		}
+	}
+	,getXMLTagName: function() {
+		return "Accelerate";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("acceleration",Std.string(this.acceleration));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("acceleration")) {
+			this.acceleration = parseFloat(xml.get("acceleration"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Accelerate
+});
+var idv_cjcat_stardustextended_actions_IZoneContainer = function() { };
+$hxClasses["idv.cjcat.stardustextended.actions.IZoneContainer"] = idv_cjcat_stardustextended_actions_IZoneContainer;
+idv_cjcat_stardustextended_actions_IZoneContainer.__name__ = "idv.cjcat.stardustextended.actions.IZoneContainer";
+idv_cjcat_stardustextended_actions_IZoneContainer.__isInterface__ = true;
+idv_cjcat_stardustextended_actions_IZoneContainer.prototype = {
+	get_zones: null
+	,set_zones: null
+	,__class__: idv_cjcat_stardustextended_actions_IZoneContainer
+	,__properties__: {set_zones:"set_zones",get_zones:"get_zones"}
+};
+var idv_cjcat_stardustextended_actions_AccelerationZone = function(zones,_inverted) {
+	if(_inverted == null) {
+		_inverted = false;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -6;
+	this.inverted = _inverted;
+	this.acceleration = 200;
+	this.useParticleDirection = true;
+	var x = 100;
+	var y = 0;
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	var obj;
+	if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+		obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+		obj.setTo(x,y);
+	} else {
+		obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+	}
+	this._direction = obj;
+	this.zoneCollection = new idv_cjcat_stardustextended_zones_ZoneCollection();
+	if(zones != null) {
+		this.zoneCollection.zones = zones;
+	} else {
+		this.zoneCollection.zones.push(new idv_cjcat_stardustextended_zones_RectZone());
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.actions.AccelerationZone"] = idv_cjcat_stardustextended_actions_AccelerationZone;
+idv_cjcat_stardustextended_actions_AccelerationZone.__name__ = "idv.cjcat.stardustextended.actions.AccelerationZone";
+idv_cjcat_stardustextended_actions_AccelerationZone.__interfaces__ = [idv_cjcat_stardustextended_actions_IZoneContainer];
+idv_cjcat_stardustextended_actions_AccelerationZone.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_AccelerationZone.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	inverted: null
+	,acceleration: null
+	,useParticleDirection: null
+	,_direction: null
+	,get_direction: function() {
+		return this._direction;
+	}
+	,set_direction: function(value) {
+		value.set_length(1);
+		this._direction = value;
+		return value;
+	}
+	,zoneCollection: null
+	,get_zones: function() {
+		return this.zoneCollection.zones;
+	}
+	,set_zones: function(value) {
+		this.zoneCollection.zones = value;
+		return value;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var xc = particle.x;
+		var yc = particle.y;
+		var contains = false;
+		var zone = this.zoneCollection.zones.iterator();
+		while(zone.hasNext()) {
+			var zone1 = zone.next();
+			if(zone1.contains(xc,yc)) {
+				contains = true;
+				break;
+			}
+		}
+		var affected = contains;
+		if(this.inverted) {
+			affected = !affected;
+		}
+		if(affected) {
+			if(this.useParticleDirection) {
+				var x = particle.vx;
+				var y = particle.vy;
+				if(y == null) {
+					y = 0;
+				}
+				if(x == null) {
+					x = 0;
+				}
+				var obj;
+				if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+					obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+					obj.setTo(x,y);
+				} else {
+					obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+				}
+				var v = obj;
+				var vecLength = v.get_length();
+				if(vecLength > 0) {
+					var finalVal = vecLength + this.acceleration * timeDelta;
+					if(finalVal < 0) {
+						finalVal = 0;
+					}
+					v.set_length(finalVal);
+					particle.vx = v.x;
+					particle.vy = v.y;
+				}
+				idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(v);
+			} else {
+				var finalX = particle.vx + this.acceleration * this._direction.x * timeDelta;
+				var finalY = particle.vy + this.acceleration * this._direction.y * timeDelta;
+				particle.vx = finalX;
+				particle.vy = finalY;
+			}
+		}
+	}
+	,getRelatedObjects: function() {
+		return this.zoneCollection.zones.slice(0,null);
+	}
+	,getXMLTagName: function() {
+		return "AccelerationZone";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		var _this = this.zoneCollection;
+		if(_this.zones.get_length() > 0) {
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = _this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+		xml.set("inverted",Std.string(this.inverted));
+		xml.set("acceleration",Std.string(this.acceleration));
+		xml.set("useParticleDirection",Std.string(this.useParticleDirection));
+		xml.set("directionX",Std.string(this._direction.x));
+		xml.set("directionY",Std.string(this._direction.y));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("zone")) {
+			haxe_Log.trace("WARNING: the simulation contains a deprecated property 'zone' for " + this.getXMLTagName(),{ fileName : "Source/idv/cjcat/stardustextended/actions/AccelerationZone.hx", lineNumber : 134, className : "idv.cjcat.stardustextended.actions.AccelerationZone", methodName : "parseXML"});
+			var tmp = xml.get("zone");
+			this.zoneCollection.zones = builder.getElementByName(tmp);
+		} else {
+			var _this = this.zoneCollection;
+			_this.zones = openfl_Vector.toObjectVector(null);
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				_this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+			}
+		}
+		this.inverted = xml.get("inverted") == "true";
+		this.acceleration = parseFloat(xml.get("acceleration"));
+		this.useParticleDirection = xml.get("useParticleDirection") == "true";
+		var tmp = parseFloat(xml.get("directionX"));
+		this._direction.x = tmp;
+		var tmp = parseFloat(xml.get("directionY"));
+		this._direction.y = tmp;
+	}
+	,__class__: idv_cjcat_stardustextended_actions_AccelerationZone
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_zones:"set_zones",get_zones:"get_zones",set_direction:"set_direction",get_direction:"get_direction"})
+});
+var idv_cjcat_stardustextended_actions_ActionCollector = function() { };
+$hxClasses["idv.cjcat.stardustextended.actions.ActionCollector"] = idv_cjcat_stardustextended_actions_ActionCollector;
+idv_cjcat_stardustextended_actions_ActionCollector.__name__ = "idv.cjcat.stardustextended.actions.ActionCollector";
+idv_cjcat_stardustextended_actions_ActionCollector.__isInterface__ = true;
+idv_cjcat_stardustextended_actions_ActionCollector.prototype = {
+	addAction: null
+	,removeAction: null
+	,clearActions: null
+	,__class__: idv_cjcat_stardustextended_actions_ActionCollector
+};
+var idv_cjcat_stardustextended_actions_ActionCollection = function() {
+	this._actions = openfl_Vector.toObjectVector(null);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.ActionCollection"] = idv_cjcat_stardustextended_actions_ActionCollection;
+idv_cjcat_stardustextended_actions_ActionCollection.__name__ = "idv.cjcat.stardustextended.actions.ActionCollection";
+idv_cjcat_stardustextended_actions_ActionCollection.__interfaces__ = [idv_cjcat_stardustextended_actions_ActionCollector];
+idv_cjcat_stardustextended_actions_ActionCollection.prioritySort = function(el1,el2) {
+	if(el1._priority > el2._priority) {
+		return -1;
+	} else if(el1._priority < el2._priority) {
+		return 1;
+	}
+	return 0;
+};
+idv_cjcat_stardustextended_actions_ActionCollection.prototype = {
+	_actions: null
+	,get_actions: function() {
+		return this._actions;
+	}
+	,addAction: function(action) {
+		if(Lambda.indexOf(this._actions,action) >= 0) {
+			return;
+		}
+		this._actions.push(action);
+		action.addEventListener("PRIORITY_CHANGE",$bind(this,this.sortActions));
+		this.sortActions();
+	}
+	,removeAction: function(action) {
+		var index = Lambda.indexOf(this._actions,action);
+		if(index >= 0) {
+			var this1 = this._actions;
+			this1.__tempIndex = index;
+			var _g_current = 0;
+			var _g_args = [];
+			while(_g_current < _g_args.length) {
+				var item = _g_args[_g_current++];
+				this1.insertAt(this1.__tempIndex,item);
+				this1.__tempIndex++;
+			}
+			this1.splice(this1.__tempIndex,1).get(0);
+			action.removeEventListener("PRIORITY_CHANGE",$bind(this,this.sortActions));
+		}
+	}
+	,clearActions: function() {
+		var action = this._actions.iterator();
+		while(action.hasNext()) {
+			var action1 = action.next();
+			this.removeAction(action1);
+		}
+	}
+	,sortActions: function(event) {
+		this._actions.sort(idv_cjcat_stardustextended_actions_ActionCollection.prioritySort);
+	}
+	,__class__: idv_cjcat_stardustextended_actions_ActionCollection
+	,__properties__: {get_actions:"get_actions"}
+};
+var idv_cjcat_stardustextended_actions_Age = function(multiplier) {
+	if(multiplier == null) {
+		multiplier = 1;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.multiplier = multiplier;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Age"] = idv_cjcat_stardustextended_actions_Age;
+idv_cjcat_stardustextended_actions_Age.__name__ = "idv.cjcat.stardustextended.actions.Age";
+idv_cjcat_stardustextended_actions_Age.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Age.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	multiplier: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		particle.life -= timeDelta * this.multiplier;
+		if(particle.life < 0) {
+			particle.life = 0;
+		}
+	}
+	,getXMLTagName: function() {
+		return "Age";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("multiplier",Std.string(this.multiplier));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("multiplier")) {
+			this.multiplier = parseFloat(xml.get("multiplier"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Age
+});
+var idv_cjcat_stardustextended_actions_AlphaCurve = function(inLifespan,outLifespan,inFunction,outFunction) {
+	if(outLifespan == null) {
+		outLifespan = 1;
+	}
+	if(inLifespan == null) {
+		inLifespan = 1;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.inAlpha = 0;
+	this.outAlpha = 0;
+	this.inLifespan = inLifespan;
+	this.outLifespan = outLifespan;
+	this.set_inFunction(inFunction);
+	this.set_outFunction(outFunction);
+	this.set_inFunctionExtraParams([]);
+	this.set_outFunctionExtraParams([]);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.AlphaCurve"] = idv_cjcat_stardustextended_actions_AlphaCurve;
+idv_cjcat_stardustextended_actions_AlphaCurve.__name__ = "idv.cjcat.stardustextended.actions.AlphaCurve";
+idv_cjcat_stardustextended_actions_AlphaCurve.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_AlphaCurve.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	inAlpha: null
+	,outAlpha: null
+	,inLifespan: null
+	,outLifespan: null
+	,_inFunction: null
+	,_outFunction: null
+	,_inFunctionExtraParams: null
+	,_outFunctionExtraParams: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(particle.initLife - particle.life < this.inLifespan) {
+			if(this._inFunction != null) {
+				particle.alpha = this._inFunction(particle.initLife - particle.life,this.inAlpha,particle.initAlpha - this.inAlpha,this.inLifespan,this._inFunctionExtraParams);
+			} else {
+				particle.alpha = (particle.initAlpha - this.inAlpha) * (particle.initLife - particle.life) / this.inLifespan + this.inAlpha;
+			}
+		} else if(particle.life < this.outLifespan) {
+			if(this._outFunction != null) {
+				particle.alpha = this._outFunction(this.outLifespan - particle.life,particle.initAlpha,this.outAlpha - particle.initAlpha,this.outLifespan,this._outFunctionExtraParams);
+			} else {
+				particle.alpha = (this.outAlpha - particle.initAlpha) * (this.outLifespan - particle.life) / this.outLifespan + particle.initAlpha;
+			}
+		} else {
+			particle.alpha = particle.initAlpha;
+		}
+	}
+	,get_inFunctionExtraParams: function() {
+		return this._inFunctionExtraParams;
+	}
+	,set_inFunctionExtraParams: function(value) {
+		if(value == null) {
+			value = [];
+		}
+		this._inFunctionExtraParams = value;
+		return value;
+	}
+	,get_outFunctionExtraParams: function() {
+		return this._outFunctionExtraParams;
+	}
+	,set_outFunctionExtraParams: function(value) {
+		if(value == null) {
+			value = [];
+		}
+		this._outFunctionExtraParams = value;
+		return value;
+	}
+	,get_inFunction: function() {
+		return this._inFunction;
+	}
+	,set_inFunction: function(value) {
+		this._inFunction = value;
+		return value;
+	}
+	,get_outFunction: function() {
+		return this._outFunction;
+	}
+	,set_outFunction: function(value) {
+		this._outFunction = value;
+		return value;
+	}
+	,getXMLTagName: function() {
+		return "AlphaCurve";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("inAlpha",Std.string(this.inAlpha));
+		xml.set("outAlpha",Std.string(this.outAlpha));
+		xml.set("inLifespan",Std.string(this.inLifespan));
+		xml.set("outLifespan",Std.string(this.outLifespan));
+		if(this._inFunction != null) {
+			xml.set("inFunction",idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions().h[this._inFunction]);
+		}
+		if(this._outFunction != null) {
+			xml.set("outFunction",idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions().h[this._outFunction]);
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("inAlpha")) {
+			this.inAlpha = parseFloat(xml.get("inAlpha"));
+		}
+		if(xml.exists("outAlpha")) {
+			this.outAlpha = parseFloat(xml.get("outAlpha"));
+		}
+		if(xml.exists("inLifespan")) {
+			this.inLifespan = parseFloat(xml.get("inLifespan"));
+		}
+		if(xml.exists("outLifespan")) {
+			this.outLifespan = parseFloat(xml.get("outLifespan"));
+		}
+		if(xml.exists("inFunction")) {
+			var this1 = idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions();
+			var key = xml.get("inFunction");
+			this.set_inFunction(this1.h[key]);
+		}
+		if(xml.exists("outFunction")) {
+			var this1 = idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions();
+			var key = xml.get("outFunction");
+			this.set_outFunction(this1.h[key]);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_AlphaCurve
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_outFunction:"set_outFunction",get_outFunction:"get_outFunction",set_inFunction:"set_inFunction",get_inFunction:"get_inFunction",set_outFunctionExtraParams:"set_outFunctionExtraParams",get_outFunctionExtraParams:"get_outFunctionExtraParams",set_inFunctionExtraParams:"set_inFunctionExtraParams",get_inFunctionExtraParams:"get_inFunctionExtraParams"})
+});
+var idv_cjcat_stardustextended_actions_ColorGradient = function(setDefaultValues) {
+	if(setDefaultValues == null) {
+		setDefaultValues = false;
+	}
+	this.numSteps = 500;
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	if(setDefaultValues) {
+		this.setGradient([65280,16711680],[0,255],[1,1]);
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.actions.ColorGradient"] = idv_cjcat_stardustextended_actions_ColorGradient;
+idv_cjcat_stardustextended_actions_ColorGradient.__name__ = "idv.cjcat.stardustextended.actions.ColorGradient";
+idv_cjcat_stardustextended_actions_ColorGradient.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_ColorGradient.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	numSteps: null
+	,_colors: null
+	,_ratios: null
+	,_alphas: null
+	,colorRs: null
+	,colorBs: null
+	,colorGs: null
+	,colorAlphas: null
+	,get_colors: function() {
+		return this._colors;
+	}
+	,get_ratios: function() {
+		return this._ratios;
+	}
+	,get_alphas: function() {
+		return this._alphas;
+	}
+	,setGradient: function(colors,ratios,alphas) {
+		this._colors = colors;
+		this._ratios = ratios;
+		this._alphas = alphas;
+		this.colorRs = openfl_Vector.toFloatVector(null);
+		this.colorBs = openfl_Vector.toFloatVector(null);
+		this.colorGs = openfl_Vector.toFloatVector(null);
+		this.colorAlphas = openfl_Vector.toFloatVector(null);
+		var mat = new openfl_geom_Matrix();
+		mat.createGradientBox(this.numSteps,1);
+		var sprite = new openfl_display_Sprite();
+		sprite.get_graphics().lineStyle();
+		sprite.get_graphics().beginGradientFill(0,colors,alphas,ratios,mat);
+		sprite.get_graphics().drawRect(0,0,this.numSteps,1);
+		sprite.get_graphics().endFill();
+		var bd = new openfl_display_BitmapData(this.numSteps,1,true,0);
+		bd.draw(sprite);
+		var _g = 0;
+		var _g1 = this.numSteps;
+		while(_g < _g1) {
+			var i = _g++;
+			var color = bd.getPixel32(this.numSteps - 1 - i,0);
+			this.colorRs.push(((color >> 16 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255);
+			this.colorBs.push((color & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255);
+			this.colorGs.push(((color >> 8 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255);
+			this.colorAlphas.push(((color >> 24 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255);
+		}
+		this.colorRs.fixed = true;
+		this.colorBs.fixed = true;
+		this.colorGs.fixed = true;
+		this.colorAlphas.fixed = true;
+		bd.dispose();
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var ratio = (this.numSteps - 1) * particle.life / particle.initLife | 0;
+		particle.colorR = this.colorRs.get(ratio);
+		particle.colorB = this.colorBs.get(ratio);
+		particle.colorG = this.colorGs.get(ratio);
+		particle.alpha = this.colorAlphas.get(ratio);
+	}
+	,getXMLTagName: function() {
+		return "ColorGradient";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		var colorsStr = "";
+		var ratiosStr = "";
+		var alphasStr = "";
+		var _g = 0;
+		var _g1 = this._colors.length;
+		while(_g < _g1) {
+			var i = _g++;
+			colorsStr += this._colors[i] + ",";
+			ratiosStr += this._ratios[i] + ",";
+			alphasStr += this._alphas[i] + ",";
+		}
+		xml.set("colors",HxOverrides.substr(colorsStr,0,colorsStr.length - 1));
+		xml.set("ratios",HxOverrides.substr(ratiosStr,0,ratiosStr.length - 1));
+		xml.set("alphas",HxOverrides.substr(alphasStr,0,alphasStr.length - 1));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		var _this = xml.get("colors").split(",");
+		var result = new Array(_this.length);
+		var _g = 0;
+		var _g1 = _this.length;
+		while(_g < _g1) {
+			var i = _g++;
+			result[i] = Std.parseInt(_this[i]);
+		}
+		var tmp = result;
+		var _this = xml.get("ratios").split(",");
+		var result = new Array(_this.length);
+		var _g = 0;
+		var _g1 = _this.length;
+		while(_g < _g1) {
+			var i = _g++;
+			result[i] = Std.parseInt(_this[i]);
+		}
+		var tmp1 = result;
+		var _this = xml.get("alphas").split(",");
+		var result = new Array(_this.length);
+		var _g = 0;
+		var _g1 = _this.length;
+		while(_g < _g1) {
+			var i = _g++;
+			result[i] = parseFloat(_this[i]);
+		}
+		this.setGradient(tmp,tmp1,result);
+	}
+	,__class__: idv_cjcat_stardustextended_actions_ColorGradient
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{get_alphas:"get_alphas",get_ratios:"get_ratios",get_colors:"get_colors"})
+});
+var idv_cjcat_stardustextended_actions_Damping = function(damping) {
+	if(damping == null) {
+		damping = 0.05;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -1;
+	this.damping = damping;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Damping"] = idv_cjcat_stardustextended_actions_Damping;
+idv_cjcat_stardustextended_actions_Damping.__name__ = "idv.cjcat.stardustextended.actions.Damping";
+idv_cjcat_stardustextended_actions_Damping.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Damping.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	damping: null
+	,preUpdate: function(emitter,time) {
+		this.damp = 1;
+		var tmp;
+		if(this.damping != 0) {
+			var f = this.damping;
+			tmp = !isNaN(f);
+		} else {
+			tmp = false;
+		}
+		if(tmp) {
+			this.damp = Math.pow(1 - this.damping,time * 60);
+		}
+	}
+	,damp: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		particle.vx *= this.damp;
+		particle.vy *= this.damp;
+	}
+	,getXMLTagName: function() {
+		return "Damping";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("damping",Std.string(this.damping));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("damping")) {
+			this.damping = parseFloat(xml.get("damping"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Damping
+});
+var idv_cjcat_stardustextended_actions_DeathLife = function() {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.DeathLife"] = idv_cjcat_stardustextended_actions_DeathLife;
+idv_cjcat_stardustextended_actions_DeathLife.__name__ = "idv.cjcat.stardustextended.actions.DeathLife";
+idv_cjcat_stardustextended_actions_DeathLife.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_DeathLife.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	update: function(emitter,particle,timeDelta,currentTime) {
+		if(particle.life <= 0) {
+			particle.isDead = true;
+		}
+	}
+	,getXMLTagName: function() {
+		return "DeathLife";
+	}
+	,__class__: idv_cjcat_stardustextended_actions_DeathLife
+});
+var idv_cjcat_stardustextended_actions_DeathZone = function(zones,inverted) {
+	if(inverted == null) {
+		inverted = false;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -6;
+	this.zoneCollection = new idv_cjcat_stardustextended_zones_ZoneCollection();
+	if(zones != null) {
+		this.zoneCollection.zones = zones;
+	} else {
+		this.zoneCollection.zones.push(new idv_cjcat_stardustextended_zones_RectZone());
+	}
+	this.inverted = inverted;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.DeathZone"] = idv_cjcat_stardustextended_actions_DeathZone;
+idv_cjcat_stardustextended_actions_DeathZone.__name__ = "idv.cjcat.stardustextended.actions.DeathZone";
+idv_cjcat_stardustextended_actions_DeathZone.__interfaces__ = [idv_cjcat_stardustextended_actions_IZoneContainer];
+idv_cjcat_stardustextended_actions_DeathZone.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_DeathZone.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	zoneCollection: null
+	,get_zones: function() {
+		return this.zoneCollection.zones;
+	}
+	,set_zones: function(value) {
+		this.zoneCollection.zones = value;
+		return value;
+	}
+	,inverted: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var xc = particle.x;
+		var yc = particle.y;
+		var contains = false;
+		var zone = this.zoneCollection.zones.iterator();
+		while(zone.hasNext()) {
+			var zone1 = zone.next();
+			if(zone1.contains(xc,yc)) {
+				contains = true;
+				break;
+			}
+		}
+		var dead = contains;
+		if(this.inverted) {
+			dead = !dead;
+		}
+		if(dead) {
+			particle.isDead = true;
+		}
+	}
+	,getRelatedObjects: function() {
+		return this.zoneCollection.zones.slice(0,null);
+	}
+	,getXMLTagName: function() {
+		return "DeathZone";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		var _this = this.zoneCollection;
+		if(_this.zones.get_length() > 0) {
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = _this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+		xml.set("inverted",Std.string(this.inverted));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("zone")) {
+			haxe_Log.trace("WARNING: the simulation contains a deprecated property 'zone' for " + this.getXMLTagName(),{ fileName : "Source/idv/cjcat/stardustextended/actions/DeathZone.hx", lineNumber : 85, className : "idv.cjcat.stardustextended.actions.DeathZone", methodName : "parseXML"});
+			var tmp = xml.get("zone");
+			this.zoneCollection.zones = builder.getElementByName(tmp);
+		} else {
+			var _this = this.zoneCollection;
+			_this.zones = openfl_Vector.toObjectVector(null);
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				_this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+			}
+		}
+		if(xml.exists("inverted")) {
+			this.inverted = xml.get("inverted") == "true";
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_DeathZone
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_zones:"set_zones",get_zones:"get_zones"})
+});
+var idv_cjcat_stardustextended_actions_Deflect = function() {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -5;
+	this._deflectors = openfl_Vector.toObjectVector(null);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Deflect"] = idv_cjcat_stardustextended_actions_Deflect;
+idv_cjcat_stardustextended_actions_Deflect.__name__ = "idv.cjcat.stardustextended.actions.Deflect";
+idv_cjcat_stardustextended_actions_Deflect.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Deflect.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	_deflectors: null
+	,hasTrigger: null
+	,addDeflector: function(deflector) {
+		if(this._deflectors.indexOf(deflector,0) < 0) {
+			this._deflectors.push(deflector);
+		}
+	}
+	,removeDeflector: function(deflector) {
+		var index = this._deflectors.indexOf(deflector,0);
+		if(index >= 0) {
+			var this1 = this._deflectors;
+			this1.__tempIndex = index;
+			var _g_current = 0;
+			var _g_args = [];
+			while(_g_current < _g_args.length) {
+				var item = _g_args[_g_current++];
+				this1.insertAt(this1.__tempIndex,item);
+				this1.__tempIndex++;
+			}
+			this1.splice(this1.__tempIndex,1);
+		}
+	}
+	,clearDeflectors: function() {
+		this._deflectors = openfl_Vector.toObjectVector(null);
+	}
+	,get_deflectors: function() {
+		return this._deflectors;
+	}
+	,set_deflectors: function(val) {
+		return this._deflectors = val;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var deflector = this._deflectors.iterator();
+		while(deflector.hasNext()) {
+			var deflector1 = deflector.next();
+			var md4D = deflector1.getMotionData4D(particle);
+			if(md4D != null) {
+				if(this.hasTrigger) {
+					particle.dictionary.h[deflector1] = true;
+				}
+				particle.x = md4D.x;
+				particle.y = md4D.y;
+				particle.vx = md4D.vx;
+				particle.vy = md4D.vy;
+			} else if(this.hasTrigger) {
+				particle.dictionary.h[deflector1] = false;
+			}
+		}
+	}
+	,preUpdate: function(emitter,time) {
+		var action = emitter.get_actions().iterator();
+		while(action.hasNext()) {
+			var action1 = action.next();
+			if(((action1) instanceof idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger)) {
+				this.hasTrigger = true;
+				return;
+			}
+		}
+		this.hasTrigger = false;
+	}
+	,getRelatedObjects: function() {
+		return this._deflectors;
+	}
+	,getXMLTagName: function() {
+		return "Deflect";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		if(this._deflectors.get_length() > 0) {
+			xml.addChild(Xml.createElement("deflectors"));
+			var deflector = this._deflectors.iterator();
+			while(deflector.hasNext()) {
+				var deflector1 = deflector.next();
+				xml.elementsNamed("deflectors").next().addChild(deflector1.getXMLTag());
+			}
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		this.clearDeflectors();
+		var node = xml.elementsNamed("deflectors").next().elementsNamed("node");
+		while(node.hasNext()) {
+			var node1 = node.next();
+			this.addDeflector(builder.getElementByName(node1.get("name")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Deflect
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_deflectors:"set_deflectors",get_deflectors:"get_deflectors"})
+});
+var idv_cjcat_stardustextended_actions_Die = function() {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Die"] = idv_cjcat_stardustextended_actions_Die;
+idv_cjcat_stardustextended_actions_Die.__name__ = "idv.cjcat.stardustextended.actions.Die";
+idv_cjcat_stardustextended_actions_Die.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Die.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	update: function(emitter,particle,timeDelta,currentTime) {
+		particle.isDead = true;
+	}
+	,getXMLTagName: function() {
+		return "Die";
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Die
+});
+var idv_cjcat_stardustextended_actions_Explode = function(x,y,strength,growSpeed,maxDistance,attenuationPower,epsilon) {
+	if(epsilon == null) {
+		epsilon = 1;
+	}
+	if(attenuationPower == null) {
+		attenuationPower = 0.1;
+	}
+	if(maxDistance == null) {
+		maxDistance = 200;
+	}
+	if(growSpeed == null) {
+		growSpeed = 40;
+	}
+	if(strength == null) {
+		strength = 5;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.x = x;
+	this.y = y;
+	this.strength = strength;
+	this.growSpeed = growSpeed;
+	this.maxDistance = maxDistance;
+	this.attenuationPower = attenuationPower;
+	this.epsilon = epsilon;
+	this.discharged = true;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Explode"] = idv_cjcat_stardustextended_actions_Explode;
+idv_cjcat_stardustextended_actions_Explode.__name__ = "idv.cjcat.stardustextended.actions.Explode";
+idv_cjcat_stardustextended_actions_Explode.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Explode.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	x: null
+	,y: null
+	,strength: null
+	,growSpeed: null
+	,maxDistance: null
+	,attenuationPower: null
+	,epsilon: null
+	,discharged: null
+	,_currentInnerRadius: null
+	,_currentOuterRadius: null
+	,explode: function() {
+		this.discharged = false;
+		this._currentInnerRadius = 0;
+		this._currentOuterRadius = this.growSpeed;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(this.discharged) {
+			return;
+		}
+		var x = particle.x - this.x;
+		var y = particle.y - this.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		var r = obj;
+		var len = r.get_length();
+		if(len < this.epsilon) {
+			len = this.epsilon;
+		}
+		if(len >= this._currentInnerRadius && len < this._currentOuterRadius) {
+			r.set_length(this.strength * Math.pow(len,-this.attenuationPower));
+			particle.vx += r.x * timeDelta;
+			particle.vy += r.y * timeDelta;
+		}
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(r);
+	}
+	,postUpdate: function(emitter,time) {
+		if(this.discharged) {
+			return;
+		}
+		this._currentInnerRadius += this.growSpeed;
+		this._currentOuterRadius += this.growSpeed;
+		if(this._currentInnerRadius > this.maxDistance) {
+			this.discharged = true;
+		}
+	}
+	,getXMLTagName: function() {
+		return "Explode";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("strength",Std.string(this.strength));
+		xml.set("growSpeed",Std.string(this.growSpeed));
+		xml.set("maxDistance",Std.string(this.maxDistance));
+		xml.set("attenuationPower",Std.string(this.attenuationPower));
+		xml.set("epsilon",Std.string(this.epsilon));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("strength")) {
+			this.strength = parseFloat(xml.get("strength"));
+		}
+		if(xml.exists("growSpeed")) {
+			this.growSpeed = parseFloat(xml.get("growSpeed"));
+		}
+		if(xml.exists("maxDistance")) {
+			this.maxDistance = parseFloat(xml.get("maxDistance"));
+		}
+		if(xml.exists("attenuationPower")) {
+			this.attenuationPower = parseFloat(xml.get("attenuationPower"));
+		}
+		if(xml.exists("epsilon")) {
+			this.epsilon = parseFloat(xml.get("epsilon"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Explode
+});
+var idv_cjcat_stardustextended_actions_FollowWaypoints = function(waypoints,loop,massless) {
+	if(massless == null) {
+		massless = true;
+	}
+	if(loop == null) {
+		loop = false;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.loop = loop;
+	this.massless = massless;
+	this.set_waypoints(waypoints);
+	if(waypoints != null) {
+		this._waypoints = waypoints;
+	} else {
+		this._waypoints = [];
+		this._waypoints.push(new idv_cjcat_stardustextended_actions_waypoints_Waypoint(0,0));
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.actions.FollowWaypoints"] = idv_cjcat_stardustextended_actions_FollowWaypoints;
+idv_cjcat_stardustextended_actions_FollowWaypoints.__name__ = "idv.cjcat.stardustextended.actions.FollowWaypoints";
+idv_cjcat_stardustextended_actions_FollowWaypoints.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_FollowWaypoints.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	loop: null
+	,massless: null
+	,_waypoints: null
+	,_timeDeltaOneSec: null
+	,get_waypoints: function() {
+		return this._waypoints;
+	}
+	,set_waypoints: function(value) {
+		if(value == null) {
+			value = [];
+		}
+		this._waypoints = value;
+		return value;
+	}
+	,addWaypoint: function(waypoint) {
+		this._waypoints.push(waypoint);
+	}
+	,clearWaypoints: function() {
+		this._waypoints = [];
+	}
+	,preUpdate: function(emitter,time) {
+		this._timeDeltaOneSec = time * 60;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var numWPs = this._waypoints.length;
+		if(numWPs == 0) {
+			return;
+		}
+		if(particle.dictionary.h[idv_cjcat_stardustextended_actions_FollowWaypoints] == null) {
+			particle.dictionary.h[idv_cjcat_stardustextended_actions_FollowWaypoints] = 0;
+		}
+		var index = particle.dictionary.h[idv_cjcat_stardustextended_actions_FollowWaypoints];
+		if(index >= numWPs) {
+			index = numWPs - 1 | 0;
+			particle.dictionary.h[idv_cjcat_stardustextended_actions_FollowWaypoints] = index;
+		}
+		var waypoint;
+		try {
+			waypoint = js_Boot.__cast(this._waypoints[index] , idv_cjcat_stardustextended_actions_waypoints_Waypoint);
+		} catch( _g ) {
+			haxe_NativeStackTrace.lastError = _g;
+			waypoint = null;
+		}
+		var dx = particle.x - waypoint.x;
+		var dy = particle.y - waypoint.y;
+		if(dx * dx + dy * dy <= waypoint.radius * waypoint.radius) {
+			if(index < numWPs - 1) {
+				var tmp = idv_cjcat_stardustextended_actions_FollowWaypoints;
+				var v = particle.dictionary.h[tmp] + 1;
+				particle.dictionary.h[tmp] = v;
+				waypoint = this._waypoints[index + 1];
+			} else if(this.loop) {
+				particle.dictionary.h[idv_cjcat_stardustextended_actions_FollowWaypoints] = 0;
+				waypoint = this._waypoints[0];
+			} else {
+				return;
+			}
+			dx = particle.x - waypoint.x;
+			dy = particle.y - waypoint.y;
+		}
+		var x = dx;
+		var y = dy;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		var r = obj;
+		var len = r.get_length();
+		if(len < waypoint.epsilon) {
+			len = waypoint.epsilon;
+		}
+		r.set_length(-waypoint.strength * Math.pow(len,-0.5 * waypoint.attenuationPower));
+		if(!this.massless) {
+			r.set_length(r.get_length() / particle.mass);
+		}
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(r);
+		particle.vx += r.x * this._timeDeltaOneSec;
+		particle.vy += r.y * this._timeDeltaOneSec;
+	}
+	,getXMLTagName: function() {
+		return "FollowWaypoints";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		var waypointsXML = Xml.createElement("waypoints");
+		var _g = 0;
+		var _g1 = this._waypoints;
+		while(_g < _g1.length) {
+			var waypoint = _g1[_g];
+			++_g;
+			var waypointXML = Xml.createElement("Waypoint");
+			waypointXML.set("x",waypoint.x == null ? "null" : "" + waypoint.x);
+			waypointXML.set("y",waypoint.y == null ? "null" : "" + waypoint.y);
+			waypointXML.set("radius",waypoint.radius == null ? "null" : "" + waypoint.radius);
+			waypointXML.set("strength",waypoint.strength == null ? "null" : "" + waypoint.strength);
+			waypointXML.set("attenuationPower",waypoint.attenuationPower == null ? "null" : "" + waypoint.attenuationPower);
+			waypointXML.set("epsilon",waypoint.epsilon == null ? "null" : "" + waypoint.epsilon);
+			waypointsXML.addChild(waypointXML);
+		}
+		xml.addChild(waypointsXML);
+		xml.set("loop",Std.string(this.loop));
+		xml.set("massless",Std.string(this.massless));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		this.clearWaypoints();
+		var node = xml.elementsNamed("Waypoint");
+		while(node.hasNext()) {
+			var node1 = node.next();
+			var waypoint = new idv_cjcat_stardustextended_actions_waypoints_Waypoint();
+			waypoint.x = parseFloat(node1.get("x"));
+			waypoint.y = parseFloat(node1.get("y"));
+			waypoint.radius = parseFloat(node1.get("radius"));
+			waypoint.strength = parseFloat(node1.get("strength"));
+			waypoint.attenuationPower = parseFloat(node1.get("attenuationPower"));
+			waypoint.epsilon = parseFloat(node1.get("epsilon"));
+			this.addWaypoint(waypoint);
+		}
+		this.loop = xml.get("loop") == "true";
+		this.massless = xml.get("massless") == "true";
+	}
+	,__class__: idv_cjcat_stardustextended_actions_FollowWaypoints
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_waypoints:"set_waypoints",get_waypoints:"get_waypoints"})
+});
+var idv_cjcat_stardustextended_actions_IFieldContainer = function() { };
+$hxClasses["idv.cjcat.stardustextended.actions.IFieldContainer"] = idv_cjcat_stardustextended_actions_IFieldContainer;
+idv_cjcat_stardustextended_actions_IFieldContainer.__name__ = "idv.cjcat.stardustextended.actions.IFieldContainer";
+idv_cjcat_stardustextended_actions_IFieldContainer.__isInterface__ = true;
+idv_cjcat_stardustextended_actions_IFieldContainer.prototype = {
+	get_fields: null
+	,set_fields: null
+	,__class__: idv_cjcat_stardustextended_actions_IFieldContainer
+	,__properties__: {set_fields:"set_fields",get_fields:"get_fields"}
+};
+var idv_cjcat_stardustextended_actions_Gravity = function(fields) {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -3;
+	if(fields != null) {
+		this._fields = fields;
+	} else {
+		this._fields = [];
+		this._fields.push(new idv_cjcat_stardustextended_fields_UniformField(0,1));
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Gravity"] = idv_cjcat_stardustextended_actions_Gravity;
+idv_cjcat_stardustextended_actions_Gravity.__name__ = "idv.cjcat.stardustextended.actions.Gravity";
+idv_cjcat_stardustextended_actions_Gravity.__interfaces__ = [idv_cjcat_stardustextended_actions_IFieldContainer];
+idv_cjcat_stardustextended_actions_Gravity.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Gravity.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	_fields: null
+	,get_fields: function() {
+		return this._fields;
+	}
+	,set_fields: function(value) {
+		return this._fields = value;
+	}
+	,addField: function(field) {
+		if(this._fields.indexOf(field) < 0) {
+			this._fields.push(field);
+		}
+	}
+	,removeField: function(field) {
+		var index = this._fields.indexOf(field);
+		if(index >= 0) {
+			this._fields.splice(index,1);
+		}
+	}
+	,clearFields: function() {
+		this._fields = [];
+	}
+	,_updateMd2D: null
+	,_ui: null
+	,_uLen: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		timeDelta *= 100;
+		this._uLen = this._fields.length;
+		var _g = 0;
+		var _g1 = this._uLen;
+		while(_g < _g1) {
+			var _ui = _g++;
+			this._updateMd2D = this._fields[_ui].getMotionData2D(particle);
+			if(this._updateMd2D != null) {
+				particle.vx += this._updateMd2D.x * timeDelta;
+				particle.vy += this._updateMd2D.y * timeDelta;
+				idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(this._updateMd2D);
+			}
+		}
+	}
+	,getRelatedObjects: function() {
+		return this._fields;
+	}
+	,getXMLTagName: function() {
+		return "Gravity";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		if(this._fields.length > 0) {
+			var fieldsXml = Xml.createElement("fields");
+			xml.addChild(fieldsXml);
+			var _g = 0;
+			var _g1 = this._fields;
+			while(_g < _g1.length) {
+				var field = _g1[_g];
+				++_g;
+				fieldsXml.addChild(field.getXMLTag());
+			}
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		this.clearFields();
+		if(xml.exists("fields")) {
+			var node = xml.elementsNamed("fields").next().elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				this.addField(js_Boot.__cast(builder.getElementByName(node1.get("name")) , idv_cjcat_stardustextended_fields_Field));
+			}
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Gravity
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_fields:"set_fields",get_fields:"get_fields"})
+});
+var idv_cjcat_stardustextended_actions_Impulse = function(field) {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.set_field(field);
+	this._discharged = true;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Impulse"] = idv_cjcat_stardustextended_actions_Impulse;
+idv_cjcat_stardustextended_actions_Impulse.__name__ = "idv.cjcat.stardustextended.actions.Impulse";
+idv_cjcat_stardustextended_actions_Impulse.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Impulse.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	_field: null
+	,get_field: function() {
+		return this._field;
+	}
+	,set_field: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_fields_UniformField(0,0);
+		}
+		this._field = value;
+		return value;
+	}
+	,_discharged: null
+	,impulse: function() {
+		this._discharged = false;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(this._discharged) {
+			return;
+		}
+		var md2D = this.get_field().getMotionData2D(particle);
+		particle.vx += md2D.x * timeDelta;
+		particle.vy += md2D.y * timeDelta;
+		idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(md2D);
+	}
+	,postUpdate: function(emitter,time) {
+		this._discharged = true;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._field);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Impulse";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("field",this.get_field().name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("field")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("field")) , idv_cjcat_stardustextended_fields_Field);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_field(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Impulse
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_field:"set_field",get_field:"get_field"})
+});
+var idv_cjcat_stardustextended_actions_Move = function(multiplier) {
+	if(multiplier == null) {
+		multiplier = 1;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -4;
+	this.multiplier = multiplier;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Move"] = idv_cjcat_stardustextended_actions_Move;
+idv_cjcat_stardustextended_actions_Move.__name__ = "idv.cjcat.stardustextended.actions.Move";
+idv_cjcat_stardustextended_actions_Move.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Move.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	multiplier: null
+	,factor: null
+	,preUpdate: function(emitter,time) {
+		this.factor = time * this.multiplier;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		particle.x += particle.vx * this.factor;
+		particle.y += particle.vy * this.factor;
+	}
+	,getXMLTagName: function() {
+		return "Move";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("multiplier",Std.string(this.multiplier));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("multiplier")) {
+			this.multiplier = parseFloat(xml.get("multiplier"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Move
+});
+var idv_cjcat_stardustextended_actions_NormalDrift = function(max,random) {
+	if(max == null) {
+		max = 1;
+	}
+	this._updateVec = new idv_cjcat_stardustextended_geom_Vec2D(0,0);
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.massless = true;
+	this.set_random(random);
+	this.set_max(max);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.NormalDrift"] = idv_cjcat_stardustextended_actions_NormalDrift;
+idv_cjcat_stardustextended_actions_NormalDrift.__name__ = "idv.cjcat.stardustextended.actions.NormalDrift";
+idv_cjcat_stardustextended_actions_NormalDrift.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_NormalDrift.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	massless: null
+	,_timeDeltaOneSec: null
+	,_random: null
+	,_max: null
+	,get_max: function() {
+		return this._max;
+	}
+	,set_max: function(value) {
+		this._max = value;
+		if(this._random != null && !isNaN(value)) {
+			this._random.setRange(-this._max,this._max);
+		}
+		return value;
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._random = value;
+		var f = this._max;
+		if(!isNaN(f)) {
+			this._random.setRange(-this._max,this._max);
+		}
+		return value;
+	}
+	,preUpdate: function(emitter,time) {
+		this._timeDeltaOneSec = time * 60;
+	}
+	,_updateVec: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		this._updateVec.x = particle.vy;
+		this._updateVec.y = particle.vx;
+		this._updateVec.set_length(this._random.random());
+		if(!this.massless) {
+			var fh = this._updateVec;
+			fh.set_length(fh.get_length() / particle.mass);
+		}
+		particle.vx += this._updateVec.x * this._timeDeltaOneSec;
+		particle.vy += this._updateVec.y * this._timeDeltaOneSec;
+	}
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null,null,null,[this._random]);
+	}
+	,getXMLTagName: function() {
+		return "NormalDrift";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("massless",Std.string(this.massless));
+		xml.set("max",Std.string(this._max));
+		xml.set("random",Std.string(this._random.name));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("massless")) {
+			this.massless = xml.get("massless") == "true";
+		}
+		if(xml.exists("max")) {
+			this.set_max(parseFloat(xml.get("max")));
+		}
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_NormalDrift
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_random:"set_random",get_random:"get_random",set_max:"set_max",get_max:"get_max"})
+});
+var idv_cjcat_stardustextended_actions_Oriented = function(factor,offset) {
+	if(offset == null) {
+		offset = 0;
+	}
+	if(factor == null) {
+		factor = 1;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -6;
+	this.factor = factor;
+	this.offset = offset;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Oriented"] = idv_cjcat_stardustextended_actions_Oriented;
+idv_cjcat_stardustextended_actions_Oriented.__name__ = "idv.cjcat.stardustextended.actions.Oriented";
+idv_cjcat_stardustextended_actions_Oriented.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Oriented.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	factor: null
+	,offset: null
+	,_timeDeltaOneSec: null
+	,f: null
+	,os: null
+	,preUpdate: function(emitter,time) {
+		this.f = Math.pow(this.factor,0.1 / time);
+		this.os = this.offset + 90;
+		this._timeDeltaOneSec = (time + idv_cjcat_stardustextended_emitters_Emitter.timeStepCorrectionOffset) * 60;
+		if(this._timeDeltaOneSec > 1) {
+			this._timeDeltaOneSec = 1;
+		}
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		var displacement = Math.atan2(particle.vy,particle.vx) * idv_cjcat_stardustextended_math_StardustMath.RADIAN_TO_DEGREE + this.os - particle.rotation;
+		particle.rotation += this.f * displacement * this._timeDeltaOneSec;
+	}
+	,getXMLTagName: function() {
+		return "Oriented";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("factor",Std.string(this.factor));
+		xml.set("offset",Std.string(this.offset));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("factor")) {
+			this.factor = parseFloat(xml.get("factor"));
+		}
+		if(xml.exists("offset")) {
+			this.offset = parseFloat(xml.get("offset"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Oriented
+});
+var idv_cjcat_stardustextended_actions_RandomDrift = function(maxX,maxY,randomX,randomY) {
+	if(maxY == null) {
+		maxY = 10;
+	}
+	if(maxX == null) {
+		maxX = 10;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -3;
+	this.massless = true;
+	var value = randomX;
+	if(value == null) {
+		value = new idv_cjcat_stardustextended_math_UniformRandom();
+	}
+	this._randomX = value;
+	var value = randomY;
+	if(value == null) {
+		value = new idv_cjcat_stardustextended_math_UniformRandom();
+	}
+	this._randomY = value;
+	this._maxX = maxX;
+	this._randomX.setRange(-this._maxX,this._maxX);
+	this._maxY = maxY;
+	this._randomY.setRange(-this._maxY,this._maxY);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.RandomDrift"] = idv_cjcat_stardustextended_actions_RandomDrift;
+idv_cjcat_stardustextended_actions_RandomDrift.__name__ = "idv.cjcat.stardustextended.actions.RandomDrift";
+idv_cjcat_stardustextended_actions_RandomDrift.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_RandomDrift.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	massless: null
+	,_maxX: null
+	,_maxY: null
+	,_randomX: null
+	,_randomY: null
+	,_timeDeltaOneSec: null
+	,set_randomX: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._randomX = value;
+		return value;
+	}
+	,set_randomY: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._randomY = value;
+		return value;
+	}
+	,get_maxX: function() {
+		return this._maxX;
+	}
+	,set_maxX: function(value) {
+		this._maxX = value;
+		this._randomX.setRange(-this._maxX,this._maxX);
+		return value;
+	}
+	,get_maxY: function() {
+		return this._maxY;
+	}
+	,set_maxY: function(value) {
+		this._maxY = value;
+		this._randomY.setRange(-this._maxY,this._maxY);
+		return value;
+	}
+	,preUpdate: function(emitter,time) {
+		this._timeDeltaOneSec = time * 60;
+	}
+	,_updateRX: null
+	,_updateRY: null
+	,_updateFactor: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		this._updateRX = this._randomX.random();
+		this._updateRY = this._randomY.random();
+		if(!this.massless) {
+			this._updateFactor = 1 / particle.mass;
+			this._updateRX *= this._updateFactor;
+			this._updateRY *= this._updateFactor;
+		}
+		particle.vx += this._updateRX * this._timeDeltaOneSec;
+		particle.vy += this._updateRY * this._timeDeltaOneSec;
+	}
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null,null,null,[this._randomX,this._randomY]);
+	}
+	,getXMLTagName: function() {
+		return "RandomDrift";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("massless",Std.string(this.massless));
+		xml.set("maxX",Std.string(this._maxX));
+		xml.set("maxY",Std.string(this._maxY));
+		xml.set("randomX",Std.string(this._randomX.name));
+		xml.set("randomY",Std.string(this._randomY.name));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("massless")) {
+			this.massless = xml.get("massless") == "true";
+		}
+		if(xml.exists("maxX")) {
+			this._maxX = parseFloat(xml.get("maxX"));
+		}
+		if(xml.exists("maxY")) {
+			this._maxY = parseFloat(xml.get("maxY"));
+		}
+		if(xml.exists("randomX")) {
+			var value;
+			try {
+				value = js_Boot.__cast(builder.getElementByName(xml.get("randomX")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				value = null;
+			}
+			if(value == null) {
+				value = new idv_cjcat_stardustextended_math_UniformRandom();
+			}
+			this._randomX = value;
+		}
+		if(xml.exists("randomY")) {
+			var value;
+			try {
+				value = js_Boot.__cast(builder.getElementByName(xml.get("randomY")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				value = null;
+			}
+			if(value == null) {
+				value = new idv_cjcat_stardustextended_math_UniformRandom();
+			}
+			this._randomY = value;
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_RandomDrift
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_maxY:"set_maxY",get_maxY:"get_maxY",set_maxX:"set_maxX",get_maxX:"get_maxX",set_randomY:"set_randomY",set_randomX:"set_randomX"})
+});
+var idv_cjcat_stardustextended_actions_ScaleCurve = function(inLifespan,outLifespan,inFunction,outFunction) {
+	if(outLifespan == null) {
+		outLifespan = 0;
+	}
+	if(inLifespan == null) {
+		inLifespan = 0;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.inScale = 0;
+	this.outScale = 0;
+	this.inLifespan = inLifespan;
+	this.outLifespan = outLifespan;
+	this.set_inFunction(inFunction);
+	this.set_outFunction(outFunction);
+	this.set_inFunctionExtraParams([]);
+	this.set_outFunctionExtraParams([]);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.ScaleCurve"] = idv_cjcat_stardustextended_actions_ScaleCurve;
+idv_cjcat_stardustextended_actions_ScaleCurve.__name__ = "idv.cjcat.stardustextended.actions.ScaleCurve";
+idv_cjcat_stardustextended_actions_ScaleCurve.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_ScaleCurve.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	inScale: null
+	,outScale: null
+	,inLifespan: null
+	,outLifespan: null
+	,_inFunction: null
+	,_outFunction: null
+	,_inFunctionExtraParams: null
+	,_outFunctionExtraParams: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(particle.initLife - particle.life < this.inLifespan) {
+			if(this._inFunction != null) {
+				particle.scale = this._inFunction.apply(null,[particle.initLife - particle.life,this.inScale,particle.initScale - this.inScale,this.inLifespan].concat(this._inFunctionExtraParams));
+			} else {
+				particle.scale = (particle.initScale - this.inScale) * (particle.initLife - particle.life) / this.inLifespan + this.inScale;
+			}
+		} else if(particle.life < this.outLifespan) {
+			if(this._outFunction != null) {
+				particle.scale = this._outFunction.apply(null,[this.outLifespan - particle.life,particle.initScale,this.outScale - particle.initScale,this.outLifespan].concat(this._outFunctionExtraParams));
+			} else {
+				particle.scale = (this.outScale - particle.initScale) * (this.outLifespan - particle.life) / this.outLifespan + particle.initScale;
+			}
+		} else {
+			particle.scale = particle.initScale;
+		}
+	}
+	,get_inFunctionExtraParams: function() {
+		return this._inFunctionExtraParams;
+	}
+	,set_inFunctionExtraParams: function(value) {
+		if(value == null) {
+			value = [];
+		}
+		this._inFunctionExtraParams = value;
+		return value;
+	}
+	,get_outFunctionExtraParams: function() {
+		return this._outFunctionExtraParams;
+	}
+	,set_outFunctionExtraParams: function(value) {
+		if(value == null) {
+			value = [];
+		}
+		this._outFunctionExtraParams = value;
+		return value;
+	}
+	,get_inFunction: function() {
+		return this._inFunction;
+	}
+	,set_inFunction: function(value) {
+		this._inFunction = value;
+		return value;
+	}
+	,get_outFunction: function() {
+		return this._outFunction;
+	}
+	,set_outFunction: function(value) {
+		this._outFunction = value;
+		return value;
+	}
+	,getXMLTagName: function() {
+		return "ScaleCurve";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("inScale",Std.string(this.inScale));
+		xml.set("outScale",Std.string(this.outScale));
+		xml.set("inLifespan",Std.string(this.inLifespan));
+		xml.set("outLifespan",Std.string(this.outLifespan));
+		if(this._inFunction != null) {
+			xml.set("inFunction",idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions().h[this._inFunction]);
+		}
+		if(this._outFunction != null) {
+			xml.set("outFunction",idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions().h[this._outFunction]);
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("inScale")) {
+			this.inScale = parseFloat(xml.get("inScale"));
+		}
+		if(xml.exists("outScale")) {
+			this.outScale = parseFloat(xml.get("outScale"));
+		}
+		if(xml.exists("inLifespan")) {
+			this.inLifespan = parseFloat(xml.get("inLifespan"));
+		}
+		if(xml.exists("outLifespan")) {
+			this.outLifespan = parseFloat(xml.get("outLifespan"));
+		}
+		if(xml.exists("inFunction")) {
+			var this1 = idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions();
+			var key = Std.string(xml.get("inFunction"));
+			this.set_inFunction(this1.h[key]);
+		}
+		if(xml.exists("outFunction")) {
+			var this1 = idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions();
+			var key = Std.string(xml.get("outFunction"));
+			this.set_outFunction(this1.h[key]);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_ScaleCurve
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_outFunction:"set_outFunction",get_outFunction:"get_outFunction",set_inFunction:"set_inFunction",get_inFunction:"get_inFunction",set_outFunctionExtraParams:"set_outFunctionExtraParams",get_outFunctionExtraParams:"get_outFunctionExtraParams",set_inFunctionExtraParams:"set_inFunctionExtraParams",get_inFunctionExtraParams:"get_inFunctionExtraParams"})
+});
+var idv_cjcat_stardustextended_actions_Spawn = function(inheritDirection,inheritVelocity,trigger) {
+	if(inheritVelocity == null) {
+		inheritVelocity = false;
+	}
+	if(inheritDirection == null) {
+		inheritDirection = true;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -10;
+	this.inheritDirection = inheritDirection;
+	this.inheritVelocity = inheritVelocity;
+	this.set_trigger(trigger);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Spawn"] = idv_cjcat_stardustextended_actions_Spawn;
+idv_cjcat_stardustextended_actions_Spawn.__name__ = "idv.cjcat.stardustextended.actions.Spawn";
+idv_cjcat_stardustextended_actions_Spawn.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Spawn.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	inheritDirection: null
+	,inheritVelocity: null
+	,_spawnerEmitter: null
+	,_spawnerEmitterId: null
+	,_trigger: null
+	,set_spawnerEmitter: function(em) {
+		this._spawnerEmitter = em;
+		this._spawnerEmitterId = em != null ? em.name : null;
+		return em;
+	}
+	,get_spawnerEmitter: function() {
+		return this._spawnerEmitter;
+	}
+	,get_spawnerEmitterId: function() {
+		return this._spawnerEmitterId;
+	}
+	,get_trigger: function() {
+		return this._trigger;
+	}
+	,set_trigger: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_actions_triggers_DeathTrigger();
+		}
+		this._trigger = value;
+		return value;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(this._spawnerEmitter == null) {
+			return;
+		}
+		if(this._trigger.testTrigger(emitter,particle,timeDelta)) {
+			var p;
+			var newParticles = this._spawnerEmitter.createParticles(this._spawnerEmitter.get_clock().getTicks(timeDelta));
+			var len = newParticles.get_length();
+			var _g = 0;
+			var _g1 = len;
+			while(_g < _g1) {
+				var m = _g++;
+				p = newParticles.get(m);
+				p.x += particle.x;
+				p.y += particle.y;
+				if(this.inheritVelocity) {
+					p.vx += particle.vx;
+					p.vy += particle.vy;
+				}
+				if(this.inheritDirection) {
+					p.rotation += particle.rotation;
+				}
+			}
+		}
+	}
+	,getXMLTagName: function() {
+		return "Spawn";
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._trigger);
+		return relatedObjects;
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("inheritDirection",Std.string(this.inheritDirection));
+		xml.set("inheritVelocity",Std.string(this.inheritVelocity));
+		xml.set("trigger",this._trigger.name);
+		if(this._spawnerEmitter != null) {
+			xml.set("spawnerEmitter",this._spawnerEmitter.name);
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		this.inheritDirection = xml.get("inheritDirection") == "true";
+		this.inheritVelocity = xml.get("inheritVelocity") == "true";
+		if(xml.exists("spawnerEmitter")) {
+			this._spawnerEmitterId = xml.get("spawnerEmitter");
+		}
+		var tmp;
+		try {
+			tmp = js_Boot.__cast(builder.getElementByName(xml.get("trigger")) , idv_cjcat_stardustextended_actions_triggers_Trigger);
+		} catch( _g ) {
+			haxe_NativeStackTrace.lastError = _g;
+			tmp = null;
+		}
+		this._trigger = tmp;
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Spawn
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_trigger:"set_trigger",get_trigger:"get_trigger",get_spawnerEmitterId:"get_spawnerEmitterId",set_spawnerEmitter:"set_spawnerEmitter",get_spawnerEmitter:"get_spawnerEmitter"})
+});
+var idv_cjcat_stardustextended_actions_SpeedLimit = function(lim) {
+	if(lim == null) {
+		lim = 1e+308;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this.limit = lim;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.SpeedLimit"] = idv_cjcat_stardustextended_actions_SpeedLimit;
+idv_cjcat_stardustextended_actions_SpeedLimit.__name__ = "idv.cjcat.stardustextended.actions.SpeedLimit";
+idv_cjcat_stardustextended_actions_SpeedLimit.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_SpeedLimit.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	limit: null
+	,preUpdate: function(emitter,time) {
+		this.limitSQ = this.limit * this.limit;
+	}
+	,speedSQ: null
+	,limitSQ: null
+	,factor: null
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		this.speedSQ = particle.vx * particle.vx + particle.vy * particle.vy;
+		if(this.speedSQ > this.limitSQ) {
+			this.factor = this.limit / Math.sqrt(this.speedSQ);
+			particle.vx *= this.factor;
+			particle.vy *= this.factor;
+		}
+	}
+	,getXMLTagName: function() {
+		return "SpeedLimit";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("limit",Std.string(this.limit));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("limit")) {
+			this.limit = parseFloat(xml.get("limit"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_SpeedLimit
+});
+var idv_cjcat_stardustextended_actions_Spin = function(_multiplier) {
+	if(_multiplier == null) {
+		_multiplier = 1;
+	}
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -4;
+	this.multiplier = _multiplier;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.Spin"] = idv_cjcat_stardustextended_actions_Spin;
+idv_cjcat_stardustextended_actions_Spin.__name__ = "idv.cjcat.stardustextended.actions.Spin";
+idv_cjcat_stardustextended_actions_Spin.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_Spin.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	multiplier: null
+	,factor: null
+	,preUpdate: function(emitter,time) {
+		this.factor = time * this.multiplier;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		particle.rotation += particle.omega * this.factor;
+	}
+	,getXMLTagName: function() {
+		return "Spin";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		xml.set("multiplier",Std.string(this.multiplier));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("multiplier")) {
+			this.multiplier = parseFloat(xml.get("multiplier"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_Spin
+});
+var idv_cjcat_stardustextended_actions_VelocityField = function(_field) {
+	idv_cjcat_stardustextended_actions_Action.call(this);
+	this._priority = -2;
+	if(this.field != null) {
+		this.field = _field;
+	} else {
+		this.field = new idv_cjcat_stardustextended_fields_UniformField(100,100);
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.actions.VelocityField"] = idv_cjcat_stardustextended_actions_VelocityField;
+idv_cjcat_stardustextended_actions_VelocityField.__name__ = "idv.cjcat.stardustextended.actions.VelocityField";
+idv_cjcat_stardustextended_actions_VelocityField.__interfaces__ = [idv_cjcat_stardustextended_actions_IFieldContainer];
+idv_cjcat_stardustextended_actions_VelocityField.__super__ = idv_cjcat_stardustextended_actions_Action;
+idv_cjcat_stardustextended_actions_VelocityField.prototype = $extend(idv_cjcat_stardustextended_actions_Action.prototype,{
+	field: null
+	,get_fields: function() {
+		if(this.field != null) {
+			return [this.field];
+		}
+		return [];
+	}
+	,set_fields: function(value) {
+		if(value != null && value.length > 0) {
+			this.field = value[0];
+		} else {
+			this.field = null;
+		}
+		return value;
+	}
+	,update: function(emitter,particle,timeDelta,currentTime) {
+		if(this.field == null) {
+			return;
+		}
+		var md2D = this.field.getMotionData2D(particle);
+		particle.vx = md2D.x;
+		particle.vy = md2D.y;
+		idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(md2D);
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this.field);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "VelocityField";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_Action.prototype.toXML.call(this);
+		if(this.field == null) {
+			xml.set("field","null");
+		} else {
+			xml.set("field",this.field.name);
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		if(xml.get("field") == "null") {
+			this.field = null;
+		} else if(xml.exists("field")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("field")) , idv_cjcat_stardustextended_fields_Field);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.field = tmp;
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_VelocityField
+	,__properties__: $extend(idv_cjcat_stardustextended_actions_Action.prototype.__properties__,{set_fields:"set_fields",get_fields:"get_fields"})
+});
+var idv_cjcat_stardustextended_actions_triggers_Trigger = function() {
+	idv_cjcat_stardustextended_StardustElement.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.triggers.Trigger"] = idv_cjcat_stardustextended_actions_triggers_Trigger;
+idv_cjcat_stardustextended_actions_triggers_Trigger.__name__ = "idv.cjcat.stardustextended.actions.triggers.Trigger";
+idv_cjcat_stardustextended_actions_triggers_Trigger.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_actions_triggers_Trigger.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	testTrigger: function(emitter,particle,time) {
+		throw new openfl_errors_Error("This method must be overridden");
+	}
+	,getXMLTagName: function() {
+		throw new openfl_errors_Error("This method must be overridden");
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<triggers/>");
+	}
+	,__class__: idv_cjcat_stardustextended_actions_triggers_Trigger
+});
+var idv_cjcat_stardustextended_actions_triggers_DeathTrigger = function() {
+	idv_cjcat_stardustextended_actions_triggers_Trigger.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.triggers.DeathTrigger"] = idv_cjcat_stardustextended_actions_triggers_DeathTrigger;
+idv_cjcat_stardustextended_actions_triggers_DeathTrigger.__name__ = "idv.cjcat.stardustextended.actions.triggers.DeathTrigger";
+idv_cjcat_stardustextended_actions_triggers_DeathTrigger.__super__ = idv_cjcat_stardustextended_actions_triggers_Trigger;
+idv_cjcat_stardustextended_actions_triggers_DeathTrigger.prototype = $extend(idv_cjcat_stardustextended_actions_triggers_Trigger.prototype,{
+	testTrigger: function(emitter,particle,time) {
+		return particle.isDead;
+	}
+	,getXMLTagName: function() {
+		return "DeathTrigger";
+	}
+	,__class__: idv_cjcat_stardustextended_actions_triggers_DeathTrigger
+});
+var idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger = function(deflector) {
+	idv_cjcat_stardustextended_actions_triggers_Trigger.call(this);
+	this.deflector = deflector;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.triggers.DeflectorTrigger"] = idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger;
+idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger.__name__ = "idv.cjcat.stardustextended.actions.triggers.DeflectorTrigger";
+idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger.__super__ = idv_cjcat_stardustextended_actions_triggers_Trigger;
+idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger.prototype = $extend(idv_cjcat_stardustextended_actions_triggers_Trigger.prototype,{
+	deflector: null
+	,testTrigger: function(emitter,particle,time) {
+		return js_Boot.__cast(particle.dictionary.h[this.deflector] , Bool);
+	}
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null,null,null,[this.deflector]);
+	}
+	,getXMLTagName: function() {
+		return "DeflectorTrigger";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_triggers_Trigger.prototype.toXML.call(this);
+		if(this.deflector != null) {
+			xml.set("deflector",Std.string(this.deflector.name));
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_triggers_Trigger.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("deflector")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("deflector")) , idv_cjcat_stardustextended_deflectors_Deflector);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.deflector = tmp;
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_actions_triggers_DeflectorTrigger
+});
+var idv_cjcat_stardustextended_actions_triggers_LifeTrigger = function(lowerBound,upperBound,triggerWithinBounds) {
+	if(triggerWithinBounds == null) {
+		triggerWithinBounds = true;
+	}
+	if(upperBound == null) {
+		upperBound = 1.79769313486232e+308;
+	}
+	if(lowerBound == null) {
+		lowerBound = 0;
+	}
+	idv_cjcat_stardustextended_actions_triggers_Trigger.call(this);
+	this.set_lowerBound(lowerBound);
+	this.set_upperBound(upperBound);
+	this.triggerWithinBounds = triggerWithinBounds;
+};
+$hxClasses["idv.cjcat.stardustextended.actions.triggers.LifeTrigger"] = idv_cjcat_stardustextended_actions_triggers_LifeTrigger;
+idv_cjcat_stardustextended_actions_triggers_LifeTrigger.__name__ = "idv.cjcat.stardustextended.actions.triggers.LifeTrigger";
+idv_cjcat_stardustextended_actions_triggers_LifeTrigger.__super__ = idv_cjcat_stardustextended_actions_triggers_Trigger;
+idv_cjcat_stardustextended_actions_triggers_LifeTrigger.prototype = $extend(idv_cjcat_stardustextended_actions_triggers_Trigger.prototype,{
+	triggerWithinBounds: null
+	,_lowerBound: null
+	,_upperBound: null
+	,testTrigger: function(emitter,particle,time) {
+		if(this.triggerWithinBounds) {
+			if(particle.life >= this._lowerBound && particle.life <= this._upperBound) {
+				return true;
+			}
+		} else if(particle.life < this._lowerBound || particle.life > this._upperBound) {
+			return true;
+		}
+		return false;
+	}
+	,get_lowerBound: function() {
+		return this._lowerBound;
+	}
+	,set_lowerBound: function(value) {
+		if(value > this._upperBound) {
+			this._upperBound = value;
+		}
+		this._lowerBound = value;
+		return value;
+	}
+	,get_upperBound: function() {
+		return this._upperBound;
+	}
+	,set_upperBound: function(value) {
+		if(value < this._lowerBound) {
+			this._lowerBound = value;
+		}
+		this._upperBound = value;
+		return value;
+	}
+	,getXMLTagName: function() {
+		return "LifeTrigger";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_actions_triggers_Trigger.prototype.toXML.call(this);
+		xml.set("triggerWithinBounds",Std.string(this.triggerWithinBounds));
+		xml.set("lowerBound",Std.string(this._lowerBound));
+		xml.set("upperBound",Std.string(this._upperBound));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_actions_triggers_Trigger.prototype.parseXML.call(this,xml,builder);
+		this.triggerWithinBounds = xml.get("triggerWithinBounds") == "true";
+		this.set_lowerBound(parseFloat(xml.get("lowerBound")));
+		this.set_upperBound(parseFloat(xml.get("upperBound")));
+	}
+	,__class__: idv_cjcat_stardustextended_actions_triggers_LifeTrigger
+	,__properties__: {set_upperBound:"set_upperBound",get_upperBound:"get_upperBound",set_lowerBound:"set_lowerBound",get_lowerBound:"get_lowerBound"}
+});
+var idv_cjcat_stardustextended_interfaces_IPosition = function() { };
+$hxClasses["idv.cjcat.stardustextended.interfaces.IPosition"] = idv_cjcat_stardustextended_interfaces_IPosition;
+idv_cjcat_stardustextended_interfaces_IPosition.__name__ = "idv.cjcat.stardustextended.interfaces.IPosition";
+idv_cjcat_stardustextended_interfaces_IPosition.__isInterface__ = true;
+idv_cjcat_stardustextended_interfaces_IPosition.prototype = {
+	setPosition: null
+	,getPosition: null
+	,__class__: idv_cjcat_stardustextended_interfaces_IPosition
+};
+var idv_cjcat_stardustextended_actions_waypoints_Waypoint = function(x,y,radius,strength,attenuationPower,epsilon) {
+	if(epsilon == null) {
+		epsilon = 1;
+	}
+	if(attenuationPower == null) {
+		attenuationPower = 0;
+	}
+	if(strength == null) {
+		strength = 1;
+	}
+	if(radius == null) {
+		radius = 20;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	this.x = x;
+	this.y = y;
+	this.radius = radius;
+	this.strength = strength;
+	this.attenuationPower = attenuationPower;
+	this.epsilon = epsilon;
+	this.position = new openfl_geom_Point(x,y);
+};
+$hxClasses["idv.cjcat.stardustextended.actions.waypoints.Waypoint"] = idv_cjcat_stardustextended_actions_waypoints_Waypoint;
+idv_cjcat_stardustextended_actions_waypoints_Waypoint.__name__ = "idv.cjcat.stardustextended.actions.waypoints.Waypoint";
+idv_cjcat_stardustextended_actions_waypoints_Waypoint.__interfaces__ = [idv_cjcat_stardustextended_interfaces_IPosition];
+idv_cjcat_stardustextended_actions_waypoints_Waypoint.prototype = {
+	x: null
+	,y: null
+	,radius: null
+	,strength: null
+	,attenuationPower: null
+	,epsilon: null
+	,position: null
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,__class__: idv_cjcat_stardustextended_actions_waypoints_Waypoint
+};
+var idv_cjcat_stardustextended_clocks_Clock = function() {
+	idv_cjcat_stardustextended_StardustElement.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.clocks.Clock"] = idv_cjcat_stardustextended_clocks_Clock;
+idv_cjcat_stardustextended_clocks_Clock.__name__ = "idv.cjcat.stardustextended.clocks.Clock";
+idv_cjcat_stardustextended_clocks_Clock.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_clocks_Clock.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	getTicks: function(time) {
+		return 0;
+	}
+	,reset: function() {
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<clocks/>");
+	}
+	,__class__: idv_cjcat_stardustextended_clocks_Clock
+});
+var idv_cjcat_stardustextended_clocks_ImpulseClock = function(_impulseInterval,_impulseLength,_initialDelay,_ticksPerCall) {
+	if(_ticksPerCall == null) {
+		_ticksPerCall = 1;
+	}
+	idv_cjcat_stardustextended_clocks_Clock.call(this);
+	this.set_impulseInterval(_impulseInterval != null ? _impulseInterval : new idv_cjcat_stardustextended_math_UniformRandom(20,10));
+	this.set_impulseLength(_impulseLength != null ? _impulseLength : new idv_cjcat_stardustextended_math_UniformRandom(5,0));
+	this.set_initialDelay(_initialDelay != null ? _initialDelay : new idv_cjcat_stardustextended_math_UniformRandom(0,0));
+	this.ticksPerCall = _ticksPerCall;
+	this.currentTime = 0;
+};
+$hxClasses["idv.cjcat.stardustextended.clocks.ImpulseClock"] = idv_cjcat_stardustextended_clocks_ImpulseClock;
+idv_cjcat_stardustextended_clocks_ImpulseClock.__name__ = "idv.cjcat.stardustextended.clocks.ImpulseClock";
+idv_cjcat_stardustextended_clocks_ImpulseClock.__super__ = idv_cjcat_stardustextended_clocks_Clock;
+idv_cjcat_stardustextended_clocks_ImpulseClock.prototype = $extend(idv_cjcat_stardustextended_clocks_Clock.prototype,{
+	_impulseInterval: null
+	,ticksPerCall: null
+	,_initialDelay: null
+	,currentImpulseInterval: null
+	,currentImpulseLength: null
+	,currentInitialDelay: null
+	,_impulseLength: null
+	,currentTime: null
+	,set_initialDelay: function(value) {
+		this._initialDelay = value;
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+		return value;
+	}
+	,get_initialDelay: function() {
+		return this._initialDelay;
+	}
+	,set_impulseLength: function(value) {
+		this._impulseLength = value;
+		var len = this._impulseLength.random();
+		this.currentImpulseLength = len > 0 ? len : 0;
+		return value;
+	}
+	,get_impulseLength: function() {
+		return this._impulseLength;
+	}
+	,set_impulseInterval: function(value) {
+		this._impulseInterval = value;
+		var val = this._impulseInterval.random();
+		this.currentImpulseInterval = val > 0 ? val : 0;
+		return value;
+	}
+	,get_impulseInterval: function() {
+		return this._impulseInterval;
+	}
+	,getTicks: function(time) {
+		var ticks = 0;
+		this.currentInitialDelay -= time;
+		if(this.currentInitialDelay < 0) {
+			this.currentTime += time;
+			if(this.currentTime <= this.currentImpulseLength) {
+				var num = this.ticksPerCall * time;
+				var floor = num | 0 | 0;
+				ticks = floor + (num - floor > Math.random() ? 1 : 0) | 0 | 0;
+			} else if(this.currentTime - time <= this.currentImpulseLength) {
+				var num = this.ticksPerCall * (this.currentImpulseLength - this.currentTime + time);
+				var floor = num | 0 | 0;
+				ticks = floor + (num - floor > Math.random() ? 1 : 0) | 0 | 0;
+			}
+			if(this.currentTime >= this.currentImpulseInterval) {
+				var len = this._impulseLength.random();
+				this.currentImpulseLength = len > 0 ? len : 0;
+				var val = this._impulseInterval.random();
+				this.currentImpulseInterval = val > 0 ? val : 0;
+				this.currentTime = 0;
+			}
+		}
+		return ticks;
+	}
+	,impulse: function() {
+		this.currentInitialDelay = -1;
+		this.currentTime = 0;
+	}
+	,setCurrentImpulseLength: function() {
+		var len = this._impulseLength.random();
+		this.currentImpulseLength = len > 0 ? len : 0;
+	}
+	,setCurrentImpulseInterval: function() {
+		var val = this._impulseInterval.random();
+		this.currentImpulseInterval = val > 0 ? val : 0;
+	}
+	,setCurrentInitialDelay: function() {
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+	}
+	,reset: function() {
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+		var len = this._impulseLength.random();
+		this.currentImpulseLength = len > 0 ? len : 0;
+		var val = this._impulseInterval.random();
+		this.currentImpulseInterval = val > 0 ? val : 0;
+		this.currentTime = 0;
+	}
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null,null,null,[this._impulseInterval,this._impulseLength,this._initialDelay]);
+	}
+	,getXMLTagName: function() {
+		return "ImpulseClock";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_clocks_Clock.prototype.toXML.call(this);
+		xml.set("ticksPerCall",Std.string(this.ticksPerCall));
+		xml.set("impulseInterval",this._impulseInterval.name);
+		xml.set("impulseLength",this._impulseLength.name);
+		xml.set("initialDelay",this._initialDelay.name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_clocks_Clock.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("ticksPerCall")) {
+			this.ticksPerCall = parseFloat(xml.get("ticksPerCall"));
+		}
+		if(xml.exists("impulseLength")) {
+			this._impulseLength = builder.getElementByName(xml.get("impulseLength"));
+		}
+		if(xml.exists("impulseInterval")) {
+			this._impulseInterval = builder.getElementByName(xml.get("impulseInterval"));
+		}
+		if(xml.exists("initialDelay")) {
+			this._initialDelay = builder.getElementByName(xml.get("initialDelay"));
+		}
+		if(xml.exists("impulseCount")) {
+			this.ticksPerCall = parseFloat(xml.get("impulseCount"));
+		}
+		if(xml.exists("repeatCount")) {
+			this._impulseLength = new idv_cjcat_stardustextended_math_UniformRandom(Std.parseInt(xml.get("repeatCount")),0);
+		}
+		if(xml.exists("burstInterval")) {
+			this._impulseInterval = new idv_cjcat_stardustextended_math_UniformRandom(Std.parseInt(xml.get("burstInterval")),0);
+		}
+	}
+	,onXMLInitComplete: function() {
+		this.reset();
+	}
+	,__class__: idv_cjcat_stardustextended_clocks_ImpulseClock
+	,__properties__: {set_impulseInterval:"set_impulseInterval",get_impulseInterval:"get_impulseInterval",set_impulseLength:"set_impulseLength",get_impulseLength:"get_impulseLength",set_initialDelay:"set_initialDelay",get_initialDelay:"get_initialDelay"}
+});
+var idv_cjcat_stardustextended_clocks_SteadyClock = function(ticksPerCall,_initialDelay) {
+	if(ticksPerCall == null) {
+		ticksPerCall = 1;
+	}
+	idv_cjcat_stardustextended_clocks_Clock.call(this);
+	this.ticksPerCall = ticksPerCall;
+	this.set_initialDelay(_initialDelay != null ? _initialDelay : new idv_cjcat_stardustextended_math_UniformRandom(0,0));
+	this.currentTime = 0;
+};
+$hxClasses["idv.cjcat.stardustextended.clocks.SteadyClock"] = idv_cjcat_stardustextended_clocks_SteadyClock;
+idv_cjcat_stardustextended_clocks_SteadyClock.__name__ = "idv.cjcat.stardustextended.clocks.SteadyClock";
+idv_cjcat_stardustextended_clocks_SteadyClock.__super__ = idv_cjcat_stardustextended_clocks_Clock;
+idv_cjcat_stardustextended_clocks_SteadyClock.prototype = $extend(idv_cjcat_stardustextended_clocks_Clock.prototype,{
+	ticksPerCall: null
+	,set_initialDelay: function(value) {
+		this._initialDelay = value;
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+		return value;
+	}
+	,get_initialDelay: function() {
+		return this._initialDelay;
+	}
+	,_initialDelay: null
+	,currentInitialDelay: null
+	,currentTime: null
+	,getTicks: function(time) {
+		this.currentTime += time;
+		if(this.currentTime > this.currentInitialDelay) {
+			var num = this.ticksPerCall * time;
+			var floor = num | 0 | 0;
+			return floor + (num - floor > Math.random() ? 1 : 0) | 0;
+		}
+		return 0;
+	}
+	,reset: function() {
+		this.currentTime = 0;
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+	}
+	,setCurrentInitialDelay: function() {
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+	}
+	,getXMLTagName: function() {
+		return "SteadyClock";
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._initialDelay);
+		return relatedObjects;
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_clocks_Clock.prototype.toXML.call(this);
+		xml.set("ticksPerCall",Std.string(this.ticksPerCall));
+		xml.set("initialDelay",this._initialDelay.name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_clocks_Clock.prototype.parseXML.call(this,xml,builder);
+		this.ticksPerCall = parseFloat(xml.get("ticksPerCall"));
+		if(xml.exists("initialDelay")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("initialDelay")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this._initialDelay = tmp;
+		}
+	}
+	,onXMLInitComplete: function() {
+		var val = this._initialDelay.random();
+		this.currentInitialDelay = val > 0 ? val : 0;
+	}
+	,__class__: idv_cjcat_stardustextended_clocks_SteadyClock
+	,__properties__: {set_initialDelay:"set_initialDelay",get_initialDelay:"get_initialDelay"}
+});
+var idv_cjcat_stardustextended_deflectors_Deflector = function() {
+	this.position = new openfl_geom_Point();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this.active = true;
+	this.bounce = 0.8;
+	this.slipperiness = 1;
+};
+$hxClasses["idv.cjcat.stardustextended.deflectors.Deflector"] = idv_cjcat_stardustextended_deflectors_Deflector;
+idv_cjcat_stardustextended_deflectors_Deflector.__name__ = "idv.cjcat.stardustextended.deflectors.Deflector";
+idv_cjcat_stardustextended_deflectors_Deflector.__interfaces__ = [idv_cjcat_stardustextended_interfaces_IPosition];
+idv_cjcat_stardustextended_deflectors_Deflector.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_deflectors_Deflector.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	active: null
+	,bounce: null
+	,position: null
+	,slipperiness: null
+	,getMotionData4D: function(particle) {
+		if(this.active) {
+			return this.calculateMotionData4D(particle);
+		}
+		return null;
+	}
+	,calculateMotionData4D: function(particle) {
+		return null;
+	}
+	,setPosition: function(xc,yc) {
+		throw new openfl_errors_Error("This method must be overridden by subclasses");
+	}
+	,getPosition: function() {
+		throw new openfl_errors_Error("This method must be overridden by subclasses");
+	}
+	,getXMLTagName: function() {
+		return "Deflector";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<deflectors/>");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("active",Std.string(this.active));
+		xml.set("bounce",Std.string(this.bounce));
+		xml.set("slipperiness",Std.string(this.slipperiness));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("active")) {
+			this.active = xml.get("active") == "true";
+		}
+		if(xml.exists("bounce")) {
+			this.bounce = parseFloat(xml.get("bounce"));
+		}
+		if(xml.exists("slipperiness")) {
+			this.slipperiness = parseFloat(xml.get("slipperiness"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_deflectors_Deflector
+});
+var idv_cjcat_stardustextended_deflectors_CircleDeflector = function(x,y,radius) {
+	if(radius == null) {
+		radius = 100;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	this.y = 0;
+	this.x = 0;
+	idv_cjcat_stardustextended_deflectors_Deflector.call(this);
+	this.x = x;
+	this.y = y;
+	this.radius = radius;
+};
+$hxClasses["idv.cjcat.stardustextended.deflectors.CircleDeflector"] = idv_cjcat_stardustextended_deflectors_CircleDeflector;
+idv_cjcat_stardustextended_deflectors_CircleDeflector.__name__ = "idv.cjcat.stardustextended.deflectors.CircleDeflector";
+idv_cjcat_stardustextended_deflectors_CircleDeflector.__super__ = idv_cjcat_stardustextended_deflectors_Deflector;
+idv_cjcat_stardustextended_deflectors_CircleDeflector.prototype = $extend(idv_cjcat_stardustextended_deflectors_Deflector.prototype,{
+	x: null
+	,y: null
+	,radius: null
+	,cr: null
+	,r: null
+	,len: null
+	,v: null
+	,factor: null
+	,calculateMotionData4D: function(particle) {
+		this.cr = particle.collisionRadius * particle.scale;
+		var x = particle.x - this.x;
+		var y = particle.y - this.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		this.r = obj;
+		this.len = this.r.get_length() - this.cr;
+		if(this.len > this.radius) {
+			idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.r);
+			return null;
+		}
+		this.r.set_length(this.radius + this.cr);
+		var x = particle.vx;
+		var y = particle.vy;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		this.v = obj;
+		this.v.projectThis(this.r);
+		this.factor = 1 + this.bounce;
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.r);
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.v);
+		var x = this.x + this.r.x;
+		var y = this.y + this.r.y;
+		var vx = (particle.vx - this.v.x * this.factor) * this.slipperiness;
+		var vy = (particle.vy - this.v.y * this.factor) * this.slipperiness;
+		if(vy == null) {
+			vy = 0;
+		}
+		if(vx == null) {
+			vx = 0;
+		}
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+			obj.vx = vx;
+			obj.vy = vy;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData4D(x,y,vx,vy);
+		}
+		return obj;
+	}
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "CircleDeflector";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_deflectors_Deflector.prototype.toXML.call(this);
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("radius",Std.string(this.radius));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_deflectors_Deflector.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("radius")) {
+			this.radius = parseFloat(xml.get("radius"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_deflectors_CircleDeflector
+});
+var idv_cjcat_stardustextended_deflectors_LineDeflector = function(x,y,nx,ny) {
+	if(ny == null) {
+		ny = -1;
+	}
+	if(nx == null) {
+		nx = 0;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_deflectors_Deflector.call(this);
+	this.x = x;
+	this.y = y;
+	var x = nx;
+	var y = ny;
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	var obj;
+	if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+		obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+		obj.setTo(x,y);
+	} else {
+		obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+	}
+	this._normal = obj;
+};
+$hxClasses["idv.cjcat.stardustextended.deflectors.LineDeflector"] = idv_cjcat_stardustextended_deflectors_LineDeflector;
+idv_cjcat_stardustextended_deflectors_LineDeflector.__name__ = "idv.cjcat.stardustextended.deflectors.LineDeflector";
+idv_cjcat_stardustextended_deflectors_LineDeflector.__super__ = idv_cjcat_stardustextended_deflectors_Deflector;
+idv_cjcat_stardustextended_deflectors_LineDeflector.prototype = $extend(idv_cjcat_stardustextended_deflectors_Deflector.prototype,{
+	x: null
+	,y: null
+	,_normal: null
+	,get_normal: function() {
+		return this._normal;
+	}
+	,r: null
+	,dot: null
+	,radius: null
+	,dist: null
+	,v: null
+	,factor: null
+	,calculateMotionData4D: function(particle) {
+		var x = particle.x - this.x;
+		var y = particle.y - this.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		this.r = obj;
+		this.r = this.r.project(this._normal);
+		this.dot = this.r.dot(this._normal);
+		this.radius = particle.collisionRadius * particle.scale;
+		this.dist = this.r.get_length();
+		if(this.dot > 0) {
+			if(this.dist > this.radius) {
+				idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.r);
+				return null;
+			} else {
+				this.r.set_length(this.radius - this.dist);
+			}
+		} else {
+			this.r.set_length(-(this.dist + this.radius));
+		}
+		var x = particle.vx;
+		var y = particle.vy;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		this.v = obj;
+		this.v = this.v.project(this._normal);
+		this.factor = 1 + this.bounce;
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.r);
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(this.v);
+		var x = particle.x + this.r.x;
+		var y = particle.y + this.r.y;
+		var vx = (particle.vx - this.v.x * this.factor) * this.slipperiness;
+		var vy = (particle.vy - this.v.y * this.factor) * this.slipperiness;
+		if(vy == null) {
+			vy = 0;
+		}
+		if(vx == null) {
+			vx = 0;
+		}
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+			obj.vx = vx;
+			obj.vy = vy;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData4D(x,y,vx,vy);
+		}
+		return obj;
+	}
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "LineDeflector";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_deflectors_Deflector.prototype.toXML.call(this);
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("normalX",Std.string(this._normal.x));
+		xml.set("normalY",Std.string(this._normal.y));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_deflectors_Deflector.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("normalX")) {
+			var tmp = parseFloat(xml.get("normalX"));
+			this._normal.x = tmp;
+		}
+		if(xml.exists("normalY")) {
+			var tmp = parseFloat(xml.get("normalY"));
+			this._normal.y = tmp;
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_deflectors_LineDeflector
+	,__properties__: {get_normal:"get_normal"}
+});
+var idv_cjcat_stardustextended_deflectors_WrappingBox = function(x,y,width,height) {
+	if(height == null) {
+		height = 480;
+	}
+	if(width == null) {
+		width = 640;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_deflectors_Deflector.call(this);
+	this.x = x;
+	this.y = y;
+	this.width = width;
+	this.height = height;
+};
+$hxClasses["idv.cjcat.stardustextended.deflectors.WrappingBox"] = idv_cjcat_stardustextended_deflectors_WrappingBox;
+idv_cjcat_stardustextended_deflectors_WrappingBox.__name__ = "idv.cjcat.stardustextended.deflectors.WrappingBox";
+idv_cjcat_stardustextended_deflectors_WrappingBox.__super__ = idv_cjcat_stardustextended_deflectors_Deflector;
+idv_cjcat_stardustextended_deflectors_WrappingBox.prototype = $extend(idv_cjcat_stardustextended_deflectors_Deflector.prototype,{
+	x: null
+	,y: null
+	,width: null
+	,height: null
+	,left: null
+	,right: null
+	,top: null
+	,bottom: null
+	,deflected: null
+	,newX: null
+	,newY: null
+	,calculateMotionData4D: function(particle) {
+		this.left = this.x;
+		this.right = this.x + this.width;
+		this.top = this.y;
+		this.bottom = this.y + this.height;
+		this.deflected = false;
+		if(particle.x < this.x) {
+			this.deflected = true;
+		} else if(particle.x > this.x + this.width) {
+			this.deflected = true;
+		}
+		if(particle.y < this.y) {
+			this.deflected = true;
+		} else if(particle.y > this.y + this.height) {
+			this.deflected = true;
+		}
+		var value2 = this.width;
+		var remainder = (particle.x - this.x) % value2;
+		this.newX = remainder < 0 ? remainder + value2 : remainder;
+		var value2 = this.height;
+		var remainder = (particle.y - this.y) % value2;
+		this.newY = remainder < 0 ? remainder + value2 : remainder;
+		if(this.deflected) {
+			var x = this.x + this.newX;
+			var y = this.y + this.newY;
+			var vx = particle.vx;
+			var vy = particle.vy;
+			if(vy == null) {
+				vy = 0;
+			}
+			if(vx == null) {
+				vx = 0;
+			}
+			if(y == null) {
+				y = 0;
+			}
+			if(x == null) {
+				x = 0;
+			}
+			var obj;
+			if(idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.length > 0) {
+				obj = idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.pop();
+				obj.x = x;
+				obj.y = y;
+				obj.vx = vx;
+				obj.vy = vy;
+			} else {
+				obj = new idv_cjcat_stardustextended_geom_MotionData4D(x,y,vx,vy);
+			}
+			return obj;
+		} else {
+			return null;
+		}
+	}
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "WrappingBox";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_deflectors_Deflector.prototype.toXML.call(this);
+		xml.remove("bounce");
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("width",Std.string(this.width));
+		xml.set("height",Std.string(this.height));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_deflectors_Deflector.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("width")) {
+			this.width = parseFloat(xml.get("width"));
+		}
+		if(xml.exists("height")) {
+			this.height = parseFloat(xml.get("height"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_deflectors_WrappingBox
+});
+var idv_cjcat_stardustextended_easing_Back = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Back"] = idv_cjcat_stardustextended_easing_Back;
+idv_cjcat_stardustextended_easing_Back.__name__ = "idv.cjcat.stardustextended.easing.Back";
+idv_cjcat_stardustextended_easing_Back.easeIn = function(t,b,c,d,s) {
+	if(s == null) {
+		s = 1.70158;
+	}
+	return c * (t /= d) * t * ((s + 1) * t - s) + b;
+};
+idv_cjcat_stardustextended_easing_Back.easeOut = function(t,b,c,d,s) {
+	if(s == null) {
+		s = 1.70158;
+	}
+	t = t / d - 1;
+	return c * (t * t * ((s + 1) * t + s) + 1) + b;
+};
+idv_cjcat_stardustextended_easing_Back.easeInOut = function(t,b,c,d,s) {
+	if(s == null) {
+		s = 1.70158;
+	}
+	if((t /= d / 2) < 1) {
+		return c / 2 * (t * t * (((s *= 1.525) + 1) * t - s)) + b;
+	}
+	return c / 2 * ((t -= 2) * t * (((s *= 1.525) + 1) * t + s) + 2) + b;
+};
+idv_cjcat_stardustextended_easing_Back.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Back
+};
+var idv_cjcat_stardustextended_easing_Circ = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Circ"] = idv_cjcat_stardustextended_easing_Circ;
+idv_cjcat_stardustextended_easing_Circ.__name__ = "idv.cjcat.stardustextended.easing.Circ";
+idv_cjcat_stardustextended_easing_Circ.easeIn = function(t,b,c,d) {
+	return -c * (Math.sqrt(1 - (t /= d) * t) - 1) + b;
+};
+idv_cjcat_stardustextended_easing_Circ.easeOut = function(t,b,c,d) {
+	t = t / d - 1;
+	return c * Math.sqrt(1 - t * t) + b;
+};
+idv_cjcat_stardustextended_easing_Circ.easeInOut = function(t,b,c,d) {
+	if((t /= d / 2) < 1) {
+		return -c / 2 * (Math.sqrt(1 - t * t) - 1) + b;
+	}
+	return c / 2 * (Math.sqrt(1 - (t -= 2) * t) + 1) + b;
+};
+idv_cjcat_stardustextended_easing_Circ.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Circ
+};
+var idv_cjcat_stardustextended_easing_Cubic = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Cubic"] = idv_cjcat_stardustextended_easing_Cubic;
+idv_cjcat_stardustextended_easing_Cubic.__name__ = "idv.cjcat.stardustextended.easing.Cubic";
+idv_cjcat_stardustextended_easing_Cubic.easeIn = function(t,b,c,d) {
+	return c * (t /= d) * t * t + b;
+};
+idv_cjcat_stardustextended_easing_Cubic.easeOut = function(t,b,c,d) {
+	t = t / d - 1;
+	return c * (t * t * t + 1) + b;
+};
+idv_cjcat_stardustextended_easing_Cubic.easeInOut = function(t,b,c,d) {
+	if((t /= d / 2) < 1) {
+		return c / 2 * t * t * t + b;
+	}
+	return c / 2 * ((t -= 2) * t * t + 2) + b;
+};
+idv_cjcat_stardustextended_easing_Cubic.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Cubic
+};
+var idv_cjcat_stardustextended_easing_EasingFunctionType = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.EasingFunctionType"] = idv_cjcat_stardustextended_easing_EasingFunctionType;
+idv_cjcat_stardustextended_easing_EasingFunctionType.__name__ = "idv.cjcat.stardustextended.easing.EasingFunctionType";
+idv_cjcat_stardustextended_easing_EasingFunctionType.__properties__ = {get_functions:"get_functions"};
+idv_cjcat_stardustextended_easing_EasingFunctionType.get_functions = function() {
+	if(idv_cjcat_stardustextended_easing_EasingFunctionType._functions == null) {
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions = new haxe_ds_StringMap();
+		var v = idv_cjcat_stardustextended_easing_Back.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Back.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Back.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Back.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Back.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Back.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Circ.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Circ.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Circ.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Circ.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Circ.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Circ.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Cubic.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Cubic.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Cubic.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Cubic.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Cubic.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Cubic.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Elastic.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Elastic.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Elastic.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Elastic.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Elastic.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Elastic.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Expo.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Expo.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Expo.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Expo.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Expo.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Expo.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Linear.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Linear.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Linear.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Linear.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Linear.easeNone;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Linear.easeNone"] = v;
+		var v = idv_cjcat_stardustextended_easing_Linear.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Linear.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quad.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quad.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quad.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quad.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quad.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quad.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quart.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quart.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quart.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quart.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quart.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quart.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quint.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quint.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quint.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quint.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Quint.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Quint.easeOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Sine.easeIn;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Sine.easeIn"] = v;
+		var v = idv_cjcat_stardustextended_easing_Sine.easeInOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Sine.easeInOut"] = v;
+		var v = idv_cjcat_stardustextended_easing_Sine.easeOut;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h["Sine.easeOut"] = v;
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Back.easeIn] = "Back.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Back.easeInOut] = "Back.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Back.easeOut] = "Back.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Circ.easeIn] = "Circ.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Circ.easeInOut] = "Circ.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Circ.easeOut] = "Circ.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Cubic.easeIn] = "Cubic.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Cubic.easeInOut] = "Cubic.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Cubic.easeOut] = "Cubic.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Elastic.easeIn] = "Elastic.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Elastic.easeInOut] = "Elastic.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Elastic.easeOut] = "Elastic.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Expo.easeIn] = "Expo.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Expo.easeInOut] = "Expo.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Expo.easeOut] = "Expo.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Linear.easeIn] = "Linear.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Linear.easeInOut] = "Linear.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Linear.easeNone] = "Linear.easeNone";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Linear.easeOut] = "Linear.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quad.easeIn] = "Quad.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quad.easeInOut] = "Quad.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quad.easeOut] = "Quad.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quart.easeIn] = "Quart.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quart.easeInOut] = "Quart.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quart.easeOut] = "Quart.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quint.easeIn] = "Quint.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quint.easeInOut] = "Quint.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Quint.easeOut] = "Quint.easeOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Sine.easeIn] = "Sine.easeIn";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Sine.easeInOut] = "Sine.easeInOut";
+		idv_cjcat_stardustextended_easing_EasingFunctionType._functions.h[idv_cjcat_stardustextended_easing_Sine.easeOut] = "Sine.easeOut";
+	}
+	return idv_cjcat_stardustextended_easing_EasingFunctionType._functions;
+};
+idv_cjcat_stardustextended_easing_EasingFunctionType.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_EasingFunctionType
+};
+var idv_cjcat_stardustextended_easing_Elastic = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Elastic"] = idv_cjcat_stardustextended_easing_Elastic;
+idv_cjcat_stardustextended_easing_Elastic.__name__ = "idv.cjcat.stardustextended.easing.Elastic";
+idv_cjcat_stardustextended_easing_Elastic.easeIn = function(t,b,c,d,a,p) {
+	if(p == null) {
+		p = 0;
+	}
+	if(a == null) {
+		a = 0;
+	}
+	var s;
+	if(t == 0) {
+		return b;
+	}
+	if((t /= d) == 1) {
+		return b + c;
+	}
+	if(p != null) {
+		p = d * .3;
+	}
+	if(a != null || a < Math.abs(c)) {
+		a = c;
+		s = p / 4;
+	} else {
+		s = p / idv_cjcat_stardustextended_easing_Elastic._2PI * Math.asin(c / a);
+	}
+	return -(a * Math.pow(2,10 * --t) * Math.sin((t * d - s) * idv_cjcat_stardustextended_easing_Elastic._2PI / p)) + b;
+};
+idv_cjcat_stardustextended_easing_Elastic.easeOut = function(t,b,c,d,a,p) {
+	if(p == null) {
+		p = 0;
+	}
+	if(a == null) {
+		a = 0;
+	}
+	var s;
+	if(t == 0) {
+		return b;
+	}
+	if((t /= d) == 1) {
+		return b + c;
+	}
+	if(p != null) {
+		p = d * .3;
+	}
+	if(a != null || a < Math.abs(c)) {
+		a = c;
+		s = p / 4;
+	} else {
+		s = p / idv_cjcat_stardustextended_easing_Elastic._2PI * Math.asin(c / a);
+	}
+	return a * Math.pow(2,-10 * t) * Math.sin((t * d - s) * idv_cjcat_stardustextended_easing_Elastic._2PI / p) + c + b;
+};
+idv_cjcat_stardustextended_easing_Elastic.easeInOut = function(t,b,c,d,a,p) {
+	if(p == null) {
+		p = 0;
+	}
+	if(a == null) {
+		a = 0;
+	}
+	var s;
+	if(t == 0) {
+		return b;
+	}
+	if((t /= d / 2) == 2) {
+		return b + c;
+	}
+	if(p != null) {
+		p = d * 0.44999999999999996;
+	}
+	if(a != null || a < Math.abs(c)) {
+		a = c;
+		s = p / 4;
+	} else {
+		s = p / idv_cjcat_stardustextended_easing_Elastic._2PI * Math.asin(c / a);
+	}
+	if(t < 1) {
+		return -.5 * (a * Math.pow(2,10 * --t) * Math.sin((t * d - s) * idv_cjcat_stardustextended_easing_Elastic._2PI / p)) + b;
+	}
+	return a * Math.pow(2,-10 * --t) * Math.sin((t * d - s) * idv_cjcat_stardustextended_easing_Elastic._2PI / p) * .5 + c + b;
+};
+idv_cjcat_stardustextended_easing_Elastic.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Elastic
+};
+var idv_cjcat_stardustextended_easing_Expo = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Expo"] = idv_cjcat_stardustextended_easing_Expo;
+idv_cjcat_stardustextended_easing_Expo.__name__ = "idv.cjcat.stardustextended.easing.Expo";
+idv_cjcat_stardustextended_easing_Expo.easeIn = function(t,b,c,d) {
+	if(t == 0) {
+		return b;
+	} else {
+		return c * Math.pow(2,10 * (t / d - 1)) + b;
+	}
+};
+idv_cjcat_stardustextended_easing_Expo.easeOut = function(t,b,c,d) {
+	if(t == d) {
+		return b + c;
+	} else {
+		return c * (-Math.pow(2,-10 * t / d) + 1) + b;
+	}
+};
+idv_cjcat_stardustextended_easing_Expo.easeInOut = function(t,b,c,d) {
+	if(t == 0) {
+		return b;
+	}
+	if(t == d) {
+		return b + c;
+	}
+	if((t /= d / 2) < 1) {
+		return c / 2 * Math.pow(2,10 * (t - 1)) + b;
+	}
+	return c / 2 * (-Math.pow(2,-10 * --t) + 2) + b;
+};
+idv_cjcat_stardustextended_easing_Expo.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Expo
+};
+var idv_cjcat_stardustextended_easing_Linear = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Linear"] = idv_cjcat_stardustextended_easing_Linear;
+idv_cjcat_stardustextended_easing_Linear.__name__ = "idv.cjcat.stardustextended.easing.Linear";
+idv_cjcat_stardustextended_easing_Linear.easeNone = function(t,b,c,d) {
+	return c * t / d + b;
+};
+idv_cjcat_stardustextended_easing_Linear.easeIn = function(t,b,c,d) {
+	return c * t / d + b;
+};
+idv_cjcat_stardustextended_easing_Linear.easeOut = function(t,b,c,d) {
+	return c * t / d + b;
+};
+idv_cjcat_stardustextended_easing_Linear.easeInOut = function(t,b,c,d) {
+	return c * t / d + b;
+};
+idv_cjcat_stardustextended_easing_Linear.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Linear
+};
+var idv_cjcat_stardustextended_easing_Quad = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Quad"] = idv_cjcat_stardustextended_easing_Quad;
+idv_cjcat_stardustextended_easing_Quad.__name__ = "idv.cjcat.stardustextended.easing.Quad";
+idv_cjcat_stardustextended_easing_Quad.easeIn = function(t,b,c,d) {
+	return c * (t /= d) * t + b;
+};
+idv_cjcat_stardustextended_easing_Quad.easeOut = function(t,b,c,d) {
+	return -c * (t /= d) * (t - 2) + b;
+};
+idv_cjcat_stardustextended_easing_Quad.easeInOut = function(t,b,c,d) {
+	if((t /= d / 2) < 1) {
+		return c / 2 * t * t + b;
+	}
+	return -c / 2 * (--t * (t - 2) - 1) + b;
+};
+idv_cjcat_stardustextended_easing_Quad.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Quad
+};
+var idv_cjcat_stardustextended_easing_Quart = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Quart"] = idv_cjcat_stardustextended_easing_Quart;
+idv_cjcat_stardustextended_easing_Quart.__name__ = "idv.cjcat.stardustextended.easing.Quart";
+idv_cjcat_stardustextended_easing_Quart.easeIn = function(t,b,c,d) {
+	return c * (t /= d) * t * t * t + b;
+};
+idv_cjcat_stardustextended_easing_Quart.easeOut = function(t,b,c,d) {
+	t = t / d - 1;
+	return -c * (t * t * t * t - 1) + b;
+};
+idv_cjcat_stardustextended_easing_Quart.easeInOut = function(t,b,c,d) {
+	if((t /= d / 2) < 1) {
+		return c / 2 * t * t * t * t + b;
+	}
+	return -c / 2 * ((t -= 2) * t * t * t - 2) + b;
+};
+idv_cjcat_stardustextended_easing_Quart.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Quart
+};
+var idv_cjcat_stardustextended_easing_Quint = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Quint"] = idv_cjcat_stardustextended_easing_Quint;
+idv_cjcat_stardustextended_easing_Quint.__name__ = "idv.cjcat.stardustextended.easing.Quint";
+idv_cjcat_stardustextended_easing_Quint.easeIn = function(t,b,c,d) {
+	return c * (t /= d) * t * t * t * t + b;
+};
+idv_cjcat_stardustextended_easing_Quint.easeOut = function(t,b,c,d) {
+	t = t / d - 1;
+	return c * (t * t * t * t * t + 1) + b;
+};
+idv_cjcat_stardustextended_easing_Quint.easeInOut = function(t,b,c,d) {
+	if((t /= d / 2) < 1) {
+		return c / 2 * t * t * t * t * t + b;
+	}
+	return c / 2 * ((t -= 2) * t * t * t * t + 2) + b;
+};
+idv_cjcat_stardustextended_easing_Quint.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Quint
+};
+var idv_cjcat_stardustextended_easing_Sine = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.easing.Sine"] = idv_cjcat_stardustextended_easing_Sine;
+idv_cjcat_stardustextended_easing_Sine.__name__ = "idv.cjcat.stardustextended.easing.Sine";
+idv_cjcat_stardustextended_easing_Sine.easeIn = function(t,b,c,d) {
+	return -c * Math.cos(t / d * idv_cjcat_stardustextended_easing_Sine._HALF_PI) + c + b;
+};
+idv_cjcat_stardustextended_easing_Sine.easeOut = function(t,b,c,d) {
+	return c * Math.sin(t / d * idv_cjcat_stardustextended_easing_Sine._HALF_PI) + b;
+};
+idv_cjcat_stardustextended_easing_Sine.easeInOut = function(t,b,c,d) {
+	return -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b;
+};
+idv_cjcat_stardustextended_easing_Sine.prototype = {
+	__class__: idv_cjcat_stardustextended_easing_Sine
+};
+var idv_cjcat_stardustextended_initializers_InitializerCollector = function() { };
+$hxClasses["idv.cjcat.stardustextended.initializers.InitializerCollector"] = idv_cjcat_stardustextended_initializers_InitializerCollector;
+idv_cjcat_stardustextended_initializers_InitializerCollector.__name__ = "idv.cjcat.stardustextended.initializers.InitializerCollector";
+idv_cjcat_stardustextended_initializers_InitializerCollector.__isInterface__ = true;
+idv_cjcat_stardustextended_initializers_InitializerCollector.prototype = {
+	addInitializer: null
+	,removeInitializer: null
+	,clearInitializers: null
+	,__class__: idv_cjcat_stardustextended_initializers_InitializerCollector
+};
+var idv_cjcat_stardustextended_emitters_Emitter = function(clock,particleHandler) {
+	this.timeSinceLastStep = 0;
+	this._invFps = 0.016666666666666666 - idv_cjcat_stardustextended_emitters_Emitter.timeStepCorrectionOffset;
+	this.activeActions = openfl_Vector.toObjectVector(null);
+	this._actionCollection = new idv_cjcat_stardustextended_actions_ActionCollection();
+	this.factory = new idv_cjcat_stardustextended_particles_PooledParticleFactory();
+	this.currentTime = 0;
+	this._particles = openfl_Vector.toObjectVector(null);
+	this.newParticles = openfl_Vector.toObjectVector(null);
+	this.eventDispatcher = new openfl_events_EventDispatcher();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this.set_clock(clock);
+	this.active = true;
+	this.particleHandler = particleHandler;
+	this.set_fps(60);
+};
+$hxClasses["idv.cjcat.stardustextended.emitters.Emitter"] = idv_cjcat_stardustextended_emitters_Emitter;
+idv_cjcat_stardustextended_emitters_Emitter.__name__ = "idv.cjcat.stardustextended.emitters.Emitter";
+idv_cjcat_stardustextended_emitters_Emitter.__interfaces__ = [idv_cjcat_stardustextended_initializers_InitializerCollector,idv_cjcat_stardustextended_actions_ActionCollector];
+idv_cjcat_stardustextended_emitters_Emitter.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_emitters_Emitter.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	eventDispatcher: null
+	,addEventListener: function(_type,listener,useCapture,priority,useWeakReference) {
+		if(useWeakReference == null) {
+			useWeakReference = false;
+		}
+		if(priority == null) {
+			priority = 0;
+		}
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.addEventListener(_type,listener,useCapture,priority,useWeakReference);
+	}
+	,removeEventListener: function(_type,listener,useCapture) {
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.removeEventListener(_type,listener,useCapture);
+	}
+	,newParticles: null
+	,_particles: null
+	,get_particles: function() {
+		return this._particles;
+	}
+	,particleHandler: null
+	,_clock: null
+	,active: null
+	,currentTime: null
+	,factory: null
+	,_actionCollection: null
+	,activeActions: null
+	,_invFps: null
+	,timeSinceLastStep: null
+	,_fps: null
+	,_numParticles: null
+	,get_clock: function() {
+		return this._clock;
+	}
+	,set_clock: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_clocks_SteadyClock(0);
+		}
+		this._clock = value;
+		return value;
+	}
+	,set_fps: function(val) {
+		if(val > 60) {
+			val = 60;
+		}
+		this._fps = val;
+		this._invFps = 1 / val - idv_cjcat_stardustextended_emitters_Emitter.timeStepCorrectionOffset;
+		return val;
+	}
+	,get_fps: function() {
+		return this._fps;
+	}
+	,step: function(time) {
+		if(time <= 0) {
+			return;
+		}
+		this.timeSinceLastStep += time;
+		this.currentTime += time;
+		if(this.timeSinceLastStep < this._invFps) {
+			return;
+		}
+		if(this.active) {
+			this.createParticles(this._clock.getTicks(this.timeSinceLastStep));
+		}
+		this.activeActions.set_length(0);
+		var action;
+		var len = this.get_actions().get_length();
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			action = this.get_actions().get(i);
+			if(action.active) {
+				this.activeActions.push(action);
+			}
+		}
+		len = this.activeActions.get_length();
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			action = this.activeActions.get(i);
+			if(action.get_needsSortedParticles()) {
+				this._particles.sort(idv_cjcat_stardustextended_particles_Particle.compareFunction);
+				break;
+			}
+		}
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			this.activeActions.get(i).preUpdate(this,this.timeSinceLastStep);
+		}
+		var p;
+		var m = 0;
+		while(m < this._particles.get_length()) {
+			p = this._particles.get(m);
+			var _g = 0;
+			var _g1 = len;
+			while(_g < _g1) {
+				var i = _g++;
+				action = this.activeActions.get(i);
+				action.update(this,p,this.timeSinceLastStep,this.currentTime);
+			}
+			if(p.isDead) {
+				this.particleHandler.particleRemoved(p);
+				p.destroy();
+				var _this = this.factory;
+				idv_cjcat_stardustextended_particles_ParticlePool._recycled.push(p);
+				var this1 = this._particles;
+				this1.__tempIndex = m;
+				var _g_current = 0;
+				var _g_args = [];
+				while(_g_current < _g_args.length) {
+					var item = _g_args[_g_current++];
+					this1.insertAt(this1.__tempIndex,item);
+					this1.__tempIndex++;
+				}
+				this1.splice(this1.__tempIndex,1);
+			} else {
+				++m;
+			}
+		}
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			this.activeActions.get(i).postUpdate(this,this.timeSinceLastStep);
+		}
+		if(this.eventDispatcher.hasEventListener("StardustEmitterStepEndEvent")) {
+			this.eventDispatcher.dispatchEvent(new idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent(this));
+		}
+		this.particleHandler.stepEnd(this,this._particles,this.timeSinceLastStep);
+		this.timeSinceLastStep = 0;
+	}
+	,get_actions: function() {
+		return this._actionCollection._actions;
+	}
+	,addAction: function(action) {
+		this._actionCollection.addAction(action);
+		idv_cjcat_stardustextended_actions_Action.addEvent.set_action(action);
+		action.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.addEvent);
+	}
+	,removeAction: function(action) {
+		this._actionCollection.removeAction(action);
+		idv_cjcat_stardustextended_actions_Action.removeEvent.set_action(action);
+		action.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.removeEvent);
+	}
+	,clearActions: function() {
+		var actions = this._actionCollection._actions;
+		var len = actions.get_length();
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			var action = actions.get(i);
+			idv_cjcat_stardustextended_actions_Action.removeEvent.set_action(action);
+			action.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_actions_Action.removeEvent);
+		}
+		this._actionCollection.clearActions();
+	}
+	,get_initializers: function() {
+		return this.factory.get_initializerCollection().get_initializers();
+	}
+	,addInitializer: function(initializer) {
+		this.factory.addInitializer(initializer);
+		initializer.dispatchAddEvent();
+	}
+	,removeInitializer: function(initializer) {
+		this.factory.removeInitializer(initializer);
+		initializer.dispatchRemoveEvent();
+	}
+	,clearInitializers: function() {
+		var initializers = this.factory.get_initializerCollection().get_initializers();
+		var len = initializers.get_length();
+		var _g = 0;
+		var _g1 = len;
+		while(_g < _g1) {
+			var i = _g++;
+			initializers.get(i).dispatchRemoveEvent();
+		}
+		this.factory.clearInitializers();
+	}
+	,reset: function() {
+		this.currentTime = 0;
+		this.clearParticles();
+		this._clock.reset();
+		this.particleHandler.reset();
+	}
+	,get_numParticles: function() {
+		return this._particles.get_length();
+	}
+	,createParticles: function(pCount) {
+		this.newParticles.set_length(0);
+		var _this = this.factory;
+		var currentTime = this.currentTime;
+		var particles = this.newParticles;
+		if(particles == null) {
+			particles = openfl_Vector.toObjectVector(null);
+		}
+		if(pCount > 0) {
+			var i;
+			var _g = 0;
+			var _g1 = pCount;
+			while(_g < _g1) {
+				var i = _g++;
+				var particle = idv_cjcat_stardustextended_particles_ParticlePool._recycled.length > 0 ? idv_cjcat_stardustextended_particles_ParticlePool._recycled.pop() : new idv_cjcat_stardustextended_particles_Particle();
+				particle.initLife = particle.life = particle.currentAnimationFrame = 0;
+				particle.initScale = particle.scale = 1;
+				particle.initAlpha = particle.alpha = 1;
+				particle.mass = 1;
+				particle.isDead = false;
+				particle.collisionRadius = 0;
+				particle.colorR = 1;
+				particle.colorB = 1;
+				particle.colorG = 1;
+				particle.x = 0;
+				particle.y = 0;
+				particle.vx = 0;
+				particle.vy = 0;
+				particle.rotation = 0;
+				particle.omega = 0;
+				particles.push(particle);
+			}
+			var initializers = _this._initializerCollection.get_initializers();
+			var len = initializers.get_length();
+			var _g = 0;
+			var _g1 = len;
+			while(_g < _g1) {
+				var i = _g++;
+				initializers.get(i).doInitialize(particles,currentTime);
+			}
+		}
+		this.addParticles(this.newParticles);
+		return this.newParticles;
+	}
+	,addParticles: function(particles) {
+		var particle;
+		var plen = particles.get_length();
+		var _g = 0;
+		var _g1 = plen;
+		while(_g < _g1) {
+			var m = _g++;
+			particle = particles.get(m);
+			this._particles.push(particle);
+			this.particleHandler.particleAdded(particle);
+		}
+	}
+	,clearParticles: function() {
+		var particle;
+		var _g = 0;
+		var _g1 = this._particles.get_length();
+		while(_g < _g1) {
+			var m = _g++;
+			particle = this._particles.get(m);
+			this.particleHandler.particleRemoved(particle);
+			particle.destroy();
+			var _this = this.factory;
+			idv_cjcat_stardustextended_particles_ParticlePool._recycled.push(particle);
+		}
+		this._particles = openfl_Vector.toObjectVector(null);
+	}
+	,getRelatedObjects: function() {
+		var allElems = openfl_Vector.toObjectVector(null);
+		allElems.push(this._clock);
+		allElems.push(this.particleHandler);
+		allElems = allElems.concat(this.get_initializers());
+		allElems = allElems.concat(this.get_actions());
+		return allElems;
+	}
+	,getXMLTagName: function() {
+		return "Emitter2D";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.createElement("emitters");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("active",Std.string(this.active));
+		xml.set("clock",this._clock.name);
+		xml.set("particleHandler",this.particleHandler.name);
+		xml.set("fps",Std.string(this.get_fps()));
+		if(this.get_actions().get_length() > 0) {
+			xml.addChild(Xml.createElement("actions"));
+			var action = this.get_actions().iterator();
+			while(action.hasNext()) {
+				var action1 = action.next();
+				xml.elementsNamed("actions").next().addChild(action1.getXMLTag());
+			}
+		}
+		if(this.get_initializers().get_length() > 0) {
+			xml.addChild(Xml.createElement("initializers"));
+			var initializer = this.get_initializers().iterator();
+			while(initializer.hasNext()) {
+				var initializer1 = initializer.next();
+				xml.elementsNamed("initializers").next().addChild(initializer1.getXMLTag());
+			}
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		this._actionCollection.clearActions();
+		this.factory.clearInitializers();
+		if(xml.exists("active")) {
+			this.active = xml.get("active") == "true";
+		}
+		if(xml.exists("clock")) {
+			this.set_clock(builder.getElementByName(xml.get("clock")));
+		}
+		if(xml.exists("particleHandler")) {
+			this.particleHandler = builder.getElementByName(xml.get("particleHandler"));
+		}
+		if(xml.exists("fps")) {
+			this.set_fps(parseFloat(xml.get("fps")));
+		}
+		var node;
+		var node = xml.elementsNamed("actions");
+		while(node.hasNext()) {
+			var node1 = node.next();
+			var childNode = node1.elements();
+			while(childNode.hasNext()) {
+				var childNode1 = childNode.next();
+				this.addAction(builder.getElementByName(childNode1.get("name")));
+			}
+		}
+		var node = xml.elementsNamed("initializers");
+		while(node.hasNext()) {
+			var node1 = node.next();
+			var childNode = node1.elements();
+			while(childNode.hasNext()) {
+				var childNode1 = childNode.next();
+				this.addInitializer(builder.getElementByName(childNode1.get("name")));
+			}
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_emitters_Emitter
+	,__properties__: {set_fps:"set_fps",get_fps:"get_fps",set_clock:"set_clock",get_clock:"get_clock",get_initializers:"get_initializers",get_actions:"get_actions",get_numParticles:"get_numParticles"}
+});
+var idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent = function(emitter) {
+	openfl_events_Event.call(this,"StardustEmitterStepEndEvent");
+	this._emitter = emitter;
+};
+$hxClasses["idv.cjcat.stardustextended.events.StardustEmitterStepEndEvent"] = idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent;
+idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent.__name__ = "idv.cjcat.stardustextended.events.StardustEmitterStepEndEvent";
+idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent.__super__ = openfl_events_Event;
+idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent.prototype = $extend(openfl_events_Event.prototype,{
+	_emitter: null
+	,get_emitter: function() {
+		return this._emitter;
+	}
+	,clone: function() {
+		return new idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent(this._emitter);
+	}
+	,__class__: idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent
+	,__properties__: {get_emitter:"get_emitter"}
+});
+var idv_cjcat_stardustextended_events_StardustInitializerEvent = function(_type) {
+	openfl_events_Event.call(this,_type);
+};
+$hxClasses["idv.cjcat.stardustextended.events.StardustInitializerEvent"] = idv_cjcat_stardustextended_events_StardustInitializerEvent;
+idv_cjcat_stardustextended_events_StardustInitializerEvent.__name__ = "idv.cjcat.stardustextended.events.StardustInitializerEvent";
+idv_cjcat_stardustextended_events_StardustInitializerEvent.__super__ = openfl_events_Event;
+idv_cjcat_stardustextended_events_StardustInitializerEvent.prototype = $extend(openfl_events_Event.prototype,{
+	_initializer: null
+	,set_initializer: function(action) {
+		this._initializer = action;
+		return action;
+	}
+	,get_initializer: function() {
+		return this._initializer;
+	}
+	,clone: function() {
+		var copy = new idv_cjcat_stardustextended_events_StardustInitializerEvent(this.type);
+		copy.set_initializer(this._initializer);
+		return copy;
+	}
+	,__class__: idv_cjcat_stardustextended_events_StardustInitializerEvent
+	,__properties__: {set_initializer:"set_initializer",get_initializer:"get_initializer"}
+});
+var idv_cjcat_stardustextended_fields_Field = function() {
+	this.position = new openfl_geom_Point();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this.active = true;
+	this.massless = true;
+};
+$hxClasses["idv.cjcat.stardustextended.fields.Field"] = idv_cjcat_stardustextended_fields_Field;
+idv_cjcat_stardustextended_fields_Field.__name__ = "idv.cjcat.stardustextended.fields.Field";
+idv_cjcat_stardustextended_fields_Field.__interfaces__ = [idv_cjcat_stardustextended_interfaces_IPosition];
+idv_cjcat_stardustextended_fields_Field.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_fields_Field.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	active: null
+	,massless: null
+	,position: null
+	,md2D: null
+	,mass_inv: null
+	,getMotionData2D: function(particle) {
+		if(!this.active) {
+			var x = 0;
+			var y = 0;
+			if(y == null) {
+				y = 0;
+			}
+			if(x == null) {
+				x = 0;
+			}
+			var obj;
+			if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+				obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+				obj.x = x;
+				obj.y = y;
+			} else {
+				obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+			}
+			return obj;
+		}
+		this.md2D = this.calculateMotionData2D(particle);
+		if(!this.massless) {
+			this.mass_inv = 1 / particle.mass;
+			this.md2D.x *= this.mass_inv;
+			this.md2D.y *= this.mass_inv;
+		}
+		return this.md2D;
+	}
+	,calculateMotionData2D: function(particle) {
+		return null;
+	}
+	,setPosition: function(xc,yc) {
+		throw new openfl_errors_Error("This method must be overridden by subclasses");
+	}
+	,getPosition: function() {
+		throw new openfl_errors_Error("This method must be overridden by subclasses");
+	}
+	,getXMLTagName: function() {
+		return "Field";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<fields/>");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("active",Std.string(this.active));
+		xml.set("massless",Std.string(this.massless));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("active")) {
+			this.active = xml.get("active") == "true";
+		}
+		if(xml.exists("massless")) {
+			this.massless = xml.get("massless") == "true";
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_fields_Field
+});
+var idv_cjcat_stardustextended_fields_BitmapField = function(x,y,max,channelX,channelY) {
+	if(channelY == null) {
+		channelY = 2;
+	}
+	if(channelX == null) {
+		channelX = 1;
+	}
+	if(max == null) {
+		max = 1;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_fields_Field.call(this);
+	this.x = x;
+	this.y = y;
+	this.max = max;
+	this.channelX = channelX;
+	this.channelY = channelY;
+	this.scaleX = 1;
+	this.scaleY = 1;
+	this.tile = true;
+	this.update();
+};
+$hxClasses["idv.cjcat.stardustextended.fields.BitmapField"] = idv_cjcat_stardustextended_fields_BitmapField;
+idv_cjcat_stardustextended_fields_BitmapField.__name__ = "idv.cjcat.stardustextended.fields.BitmapField";
+idv_cjcat_stardustextended_fields_BitmapField.__super__ = idv_cjcat_stardustextended_fields_Field;
+idv_cjcat_stardustextended_fields_BitmapField.prototype = $extend(idv_cjcat_stardustextended_fields_Field.prototype,{
+	x: null
+	,y: null
+	,channelX: null
+	,channelY: null
+	,max: null
+	,scaleX: null
+	,scaleY: null
+	,tile: null
+	,_bitmapData: null
+	,update: function(bitmapData) {
+		if(bitmapData == null) {
+			bitmapData = new openfl_display_BitmapData(1,1,false,8421504);
+		}
+		this._bitmapData = bitmapData;
+	}
+	,calculateMotionData2D: function(particle) {
+		var px = particle.x / this.scaleX;
+		var py = particle.y / this.scaleY;
+		if(this.tile) {
+			var value2 = this._bitmapData.width;
+			var remainder = px % value2;
+			px = remainder < 0 ? remainder + value2 : remainder;
+			var value2 = this._bitmapData.height;
+			var remainder = py % value2;
+			py = remainder < 0 ? remainder + value2 : remainder;
+		} else if(px < 0 || px >= this._bitmapData.width || py < 0 || py >= this._bitmapData.height) {
+			return null;
+		}
+		var finalX = 0;
+		var finalY = 0;
+		var color = this._bitmapData.getPixel(px | 0,py | 0);
+		switch(this.channelX) {
+		case 1:
+			finalX = 2 * (((color & 16711680) >> 16) / 255 - 0.5) * this.max;
+			break;
+		case 2:
+			finalX = 2 * (((color & 65280) >> 8) / 255 - 0.5) * this.max;
+			break;
+		case 4:
+			finalX = 2 * ((color & 255) / 255 - 0.5) * this.max;
+			break;
+		}
+		switch(this.channelY) {
+		case 1:
+			finalY = 2 * (((color & 16711680) >> 16) / 255 - 0.5) * this.max;
+			break;
+		case 2:
+			finalY = 2 * (((color & 65280) >> 8) / 255 - 0.5) * this.max;
+			break;
+		case 4:
+			finalY = 2 * ((color & 255) / 255 - 0.5) * this.max;
+			break;
+		}
+		var x = finalX;
+		var y = finalY;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "BitmapField";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_fields_Field.prototype.toXML.call(this);
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("channelX",Std.string(this.channelX));
+		xml.set("channelY",Std.string(this.channelY));
+		xml.set("max",Std.string(this.max));
+		xml.set("scaleX",Std.string(this.scaleX));
+		xml.set("scaleY",Std.string(this.scaleY));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_fields_Field.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("channelX")) {
+			this.channelX = parseFloat(xml.get("channelX")) | 0;
+		}
+		if(xml.exists("channelY")) {
+			this.channelY = parseFloat(xml.get("channelY")) | 0;
+		}
+		if(xml.exists("max")) {
+			this.max = parseFloat(xml.get("max"));
+		}
+		if(xml.exists("scaleX")) {
+			this.scaleX = parseFloat(xml.get("scaleX"));
+		}
+		if(xml.exists("scaleY")) {
+			this.scaleY = parseFloat(xml.get("scaleY"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_fields_BitmapField
+});
+var idv_cjcat_stardustextended_fields_RadialField = function(x,y,strength,attenuationPower,epsilon) {
+	if(epsilon == null) {
+		epsilon = 1;
+	}
+	if(attenuationPower == null) {
+		attenuationPower = 0;
+	}
+	if(strength == null) {
+		strength = 1;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	this._rVec = new idv_cjcat_stardustextended_geom_Vec2D(0,0);
+	idv_cjcat_stardustextended_fields_Field.call(this);
+	this.x = x;
+	this.y = y;
+	this.strength = strength;
+	this.attenuationPower = attenuationPower;
+	this.epsilon = epsilon;
+};
+$hxClasses["idv.cjcat.stardustextended.fields.RadialField"] = idv_cjcat_stardustextended_fields_RadialField;
+idv_cjcat_stardustextended_fields_RadialField.__name__ = "idv.cjcat.stardustextended.fields.RadialField";
+idv_cjcat_stardustextended_fields_RadialField.__super__ = idv_cjcat_stardustextended_fields_Field;
+idv_cjcat_stardustextended_fields_RadialField.prototype = $extend(idv_cjcat_stardustextended_fields_Field.prototype,{
+	x: null
+	,y: null
+	,strength: null
+	,attenuationPower: null
+	,epsilon: null
+	,_rVec: null
+	,_calLen: null
+	,calculateMotionData2D: function(particle) {
+		this._rVec.x = particle.x - this.x;
+		this._rVec.y = particle.y - this.y;
+		this._calLen = this._rVec.get_length();
+		if(this._calLen < this.epsilon) {
+			this._calLen = this.epsilon;
+		}
+		this._rVec.set_length(this.strength * Math.pow(this._calLen,-0.5 * this.attenuationPower));
+		var x = this._rVec.x;
+		var y = this._rVec.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,setPosition: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,getPosition: function() {
+		this.position.setTo(this.x,this.y);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "RadialField";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_fields_Field.prototype.toXML.call(this);
+		xml.set("x",Std.string(this.x));
+		xml.set("y",Std.string(this.y));
+		xml.set("strength",Std.string(this.strength));
+		xml.set("attenuationPower",Std.string(this.attenuationPower));
+		xml.set("epsilon",Std.string(this.epsilon));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_fields_Field.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("strength")) {
+			this.strength = parseFloat(xml.get("strength"));
+		}
+		if(xml.exists("attenuationPower")) {
+			this.attenuationPower = parseFloat(xml.get("attenuationPower"));
+		}
+		if(xml.exists("epsilon")) {
+			this.epsilon = parseFloat(xml.get("epsilon"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_fields_RadialField
+});
+var idv_cjcat_stardustextended_fields_UniformField = function(x,y) {
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_fields_Field.call(this);
+	this.x = x;
+	this.y = y;
+};
+$hxClasses["idv.cjcat.stardustextended.fields.UniformField"] = idv_cjcat_stardustextended_fields_UniformField;
+idv_cjcat_stardustextended_fields_UniformField.__name__ = "idv.cjcat.stardustextended.fields.UniformField";
+idv_cjcat_stardustextended_fields_UniformField.__super__ = idv_cjcat_stardustextended_fields_Field;
+idv_cjcat_stardustextended_fields_UniformField.prototype = $extend(idv_cjcat_stardustextended_fields_Field.prototype,{
+	x: null
+	,y: null
+	,calculateMotionData2D: function(particle) {
+		var x = this.x;
+		var y = this.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,setPosition: function(xc,yc) {
+	}
+	,getPosition: function() {
+		this.position.setTo(0,0);
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "UniformField";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_fields_Field.prototype.toXML.call(this);
+		xml.set("x","x");
+		xml.set("y","y");
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_fields_Field.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this.x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this.y = parseFloat(xml.get("y"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_fields_UniformField
+});
+var idv_cjcat_stardustextended_geom_MotionData2D = function(x,y) {
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	this.x = x;
+	this.y = y;
+};
+$hxClasses["idv.cjcat.stardustextended.geom.MotionData2D"] = idv_cjcat_stardustextended_geom_MotionData2D;
+idv_cjcat_stardustextended_geom_MotionData2D.__name__ = "idv.cjcat.stardustextended.geom.MotionData2D";
+idv_cjcat_stardustextended_geom_MotionData2D.prototype = {
+	x: null
+	,y: null
+	,setTo: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,__class__: idv_cjcat_stardustextended_geom_MotionData2D
+};
+var idv_cjcat_stardustextended_geom_MotionData2DPool = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.geom.MotionData2DPool"] = idv_cjcat_stardustextended_geom_MotionData2DPool;
+idv_cjcat_stardustextended_geom_MotionData2DPool.__name__ = "idv.cjcat.stardustextended.geom.MotionData2DPool";
+idv_cjcat_stardustextended_geom_MotionData2DPool.get = function(x,y) {
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	var obj;
+	if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+		obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+		obj.x = x;
+		obj.y = y;
+	} else {
+		obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+	}
+	return obj;
+};
+idv_cjcat_stardustextended_geom_MotionData2DPool.recycle = function(obj) {
+	idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(obj);
+};
+idv_cjcat_stardustextended_geom_MotionData2DPool.prototype = {
+	__class__: idv_cjcat_stardustextended_geom_MotionData2DPool
+};
+var idv_cjcat_stardustextended_geom_MotionData4D = function(x,y,vx,vy) {
+	if(vy == null) {
+		vy = 0;
+	}
+	if(vx == null) {
+		vx = 0;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	this.x = x;
+	this.y = y;
+	this.vx = vx;
+	this.vy = vy;
+};
+$hxClasses["idv.cjcat.stardustextended.geom.MotionData4D"] = idv_cjcat_stardustextended_geom_MotionData4D;
+idv_cjcat_stardustextended_geom_MotionData4D.__name__ = "idv.cjcat.stardustextended.geom.MotionData4D";
+idv_cjcat_stardustextended_geom_MotionData4D.prototype = {
+	x: null
+	,y: null
+	,vx: null
+	,vy: null
+	,__class__: idv_cjcat_stardustextended_geom_MotionData4D
+};
+var idv_cjcat_stardustextended_geom_MotionData4DPool = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.geom.MotionData4DPool"] = idv_cjcat_stardustextended_geom_MotionData4DPool;
+idv_cjcat_stardustextended_geom_MotionData4DPool.__name__ = "idv.cjcat.stardustextended.geom.MotionData4DPool";
+idv_cjcat_stardustextended_geom_MotionData4DPool.get = function(x,y,vx,vy) {
+	if(vy == null) {
+		vy = 0;
+	}
+	if(vx == null) {
+		vx = 0;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	var obj;
+	if(idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.length > 0) {
+		obj = idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.pop();
+		obj.x = x;
+		obj.y = y;
+		obj.vx = vx;
+		obj.vy = vy;
+	} else {
+		obj = new idv_cjcat_stardustextended_geom_MotionData4D(x,y,vx,vy);
+	}
+	return obj;
+};
+idv_cjcat_stardustextended_geom_MotionData4DPool.recycle = function(obj) {
+	idv_cjcat_stardustextended_geom_MotionData4DPool._recycled.push(obj);
+};
+idv_cjcat_stardustextended_geom_MotionData4DPool.prototype = {
+	__class__: idv_cjcat_stardustextended_geom_MotionData4DPool
+};
+var idv_cjcat_stardustextended_geom_Vec2D = function(_x,_y) {
+	if(_y == null) {
+		_y = 0;
+	}
+	if(_x == null) {
+		_x = 0;
+	}
+	openfl_geom_Point.call(this,_x,_y);
+};
+$hxClasses["idv.cjcat.stardustextended.geom.Vec2D"] = idv_cjcat_stardustextended_geom_Vec2D;
+idv_cjcat_stardustextended_geom_Vec2D.__name__ = "idv.cjcat.stardustextended.geom.Vec2D";
+idv_cjcat_stardustextended_geom_Vec2D.__super__ = openfl_geom_Point;
+idv_cjcat_stardustextended_geom_Vec2D.prototype = $extend(openfl_geom_Point.prototype,{
+	clone: function() {
+		return new idv_cjcat_stardustextended_geom_Vec2D(this.x,this.y);
+	}
+	,get_length: function() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	,set_length: function(value) {
+		if(this.x == 0 && this.y == 0) {
+			return 0;
+		}
+		var factor = value / this.get_length();
+		this.x *= factor;
+		this.y *= factor;
+		return value;
+	}
+	,setTo: function(xc,yc) {
+		this.x = xc;
+		this.y = yc;
+	}
+	,dot: function(vector) {
+		return this.x * vector.x + this.y * vector.y;
+	}
+	,project: function(target) {
+		var temp = this.clone();
+		temp.projectThis(target);
+		return temp;
+	}
+	,projectThis: function(target) {
+		var x = target.x;
+		var y = target.y;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+			obj.setTo(x,y);
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+		}
+		var temp = obj;
+		temp.set_length(1.0);
+		temp.set_length(this.dot(temp));
+		this.x = temp.x;
+		this.y = temp.y;
+		idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(temp);
+	}
+	,rotate: function(angle,useRadian) {
+		if(useRadian == null) {
+			useRadian = false;
+		}
+		if(!useRadian) {
+			angle *= idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN;
+		}
+		var originalX = this.x;
+		this.x = originalX * Math.cos(angle) - this.y * Math.sin(angle);
+		this.y = originalX * Math.sin(angle) + this.y * Math.cos(angle);
+		return this;
+	}
+	,get_angle: function() {
+		return Math.atan2(this.y,this.x) * idv_cjcat_stardustextended_math_StardustMath.RADIAN_TO_DEGREE;
+	}
+	,set_angle: function(value) {
+		var originalLength = this.get_length();
+		var rad = value * idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN;
+		this.x = originalLength * Math.cos(rad);
+		this.y = originalLength * Math.sin(rad);
+		return value;
+	}
+	,__class__: idv_cjcat_stardustextended_geom_Vec2D
+	,__properties__: $extend(openfl_geom_Point.prototype.__properties__,{set_angle:"set_angle",get_angle:"get_angle"})
+});
+var idv_cjcat_stardustextended_geom_Vec2DPool = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.geom.Vec2DPool"] = idv_cjcat_stardustextended_geom_Vec2DPool;
+idv_cjcat_stardustextended_geom_Vec2DPool.__name__ = "idv.cjcat.stardustextended.geom.Vec2DPool";
+idv_cjcat_stardustextended_geom_Vec2DPool.get = function(x,y) {
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	var obj;
+	if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+		obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+		obj.setTo(x,y);
+	} else {
+		obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+	}
+	return obj;
+};
+idv_cjcat_stardustextended_geom_Vec2DPool.recycle = function(obj) {
+	idv_cjcat_stardustextended_geom_Vec2DPool._recycled.push(obj);
+};
+idv_cjcat_stardustextended_geom_Vec2DPool.prototype = {
+	__class__: idv_cjcat_stardustextended_geom_Vec2DPool
+};
+var idv_cjcat_stardustextended_handlers_ISpriteSheetHandler = function() { };
+$hxClasses["idv.cjcat.stardustextended.handlers.ISpriteSheetHandler"] = idv_cjcat_stardustextended_handlers_ISpriteSheetHandler;
+idv_cjcat_stardustextended_handlers_ISpriteSheetHandler.__name__ = "idv.cjcat.stardustextended.handlers.ISpriteSheetHandler";
+idv_cjcat_stardustextended_handlers_ISpriteSheetHandler.__isInterface__ = true;
+idv_cjcat_stardustextended_handlers_ISpriteSheetHandler.prototype = {
+	get_spriteSheetAnimationSpeed: null
+	,set_spriteSheetAnimationSpeed: null
+	,get_spriteSheetStartAtRandomFrame: null
+	,set_spriteSheetStartAtRandomFrame: null
+	,get_smoothing: null
+	,set_smoothing: null
+	,get_isSpriteSheet: null
+	,get_blendMode: null
+	,set_blendMode: null
+	,__class__: idv_cjcat_stardustextended_handlers_ISpriteSheetHandler
+	,__properties__: {set_blendMode:"set_blendMode",get_blendMode:"get_blendMode",get_isSpriteSheet:"get_isSpriteSheet",set_smoothing:"set_smoothing",get_smoothing:"get_smoothing",set_spriteSheetStartAtRandomFrame:"set_spriteSheetStartAtRandomFrame",get_spriteSheetStartAtRandomFrame:"get_spriteSheetStartAtRandomFrame",set_spriteSheetAnimationSpeed:"set_spriteSheetAnimationSpeed",get_spriteSheetAnimationSpeed:"get_spriteSheetAnimationSpeed"}
+};
+var idv_cjcat_stardustextended_handlers_ParticleHandler = function() {
+	idv_cjcat_stardustextended_StardustElement.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.handlers.ParticleHandler"] = idv_cjcat_stardustextended_handlers_ParticleHandler;
+idv_cjcat_stardustextended_handlers_ParticleHandler.__name__ = "idv.cjcat.stardustextended.handlers.ParticleHandler";
+idv_cjcat_stardustextended_handlers_ParticleHandler.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_handlers_ParticleHandler.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	reset: function() {
+	}
+	,stepBegin: function(emitter,particles,time) {
+	}
+	,stepEnd: function(emitter,particles,time) {
+	}
+	,particleAdded: function(particle) {
+	}
+	,particleRemoved: function(particle) {
+	}
+	,getXMLTagName: function() {
+		return "ParticleHandler";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<handlers/>");
+	}
+	,__class__: idv_cjcat_stardustextended_handlers_ParticleHandler
+});
+var idv_cjcat_stardustextended_handlers_starling_Frame = function(_topLeftX,_topLeftY,_bottomRightX,_bottomRightY,_halfWidth,_halfHeight) {
+	this.topLeftX = _topLeftX;
+	this.topLeftY = _topLeftY;
+	this.bottomRightX = _bottomRightX;
+	this.bottomRightY = _bottomRightY;
+	this.particleHalfWidth = _halfWidth;
+	this.particleHalfHeight = _halfHeight;
+};
+$hxClasses["idv.cjcat.stardustextended.handlers.starling.Frame"] = idv_cjcat_stardustextended_handlers_starling_Frame;
+idv_cjcat_stardustextended_handlers_starling_Frame.__name__ = "idv.cjcat.stardustextended.handlers.starling.Frame";
+idv_cjcat_stardustextended_handlers_starling_Frame.prototype = {
+	particleHalfWidth: null
+	,particleHalfHeight: null
+	,topLeftX: null
+	,topLeftY: null
+	,bottomRightX: null
+	,bottomRightY: null
+	,__class__: idv_cjcat_stardustextended_handlers_starling_Frame
+};
+var idv_cjcat_stardustextended_handlers_starling_ParticleProgram = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.handlers.starling.ParticleProgram"] = idv_cjcat_stardustextended_handlers_starling_ParticleProgram;
+idv_cjcat_stardustextended_handlers_starling_ParticleProgram.__name__ = "idv.cjcat.stardustextended.handlers.starling.ParticleProgram";
+idv_cjcat_stardustextended_handlers_starling_ParticleProgram.getProgram = function(texMipmap,texFormat,texSmoothing) {
+	if(texSmoothing == null) {
+		texSmoothing = "bilinear";
+	}
+	if(texFormat == null) {
+		texFormat = "bgra";
+	}
+	if(texMipmap == null) {
+		texMipmap = true;
+	}
+	var target = starling_core_Starling.get_current();
+	var programName = idv_cjcat_stardustextended_handlers_starling_ParticleProgram.getImageProgramName(texMipmap,texFormat,texSmoothing);
+	var program = target.get_painter().getProgram(programName);
+	if(program == null) {
+		var vertexShader = "m44 op, va0, vc1 \n" + "mul v0, va1, vc0 \n" + "mov v1, va2      \n";
+		var fragmentShader = "tex ft1,  v1, fs0 <???> \n" + "mul  oc, ft1,  v0       \n";
+		fragmentShader = StringTools.replace(fragmentShader,"<???>",starling_utils_RenderUtil.getTextureLookupFlags(texFormat,texMipmap,false,texSmoothing));
+		program = starling_rendering_Program.fromSource(vertexShader,fragmentShader);
+		target.get_painter().registerProgram(programName,program);
+	}
+	return program;
+};
+idv_cjcat_stardustextended_handlers_starling_ParticleProgram.getImageProgramName = function(mipMap,format,smoothing) {
+	var bitField = 0;
+	if(mipMap) {
+		bitField = bitField | 2;
+	}
+	if(smoothing == "none") {
+		bitField = bitField | 8;
+	} else if(smoothing == "trilinear") {
+		bitField = bitField | 16;
+	}
+	if(openfl_display3D_Context3DTextureFormat.fromString(format) == 3) {
+		bitField = bitField | 32;
+	} else if(format == "compressedAlpha") {
+		bitField = bitField | 64;
+	}
+	var name = idv_cjcat_stardustextended_handlers_starling_ParticleProgram.sProgramNameCache.h[bitField];
+	if(name == null) {
+		name = "__STARDUST_RENDERER." + Std.string(UInt.toFloat(bitField));
+		idv_cjcat_stardustextended_handlers_starling_ParticleProgram.sProgramNameCache.h[bitField] = name;
+	}
+	return name;
+};
+idv_cjcat_stardustextended_handlers_starling_ParticleProgram.prototype = {
+	__class__: idv_cjcat_stardustextended_handlers_starling_ParticleProgram
+};
+var idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer = function() {
+	this.vertexID = 0;
+	this.premultiplyAlpha = true;
+	this.mNumParticles = 0;
+	starling_display_DisplayObject.call(this);
+	if(idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.initCalled == false) {
+		idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.init();
+	}
+	this.vertexes = openfl_Vector.toFloatVector(null);
+};
+$hxClasses["idv.cjcat.stardustextended.handlers.starling.StardustStarlingRenderer"] = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.__name__ = "idv.cjcat.stardustextended.handlers.starling.StardustStarlingRenderer";
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.init = function(numberOfBuffers,maxParticlesPerBuffer) {
+	if(maxParticlesPerBuffer == null) {
+		maxParticlesPerBuffer = 16383;
+	}
+	if(numberOfBuffers == null) {
+		numberOfBuffers = 2;
+	}
+	idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.numberOfVertexBuffers = numberOfBuffers;
+	if(maxParticlesPerBuffer > 16383) {
+		maxParticlesPerBuffer = 16383;
+		haxe_Log.trace("StardustStarlingRenderer WARNING: Tried to render than 16383 particles, setting value to 16383",{ fileName : "Source/idv/cjcat/stardustextended/handlers/starling/StardustStarlingRenderer.hx", lineNumber : 74, className : "idv.cjcat.stardustextended.handlers.starling.StardustStarlingRenderer", methodName : "init"});
+	}
+	idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles = maxParticlesPerBuffer;
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.createBuffers(maxParticlesPerBuffer,numberOfBuffers);
+	if(!idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.initCalled) {
+		var _g = 0;
+		while(_g < 2048) {
+			var i = _g++;
+			idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT.set(i & 2047,Math.cos(i * 0.00306796157577128245943617517898));
+			idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT.set(i & 2047,Math.sin(i * 0.00306796157577128245943617517898));
+		}
+		starling_core_Starling.get_current().get_stage3D().addEventListener("context3DCreate",idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.onContextCreated);
+		idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.initCalled = true;
+	}
+};
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.onContextCreated = function(event) {
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.createBuffers(idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles,idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.numberOfVertexBuffers);
+};
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.__super__ = starling_display_DisplayObject;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.prototype = $extend(starling_display_DisplayObject.prototype,{
+	boundsRect: null
+	,mFilter: null
+	,mTexture: null
+	,mBatched: null
+	,vertexes: null
+	,frames: null
+	,mNumParticles: null
+	,texSmoothing: null
+	,premultiplyAlpha: null
+	,_id: null
+	,setTextures: function(texture,_frames) {
+		this.mTexture = texture;
+		this.frames = _frames;
+	}
+	,particle: null
+	,vertexID: null
+	,red: null
+	,green: null
+	,blue: null
+	,particleAlpha: null
+	,_rotation: null
+	,xPos: null
+	,yPos: null
+	,xOffset: null
+	,yOffset: null
+	,angle: null
+	,cos: null
+	,sin: null
+	,cosX: null
+	,cosY: null
+	,sinX: null
+	,sinY: null
+	,position: null
+	,frame: null
+	,bottomRightX: null
+	,bottomRightY: null
+	,topLeftX: null
+	,topLeftY: null
+	,_i: null
+	,advanceTime: function(mParticles) {
+		this.mNumParticles = mParticles.get_length();
+		this.vertexes.fixed = false;
+		this.vertexes.set_length(this.mNumParticles * 32);
+		this.vertexes.fixed = true;
+		var _g = 0;
+		var _g1 = this.mNumParticles;
+		while(_g < _g1) {
+			var _i = _g++;
+			this.vertexID = _i << 2;
+			this.particle = mParticles.get(_i);
+			this.particleAlpha = this.particle.alpha;
+			if(this.premultiplyAlpha) {
+				this.red = this.particle.colorR * this.particleAlpha;
+				this.green = this.particle.colorG * this.particleAlpha;
+				this.blue = this.particle.colorB * this.particleAlpha;
+			} else {
+				this.red = this.particle.colorR;
+				this.green = this.particle.colorG;
+				this.blue = this.particle.colorB;
+			}
+			this._rotation = this.particle.rotation * idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.DEGREES_TO_RADIANS;
+			this.xPos = this.particle.x;
+			this.yPos = this.particle.y;
+			this.frame = this.frames.get(this.particle.currentAnimationFrame);
+			this.bottomRightX = this.frame.bottomRightX;
+			this.bottomRightY = this.frame.bottomRightY;
+			this.topLeftX = this.frame.topLeftX;
+			this.topLeftY = this.frame.topLeftY;
+			this.xOffset = this.frame.particleHalfWidth * this.particle.scale;
+			this.yOffset = this.frame.particleHalfHeight * this.particle.scale;
+			this.position = this.vertexID << 3;
+			var tmp;
+			if(this._rotation != 0) {
+				var f = this._rotation;
+				tmp = !isNaN(f);
+			} else {
+				tmp = false;
+			}
+			if(tmp) {
+				this.angle = (this._rotation * 325.94932345220164765467394738691 | 0) & 2047;
+				this.cos = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT.get(this.angle);
+				this.sin = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT.get(this.angle);
+				this.cosX = this.cos * this.xOffset;
+				this.cosY = this.cos * this.yOffset;
+				this.sinX = this.sin * this.xOffset;
+				this.sinY = this.sin * this.yOffset;
+				this.vertexes.set(this.position,this.xPos - this.cosX + this.sinY);
+				this.vertexes.set(++this.position,this.yPos - this.sinX - this.cosY);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.topLeftX);
+				this.vertexes.set(++this.position,this.topLeftY);
+				this.vertexes.set(++this.position,this.xPos + this.cosX + this.sinY);
+				this.vertexes.set(++this.position,this.yPos + this.sinX - this.cosY);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.bottomRightX);
+				this.vertexes.set(++this.position,this.topLeftY);
+				this.vertexes.set(++this.position,this.xPos - this.cosX - this.sinY);
+				this.vertexes.set(++this.position,this.yPos - this.sinX + this.cosY);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.topLeftX);
+				this.vertexes.set(++this.position,this.bottomRightY);
+				this.vertexes.set(++this.position,this.xPos + this.cosX - this.sinY);
+				this.vertexes.set(++this.position,this.yPos + this.sinX + this.cosY);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.bottomRightX);
+				this.vertexes.set(++this.position,this.bottomRightY);
+			} else {
+				this.vertexes.set(this.position,this.xPos - this.xOffset);
+				this.vertexes.set(++this.position,this.yPos - this.yOffset);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.topLeftX);
+				this.vertexes.set(++this.position,this.topLeftY);
+				this.vertexes.set(++this.position,this.xPos + this.xOffset);
+				this.vertexes.set(++this.position,this.yPos - this.yOffset);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.bottomRightX);
+				this.vertexes.set(++this.position,this.topLeftY);
+				this.vertexes.set(++this.position,this.xPos - this.xOffset);
+				this.vertexes.set(++this.position,this.yPos + this.yOffset);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.topLeftX);
+				this.vertexes.set(++this.position,this.bottomRightY);
+				this.vertexes.set(++this.position,this.xPos + this.xOffset);
+				this.vertexes.set(++this.position,this.yPos + this.yOffset);
+				this.vertexes.set(++this.position,this.red);
+				this.vertexes.set(++this.position,this.green);
+				this.vertexes.set(++this.position,this.blue);
+				this.vertexes.set(++this.position,this.particleAlpha);
+				this.vertexes.set(++this.position,this.bottomRightX);
+				this.vertexes.set(++this.position,this.bottomRightY);
+			}
+		}
+	}
+	,isStateChange: function(texture,smoothing,blendMode,filter,premultiplyAlpha,numParticles) {
+		if(this.mNumParticles == 0) {
+			return false;
+		} else if(this.mNumParticles + numParticles > 16383) {
+			return true;
+		} else if(this.mTexture != null && texture != null) {
+			if(!(this.mTexture.get_base() != texture || this.texSmoothing != smoothing || this.get_blendMode() != blendMode || this.mFilter != filter)) {
+				return this.premultiplyAlpha != premultiplyAlpha;
+			} else {
+				return true;
+			}
+		}
+		return true;
+	}
+	,render: function(painter) {
+		painter.excludeFromCache(this);
+		if(this.mNumParticles > 0 && !this.mBatched) {
+			var mNumBatchedParticles = 0;
+			var last = this.get_parent().getChildIndex(this);
+			var isStateChange;
+			var targetIndex;
+			var sourceIndex;
+			var sourceEnd;
+			while(++last < this.get_parent().get_numChildren()) {
+				var nextPS;
+				try {
+					nextPS = js_Boot.__cast(this.get_parent().getChildAt(last) , idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer);
+				} catch( _g ) {
+					haxe_NativeStackTrace.lastError = _g;
+					nextPS = null;
+				}
+				isStateChange = nextPS.isStateChange(this.mTexture.get_base(),this.texSmoothing,this.get_blendMode(),this.mFilter,this.premultiplyAlpha,this.mNumParticles);
+				if(nextPS != null && !isStateChange) {
+					if(nextPS.mNumParticles > 0) {
+						this.vertexes.fixed = false;
+						targetIndex = (this.mNumParticles + mNumBatchedParticles) * 32 | 0;
+						sourceIndex = 0;
+						sourceEnd = nextPS.mNumParticles * 32 | 0;
+						while(sourceIndex < sourceEnd) this.vertexes.set(targetIndex++,nextPS.vertexes.get(sourceIndex++));
+						this.vertexes.fixed = true;
+						mNumBatchedParticles += nextPS.mNumParticles;
+						nextPS.mBatched = true;
+						nextPS.set_filter(null);
+					}
+				} else {
+					break;
+				}
+			}
+			var mNumBatchedParticles1 = mNumBatchedParticles;
+			var parentAlpha = this.get_parent() != null ? this.get_parent().get_alpha() : 1.0;
+			this.renderCustom(painter,mNumBatchedParticles1,parentAlpha);
+		}
+		starling_display_DisplayObject.prototype.set_filter.call(this,this.mFilter);
+		this.mBatched = false;
+	}
+	,batchNeighbours: function() {
+		var mNumBatchedParticles = 0;
+		var last = this.get_parent().getChildIndex(this);
+		var isStateChange;
+		var targetIndex;
+		var sourceIndex;
+		var sourceEnd;
+		while(++last < this.get_parent().get_numChildren()) {
+			var nextPS;
+			try {
+				nextPS = js_Boot.__cast(this.get_parent().getChildAt(last) , idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				nextPS = null;
+			}
+			isStateChange = nextPS.isStateChange(this.mTexture.get_base(),this.texSmoothing,this.get_blendMode(),this.mFilter,this.premultiplyAlpha,this.mNumParticles);
+			if(nextPS != null && !isStateChange) {
+				if(nextPS.mNumParticles > 0) {
+					this.vertexes.fixed = false;
+					targetIndex = (this.mNumParticles + mNumBatchedParticles) * 32 | 0;
+					sourceIndex = 0;
+					sourceEnd = nextPS.mNumParticles * 32 | 0;
+					while(sourceIndex < sourceEnd) this.vertexes.set(targetIndex++,nextPS.vertexes.get(sourceIndex++));
+					this.vertexes.fixed = true;
+					mNumBatchedParticles += nextPS.mNumParticles;
+					nextPS.mBatched = true;
+					nextPS.set_filter(null);
+				}
+			} else {
+				break;
+			}
+		}
+		return mNumBatchedParticles;
+	}
+	,renderCustom: function(painter,mNumBatchedParticles,parentAlpha) {
+		if(this.mNumParticles == 0 || idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_buffersCreated() == false) {
+			return;
+		}
+		if(mNumBatchedParticles > idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles) {
+			haxe_Log.trace("Over " + idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles + " particles! Aborting rendering",{ fileName : "Source/idv/cjcat/stardustextended/handlers/starling/StardustStarlingRenderer.hx", lineNumber : 334, className : "idv.cjcat.stardustextended.handlers.starling.StardustStarlingRenderer", methodName : "renderCustom"});
+			return;
+		}
+		idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.switchVertexBuffer();
+		var context = starling_core_Starling.get_current().get_context();
+		if(context == null) {
+			throw new starling_errors_MissingContextError();
+		}
+		painter.finishMeshBatch();
+		painter.set_drawCount(painter.get_drawCount() + 1);
+		painter.prepareToDraw();
+		starling_display_BlendMode.get(this.get_blendMode()).activate();
+		idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha.set(0,idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha.set(1,idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha.set(2,this.premultiplyAlpha ? parentAlpha : 1)));
+		idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha.set(3,parentAlpha);
+		idv_cjcat_stardustextended_handlers_starling_ParticleProgram.getProgram(this.mTexture.get_mipMapping(),openfl_display3D_Context3DTextureFormat.toString(this.mTexture.get_format()),this.texSmoothing).activate();
+		context.setProgramConstantsFromVector(1,0,idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha,1);
+		context.setProgramConstantsFromMatrix(1,1,painter.get_state().get_mvpMatrix3D(),true);
+		context.setTextureAt(0,this.mTexture.get_base());
+		var tmp = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBuffer();
+		var tmp1 = this.vertexes;
+		var a = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles * 4;
+		var b = this.vertexes.get_length() / 8 | 0;
+		tmp.uploadFromVector(tmp1,0,a > b ? b : a);
+		context.setVertexBufferAt(0,idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBuffer(),0,2);
+		context.setVertexBufferAt(1,idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBuffer(),2,4);
+		context.setVertexBufferAt(2,idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBuffer(),6,2);
+		var a = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.maxParticles;
+		var b = this.mNumParticles + mNumBatchedParticles;
+		context.drawTriangles(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indexBuffer,0,(a > b ? b : a) * 2);
+		context.setVertexBufferAt(0,null);
+		context.setVertexBufferAt(1,null);
+		context.setVertexBufferAt(2,null);
+		context.setTextureAt(0,null);
+	}
+	,set_filter: function(value) {
+		if(!this.mBatched) {
+			this.mFilter = value;
+		}
+		starling_display_DisplayObject.prototype.set_filter.call(this,value);
+		return value;
+	}
+	,getBounds: function(targetSpace,resultRect) {
+		if(this.boundsRect == null) {
+			this.boundsRect = new openfl_geom_Rectangle();
+		}
+		return this.boundsRect;
+	}
+	,__class__: idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer
+});
+var idv_cjcat_stardustextended_handlers_starling_StarlingHandler = function() {
+	this._premultiplyAlpha = true;
+	this._smoothing = "none";
+	this._spriteSheetAnimationSpeed = 1;
+	this._blendMode = "normal";
+	idv_cjcat_stardustextended_handlers_ParticleHandler.call(this);
+	this.timeSinceLastStep = 0;
+};
+$hxClasses["idv.cjcat.stardustextended.handlers.starling.StarlingHandler"] = idv_cjcat_stardustextended_handlers_starling_StarlingHandler;
+idv_cjcat_stardustextended_handlers_starling_StarlingHandler.__name__ = "idv.cjcat.stardustextended.handlers.starling.StarlingHandler";
+idv_cjcat_stardustextended_handlers_starling_StarlingHandler.__interfaces__ = [idv_cjcat_stardustextended_handlers_ISpriteSheetHandler];
+idv_cjcat_stardustextended_handlers_starling_StarlingHandler.__super__ = idv_cjcat_stardustextended_handlers_ParticleHandler;
+idv_cjcat_stardustextended_handlers_starling_StarlingHandler.prototype = $extend(idv_cjcat_stardustextended_handlers_ParticleHandler.prototype,{
+	_blendMode: null
+	,_spriteSheetAnimationSpeed: null
+	,_smoothing: null
+	,_isSpriteSheet: null
+	,_premultiplyAlpha: null
+	,_spriteSheetStartAtRandomFrame: null
+	,_totalFrames: null
+	,_textures: null
+	,_renderer: null
+	,timeSinceLastStep: null
+	,reset: function() {
+		this.timeSinceLastStep = 0;
+		var _this = this._renderer;
+		var mParticles = openfl_Vector.toObjectVector(null);
+		_this.mNumParticles = mParticles.get_length();
+		_this.vertexes.fixed = false;
+		_this.vertexes.set_length(_this.mNumParticles * 32);
+		_this.vertexes.fixed = true;
+		var _g = 0;
+		var _g1 = _this.mNumParticles;
+		while(_g < _g1) {
+			var _i = _g++;
+			_this.vertexID = _i << 2;
+			_this.particle = mParticles.get(_i);
+			_this.particleAlpha = _this.particle.alpha;
+			if(_this.premultiplyAlpha) {
+				_this.red = _this.particle.colorR * _this.particleAlpha;
+				_this.green = _this.particle.colorG * _this.particleAlpha;
+				_this.blue = _this.particle.colorB * _this.particleAlpha;
+			} else {
+				_this.red = _this.particle.colorR;
+				_this.green = _this.particle.colorG;
+				_this.blue = _this.particle.colorB;
+			}
+			_this._rotation = _this.particle.rotation * idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.DEGREES_TO_RADIANS;
+			_this.xPos = _this.particle.x;
+			_this.yPos = _this.particle.y;
+			_this.frame = _this.frames.get(_this.particle.currentAnimationFrame);
+			_this.bottomRightX = _this.frame.bottomRightX;
+			_this.bottomRightY = _this.frame.bottomRightY;
+			_this.topLeftX = _this.frame.topLeftX;
+			_this.topLeftY = _this.frame.topLeftY;
+			_this.xOffset = _this.frame.particleHalfWidth * _this.particle.scale;
+			_this.yOffset = _this.frame.particleHalfHeight * _this.particle.scale;
+			_this.position = _this.vertexID << 3;
+			var tmp;
+			if(_this._rotation != 0) {
+				var f = _this._rotation;
+				tmp = !isNaN(f);
+			} else {
+				tmp = false;
+			}
+			if(tmp) {
+				_this.angle = (_this._rotation * 325.94932345220164765467394738691 | 0) & 2047;
+				_this.cos = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT.get(_this.angle);
+				_this.sin = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT.get(_this.angle);
+				_this.cosX = _this.cos * _this.xOffset;
+				_this.cosY = _this.cos * _this.yOffset;
+				_this.sinX = _this.sin * _this.xOffset;
+				_this.sinY = _this.sin * _this.yOffset;
+				_this.vertexes.set(_this.position,_this.xPos - _this.cosX + _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.sinX - _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.cosX + _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.sinX - _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos - _this.cosX - _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.sinX + _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.cosX - _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.sinX + _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+			} else {
+				_this.vertexes.set(_this.position,_this.xPos - _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos - _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+			}
+		}
+	}
+	,set_container: function(container) {
+		this.createRendererIfNeeded();
+		container.addChild(this._renderer);
+		return container;
+	}
+	,createRendererIfNeeded: function() {
+		if(this._renderer == null) {
+			this._renderer = new idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer();
+			this._renderer.set_blendMode(this._blendMode);
+			this._renderer.texSmoothing = this._smoothing;
+			this._renderer.premultiplyAlpha = this._premultiplyAlpha;
+		}
+	}
+	,_stepSize: null
+	,_mNumParticles: null
+	,_particle: null
+	,_currentFrame: null
+	,_i: null
+	,stepEnd: function(emitter,particles,time) {
+		if(this._isSpriteSheet && this._spriteSheetAnimationSpeed > 0) {
+			if((this.timeSinceLastStep += time) > 1 / this._spriteSheetAnimationSpeed) {
+				this._stepSize = Math.floor(this.timeSinceLastStep * this._spriteSheetAnimationSpeed);
+				this._mNumParticles = particles.get_length();
+				var _g = 0;
+				var _g1 = this._mNumParticles;
+				while(_g < _g1) {
+					var _i = _g++;
+					this._particle = particles.get(_i);
+					this._currentFrame = this._particle.currentAnimationFrame;
+					this._currentFrame = this._currentFrame + this._stepSize | 0;
+					if(this._currentFrame >= this._totalFrames) {
+						this._currentFrame = 0;
+					}
+					this._particle.currentAnimationFrame = this._currentFrame;
+				}
+				this.timeSinceLastStep = 0;
+			}
+		}
+		var _this = this._renderer;
+		_this.mNumParticles = particles.get_length();
+		_this.vertexes.fixed = false;
+		_this.vertexes.set_length(_this.mNumParticles * 32);
+		_this.vertexes.fixed = true;
+		var _g = 0;
+		var _g1 = _this.mNumParticles;
+		while(_g < _g1) {
+			var _i = _g++;
+			_this.vertexID = _i << 2;
+			_this.particle = particles.get(_i);
+			_this.particleAlpha = _this.particle.alpha;
+			if(_this.premultiplyAlpha) {
+				_this.red = _this.particle.colorR * _this.particleAlpha;
+				_this.green = _this.particle.colorG * _this.particleAlpha;
+				_this.blue = _this.particle.colorB * _this.particleAlpha;
+			} else {
+				_this.red = _this.particle.colorR;
+				_this.green = _this.particle.colorG;
+				_this.blue = _this.particle.colorB;
+			}
+			_this._rotation = _this.particle.rotation * idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.DEGREES_TO_RADIANS;
+			_this.xPos = _this.particle.x;
+			_this.yPos = _this.particle.y;
+			_this.frame = _this.frames.get(_this.particle.currentAnimationFrame);
+			_this.bottomRightX = _this.frame.bottomRightX;
+			_this.bottomRightY = _this.frame.bottomRightY;
+			_this.topLeftX = _this.frame.topLeftX;
+			_this.topLeftY = _this.frame.topLeftY;
+			_this.xOffset = _this.frame.particleHalfWidth * _this.particle.scale;
+			_this.yOffset = _this.frame.particleHalfHeight * _this.particle.scale;
+			_this.position = _this.vertexID << 3;
+			var tmp;
+			if(_this._rotation != 0) {
+				var f = _this._rotation;
+				tmp = !isNaN(f);
+			} else {
+				tmp = false;
+			}
+			if(tmp) {
+				_this.angle = (_this._rotation * 325.94932345220164765467394738691 | 0) & 2047;
+				_this.cos = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT.get(_this.angle);
+				_this.sin = idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT.get(_this.angle);
+				_this.cosX = _this.cos * _this.xOffset;
+				_this.cosY = _this.cos * _this.yOffset;
+				_this.sinX = _this.sin * _this.xOffset;
+				_this.sinY = _this.sin * _this.yOffset;
+				_this.vertexes.set(_this.position,_this.xPos - _this.cosX + _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.sinX - _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.cosX + _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.sinX - _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos - _this.cosX - _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.sinX + _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.cosX - _this.sinY);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.sinX + _this.cosY);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+			} else {
+				_this.vertexes.set(_this.position,_this.xPos - _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos - _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.topLeftY);
+				_this.vertexes.set(++_this.position,_this.xPos - _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.topLeftX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+				_this.vertexes.set(++_this.position,_this.xPos + _this.xOffset);
+				_this.vertexes.set(++_this.position,_this.yPos + _this.yOffset);
+				_this.vertexes.set(++_this.position,_this.red);
+				_this.vertexes.set(++_this.position,_this.green);
+				_this.vertexes.set(++_this.position,_this.blue);
+				_this.vertexes.set(++_this.position,_this.particleAlpha);
+				_this.vertexes.set(++_this.position,_this.bottomRightX);
+				_this.vertexes.set(++_this.position,_this.bottomRightY);
+			}
+		}
+	}
+	,particleAdded: function(particle) {
+		if(this._isSpriteSheet) {
+			var currFrame = 0;
+			if(this._spriteSheetStartAtRandomFrame) {
+				currFrame = Math.random() * this._totalFrames | 0;
+			}
+			particle.currentAnimationFrame = currFrame;
+		} else {
+			particle.currentAnimationFrame = 0;
+		}
+	}
+	,get_renderer: function() {
+		return this._renderer;
+	}
+	,set_spriteSheetAnimationSpeed: function(spriteSheetAnimationSpeed) {
+		this._spriteSheetAnimationSpeed = spriteSheetAnimationSpeed;
+		if(this._textures != null) {
+			this.setTextures(this._textures);
+		}
+		return spriteSheetAnimationSpeed;
+	}
+	,get_spriteSheetAnimationSpeed: function() {
+		return this._spriteSheetAnimationSpeed;
+	}
+	,set_spriteSheetStartAtRandomFrame: function(spriteSheetStartAtRandomFrame) {
+		this._spriteSheetStartAtRandomFrame = spriteSheetStartAtRandomFrame;
+		return spriteSheetStartAtRandomFrame;
+	}
+	,get_spriteSheetStartAtRandomFrame: function() {
+		return this._spriteSheetStartAtRandomFrame;
+	}
+	,get_isSpriteSheet: function() {
+		return this._isSpriteSheet;
+	}
+	,get_smoothing: function() {
+		return this._smoothing != "none";
+	}
+	,set_smoothing: function(value) {
+		if(value == true) {
+			this._smoothing = "bilinear";
+		} else {
+			this._smoothing = "none";
+		}
+		this.createRendererIfNeeded();
+		this._renderer.texSmoothing = this._smoothing;
+		return value;
+	}
+	,get_premultiplyAlpha: function() {
+		return this._premultiplyAlpha;
+	}
+	,set_premultiplyAlpha: function(value) {
+		this._premultiplyAlpha = value;
+		this.createRendererIfNeeded();
+		this._renderer.premultiplyAlpha = value;
+		return value;
+	}
+	,set_blendMode: function(blendMode) {
+		this._blendMode = blendMode;
+		this.createRendererIfNeeded();
+		this._renderer.set_blendMode(blendMode);
+		return blendMode;
+	}
+	,get_blendMode: function() {
+		return this._blendMode;
+	}
+	,setTextures: function(textures) {
+		if(textures == null || textures.get_length() == 0) {
+			throw new openfl_errors_ArgumentError("the textures parameter cannot be null and needs to hold at least 1 element");
+		}
+		this.createRendererIfNeeded();
+		this._isSpriteSheet = textures.get_length() > 1;
+		this._textures = textures;
+		var frames = openfl_Vector.toObjectVector(null);
+		var texture = textures.iterator();
+		while(texture.hasNext()) {
+			var texture1 = texture.next();
+			if(texture1.get_root() != textures.get(0).get_root()) {
+				throw new openfl_errors_Error("The texture " + Std.string(texture1) + " does not share the same base root with others");
+			}
+			var frame = new idv_cjcat_stardustextended_handlers_starling_Frame(texture1.get_region().x / texture1.get_root().get_width(),texture1.get_region().y / texture1.get_root().get_height(),(texture1.get_region().x + texture1.get_region().width) / texture1.get_root().get_width(),(texture1.get_region().y + texture1.get_region().height) / texture1.get_root().get_height(),texture1.get_width() * 0.5,texture1.get_height() * 0.5);
+			frames.push(frame);
+		}
+		this._totalFrames = frames.get_length();
+		this._renderer.setTextures(textures.get(0).get_root(),frames);
+	}
+	,get_textures: function() {
+		return this._textures;
+	}
+	,getXMLTagName: function() {
+		return "StarlingHandler";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_handlers_ParticleHandler.prototype.toXML.call(this);
+		xml.set("spriteSheetAnimationSpeed",Std.string(this._spriteSheetAnimationSpeed));
+		xml.set("spriteSheetStartAtRandomFrame",Std.string(this._spriteSheetStartAtRandomFrame));
+		xml.set("smoothing",Std.string(this.get_smoothing()));
+		xml.set("blendMode",Std.string(this._blendMode));
+		xml.set("premultiplyAlpha",Std.string(this._premultiplyAlpha));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_handlers_ParticleHandler.prototype.parseXML.call(this,xml,builder);
+		this._spriteSheetAnimationSpeed = Std.parseInt(xml.get("spriteSheetAnimationSpeed"));
+		this._spriteSheetStartAtRandomFrame = xml.get("spriteSheetStartAtRandomFrame") == "true";
+		this.set_smoothing(xml.get("smoothing") == "true");
+		this.set_blendMode(xml.get("blendMode"));
+		this.set_premultiplyAlpha(xml.get("premultiplyAlpha") == "true");
+	}
+	,__class__: idv_cjcat_stardustextended_handlers_starling_StarlingHandler
+	,__properties__: {get_textures:"get_textures",set_blendMode:"set_blendMode",get_blendMode:"get_blendMode",set_premultiplyAlpha:"set_premultiplyAlpha",get_premultiplyAlpha:"get_premultiplyAlpha",set_smoothing:"set_smoothing",get_smoothing:"get_smoothing",get_isSpriteSheet:"get_isSpriteSheet",set_spriteSheetStartAtRandomFrame:"set_spriteSheetStartAtRandomFrame",get_spriteSheetStartAtRandomFrame:"get_spriteSheetStartAtRandomFrame",set_spriteSheetAnimationSpeed:"set_spriteSheetAnimationSpeed",get_spriteSheetAnimationSpeed:"get_spriteSheetAnimationSpeed",get_renderer:"get_renderer",set_container:"set_container"}
+});
+var idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers = function() { };
+$hxClasses["idv.cjcat.stardustextended.handlers.starling.StarlingParticleBuffers"] = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers;
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.__name__ = "idv.cjcat.stardustextended.handlers.starling.StarlingParticleBuffers";
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.__properties__ = {get_buffersCreated:"get_buffersCreated",get_vertexBuffer:"get_vertexBuffer"};
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.createBuffers = function(numParticles,numberOfVertexBuffers) {
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers = numberOfVertexBuffers;
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx = -1;
+	if(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers != null) {
+		var _g = 0;
+		var _g1 = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.get_length();
+		while(_g < _g1) {
+			var i = _g++;
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.get(i).dispose();
+		}
+	}
+	if(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indexBuffer != null) {
+		idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indexBuffer.dispose();
+	}
+	var context = starling_core_Starling.get_currentContext();
+	if(context == null) {
+		throw new starling_errors_MissingContextError();
+	}
+	if(context.driverInfo == "Disposed") {
+		return;
+	}
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers = openfl_Vector.toObjectVector(null);
+	var c = js_Boot.getClass(openfl_display3D_Context3D);
+	if(c.__name__ == "openfl.display3D.Context3D") {
+		var _g = 0;
+		var _g1 = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers;
+		while(_g < _g1) {
+			var i = _g++;
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.set(i,context.createVertexBuffer(numParticles * 4,8,openfl_display3D_Context3DBufferUsage.fromString("dynamicDraw")));
+		}
+	} else {
+		var _g = 0;
+		var _g1 = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers;
+		while(_g < _g1) {
+			var i = _g++;
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.set(i,context.createVertexBuffer(numParticles * 4,8));
+		}
+	}
+	var zeroBytes = new openfl_utils_ByteArrayData(0);
+	openfl_utils_ByteArray.set_length(zeroBytes,numParticles * 16 * 8);
+	var _g = 0;
+	var _g1 = idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers;
+	while(_g < _g1) {
+		var i = _g++;
+		idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.get(i).uploadFromByteArray(zeroBytes,0,0,numParticles * 4);
+	}
+	openfl_utils_ByteArray.set_length(zeroBytes,0);
+	if(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices == null) {
+		idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices = openfl_Vector.toIntVector(null);
+		var numVertices = 0;
+		var indexPosition = -1;
+		var _g = 0;
+		var _g1 = numParticles;
+		while(_g < _g1) {
+			var i = _g++;
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices);
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices + 1);
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices + 2);
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices + 1);
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices + 3);
+			idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices.set(++indexPosition,numVertices + 2);
+			numVertices += 4;
+		}
+	}
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indexBuffer = context.createIndexBuffer(numParticles * 6);
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indexBuffer.uploadFromVector(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.indices,0,numParticles * 6);
+};
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.switchVertexBuffer = function() {
+	idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx = ++idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx % idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.sNumberOfVertexBuffers;
+};
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBuffer = function() {
+	return idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.get(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx);
+};
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_vertexBufferIdx = function() {
+	return idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx;
+};
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.get_buffersCreated = function() {
+	if(idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers != null) {
+		return idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.vertexBuffers.get_length() > 0;
+	} else {
+		return false;
+	}
+};
+var idv_cjcat_stardustextended_initializers_Initializer = function() {
+	this.eventDispatcher = new openfl_events_EventDispatcher();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this.set_priority(0);
+	this.active = true;
+	idv_cjcat_stardustextended_initializers_Initializer.addEvent.set_initializer(this);
+	idv_cjcat_stardustextended_initializers_Initializer.removeEvent.set_initializer(this);
+	idv_cjcat_stardustextended_initializers_Initializer.priorityChangeEvent.set_initializer(this);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Initializer"] = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Initializer.__name__ = "idv.cjcat.stardustextended.initializers.Initializer";
+idv_cjcat_stardustextended_initializers_Initializer.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_initializers_Initializer.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	eventDispatcher: null
+	,addEventListener: function(_type,listener,useCapture,priority,useWeakReference) {
+		if(useWeakReference == null) {
+			useWeakReference = false;
+		}
+		if(priority == null) {
+			priority = 0;
+		}
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.addEventListener(_type,listener,useCapture,priority,useWeakReference);
+	}
+	,removeEventListener: function(_type,listener,useCapture) {
+		if(useCapture == null) {
+			useCapture = false;
+		}
+		this.eventDispatcher.removeEventListener(_type,listener,useCapture);
+	}
+	,dispatchAddEvent: function() {
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_initializers_Initializer.addEvent);
+	}
+	,dispatchRemoveEvent: function() {
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_initializers_Initializer.removeEvent);
+	}
+	,active: null
+	,_priority: null
+	,doInitialize: function(particles,currentTime) {
+		if(this.active) {
+			var particle;
+			var _g = 0;
+			var _g1 = particles.get_length();
+			while(_g < _g1) {
+				var m = _g++;
+				particle = particles.get(m);
+				this.initialize(particle);
+			}
+		}
+	}
+	,initialize: function(particle) {
+	}
+	,get_priority: function() {
+		return this._priority;
+	}
+	,set_priority: function(value) {
+		this._priority = value;
+		this.eventDispatcher.dispatchEvent(idv_cjcat_stardustextended_initializers_Initializer.priorityChangeEvent);
+		return value;
+	}
+	,getXMLTagName: function() {
+		return "Initializer";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<initializers/>");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("active",Std.string(this.active));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("active")) {
+			this.active = xml.get("active") == "true";
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Initializer
+	,__properties__: {set_priority:"set_priority",get_priority:"get_priority"}
+});
+var idv_cjcat_stardustextended_initializers_Alpha = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Alpha"] = idv_cjcat_stardustextended_initializers_Alpha;
+idv_cjcat_stardustextended_initializers_Alpha.__name__ = "idv.cjcat.stardustextended.initializers.Alpha";
+idv_cjcat_stardustextended_initializers_Alpha.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Alpha.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,initialize: function(particle) {
+		particle.initAlpha = particle.alpha = this.get_random().random();
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(1,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Alpha";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",Std.string(this._random.name));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Alpha
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_InitializerCollection = function() {
+	this._initializers = openfl_Vector.toObjectVector(null);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.InitializerCollection"] = idv_cjcat_stardustextended_initializers_InitializerCollection;
+idv_cjcat_stardustextended_initializers_InitializerCollection.__name__ = "idv.cjcat.stardustextended.initializers.InitializerCollection";
+idv_cjcat_stardustextended_initializers_InitializerCollection.__interfaces__ = [idv_cjcat_stardustextended_initializers_InitializerCollector];
+idv_cjcat_stardustextended_initializers_InitializerCollection.prioritySort = function(el1,el2) {
+	if(el1.get_priority() > el2.get_priority()) {
+		return -1;
+	} else if(el1.get_priority() < el2.get_priority()) {
+		return 1;
+	}
+	return 0;
+};
+idv_cjcat_stardustextended_initializers_InitializerCollection.prototype = {
+	_initializers: null
+	,addInitializer: function(initializer) {
+		if(Lambda.indexOf(this._initializers,initializer) >= 0) {
+			return;
+		}
+		this._initializers.push(initializer);
+		initializer.addEventListener("PRIORITY_CHANGE",$bind(this,this.sortInitializers));
+		this.sortInitializers();
+	}
+	,removeInitializer: function(initializer) {
+		var index = Lambda.indexOf(this._initializers,initializer);
+		if(index >= 0) {
+			var this1 = this._initializers;
+			this1.__tempIndex = index;
+			var _g_current = 0;
+			var _g_args = [];
+			while(_g_current < _g_args.length) {
+				var item = _g_args[_g_current++];
+				this1.insertAt(this1.__tempIndex,item);
+				this1.__tempIndex++;
+			}
+			this1.splice(this1.__tempIndex,1).get(0);
+			initializer.removeEventListener("PRIORITY_CHANGE",$bind(this,this.sortInitializers));
+		}
+	}
+	,sortInitializers: function(event) {
+		this._initializers.sort(idv_cjcat_stardustextended_initializers_InitializerCollection.prioritySort);
+	}
+	,clearInitializers: function() {
+		var initializer = this._initializers.iterator();
+		while(initializer.hasNext()) {
+			var initializer1 = initializer.next();
+			this.removeInitializer(initializer1);
+		}
+	}
+	,get_initializers: function() {
+		return this._initializers;
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_InitializerCollection
+	,__properties__: {get_initializers:"get_initializers"}
+};
+var idv_cjcat_stardustextended_initializers_Life = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Life"] = idv_cjcat_stardustextended_initializers_Life;
+idv_cjcat_stardustextended_initializers_Life.__name__ = "idv.cjcat.stardustextended.initializers.Life";
+idv_cjcat_stardustextended_initializers_Life.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Life.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,initialize: function(particle) {
+		particle.initLife = particle.life = this.get_random().random();
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(0,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Life";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",Std.string(this._random.name));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Life
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_Mass = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Mass"] = idv_cjcat_stardustextended_initializers_Mass;
+idv_cjcat_stardustextended_initializers_Mass.__name__ = "idv.cjcat.stardustextended.initializers.Mass";
+idv_cjcat_stardustextended_initializers_Mass.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Mass.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(1,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,initialize: function(particle) {
+		particle.mass = this.get_random().random();
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Mass";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",this.get_random().name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Mass
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_Omega = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Omega"] = idv_cjcat_stardustextended_initializers_Omega;
+idv_cjcat_stardustextended_initializers_Omega.__name__ = "idv.cjcat.stardustextended.initializers.Omega";
+idv_cjcat_stardustextended_initializers_Omega.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Omega.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,initialize: function(particle) {
+		particle.omega = this._random.random();
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(0,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Omega";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",this._random.name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Omega
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_PositionAnimated = function(zones) {
+	this.inheritVelocity = false;
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.zoneCollection = new idv_cjcat_stardustextended_zones_ZoneCollection();
+	if(zones != null) {
+		this.zoneCollection.zones = zones;
+	} else {
+		this.zoneCollection.zones.push(new idv_cjcat_stardustextended_zones_RectZone());
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.PositionAnimated"] = idv_cjcat_stardustextended_initializers_PositionAnimated;
+idv_cjcat_stardustextended_initializers_PositionAnimated.__name__ = "idv.cjcat.stardustextended.initializers.PositionAnimated";
+idv_cjcat_stardustextended_initializers_PositionAnimated.__interfaces__ = [idv_cjcat_stardustextended_actions_IZoneContainer];
+idv_cjcat_stardustextended_initializers_PositionAnimated.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_PositionAnimated.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	zoneCollection: null
+	,get_zones: function() {
+		return this.zoneCollection.zones;
+	}
+	,set_zones: function(value) {
+		this.zoneCollection.zones = value;
+		return value;
+	}
+	,inheritVelocity: null
+	,positions: null
+	,prevPos: null
+	,currentPos: null
+	,doInitialize: function(particles,currentTime) {
+		if(this.positions != null) {
+			this.currentPos = (currentTime | 0) % this.positions.get_length();
+			this.prevPos = UInt.gt(this.currentPos,0) ? this.currentPos - 1 : this.positions.get_length() - 1;
+		}
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.doInitialize.call(this,particles,currentTime);
+	}
+	,initialize: function(particle) {
+		var md2D = new idv_cjcat_stardustextended_geom_MotionData2D(0,0);
+		var _this = this.zoneCollection;
+		var md2D1 = new idv_cjcat_stardustextended_geom_MotionData2D(0,0);
+		var numZones = _this.zones.get_length();
+		if(UInt.gt(numZones,1)) {
+			var sumArea = 0;
+			var areas = [];
+			var _g = 0;
+			var _g1 = numZones;
+			while(_g < _g1) {
+				var i = _g++;
+				sumArea += (js_Boot.__cast(_this.zones.get(i) , idv_cjcat_stardustextended_zones_Zone)).getArea();
+				areas.push(sumArea);
+			}
+			var position = Math.random() * sumArea;
+			var _g = 0;
+			var _g1 = areas.length;
+			while(_g < _g1) {
+				var i = _g++;
+				if(position <= areas[i]) {
+					md2D1 = _this.zones.get(i).getPoint();
+					break;
+				}
+			}
+		} else if(numZones == 1) {
+			md2D1 = _this.zones.get(0).getPoint();
+		}
+		md2D = md2D1;
+		if(md2D != null) {
+			particle.x = md2D.x;
+			particle.y = md2D.y;
+			if(this.positions != null) {
+				particle.x = md2D.x + this.positions.get(this.currentPos).x;
+				particle.y = md2D.y + this.positions.get(this.currentPos).y;
+				if(this.inheritVelocity) {
+					particle.vx += this.positions.get(this.currentPos).x - this.positions.get(this.prevPos).x;
+					particle.vy += this.positions.get(this.currentPos).y - this.positions.get(this.prevPos).y;
+				}
+			} else {
+				particle.x = md2D.x;
+				particle.y = md2D.y;
+			}
+			idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(md2D);
+		}
+	}
+	,get_currentPosition: function() {
+		if(this.positions != null) {
+			return this.positions.get(this.currentPos);
+		}
+		return null;
+	}
+	,getRelatedObjects: function() {
+		return this.zoneCollection.zones;
+	}
+	,getXMLTagName: function() {
+		return "PositionAnimated";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		var _this = this.zoneCollection;
+		if(_this.zones.get_length() > 0) {
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = _this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+		xml.set("inheritVelocity",Std.string(this.inheritVelocity));
+		if(this.positions != null && this.positions.get_length() > 0) {
+			openfl_Lib.registerClassAlias("String",String);
+			openfl_Lib.registerClassAlias("Point",openfl_geom_Point);
+			openfl_Lib.registerClassAlias("VecPoint",idv_cjcat_stardustextended_VecPoint);
+			var bytes = new openfl_utils_ByteArrayData(0);
+			bytes.writeObject(this.positions);
+			xml.set("positions",idv_cjcat_stardustextended_utils_Base64.encode(bytes));
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("zone")) {
+			haxe_Log.trace("WARNING: the simulation contains a deprecated property 'zone' for " + this.getXMLTagName(),{ fileName : "Source/idv/cjcat/stardustextended/initializers/PositionAnimated.hx", lineNumber : 121, className : "idv.cjcat.stardustextended.initializers.PositionAnimated", methodName : "parseXML"});
+			var tmp = xml.get("zone");
+			this.zoneCollection.zones = builder.getElementByName(tmp);
+		} else {
+			var _this = this.zoneCollection;
+			_this.zones = openfl_Vector.toObjectVector(null);
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				_this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+			}
+		}
+		if(xml.exists("positions")) {
+			openfl_Lib.registerClassAlias("String",String);
+			openfl_Lib.registerClassAlias("Point",openfl_geom_Point);
+			openfl_Lib.registerClassAlias("VecPoint",idv_cjcat_stardustextended_VecPoint);
+			var bytes = new openfl_utils_ByteArrayData(0);
+			bytes = idv_cjcat_stardustextended_utils_Base64.decode(xml.get("positions"));
+			bytes.position = 0;
+			this.positions = bytes.readObject();
+		}
+		if(xml.exists("inheritVelocity")) {
+			this.inheritVelocity = xml.get("inheritVelocity") == "true";
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_PositionAnimated
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_zones:"set_zones",get_zones:"get_zones"})
+});
+var idv_cjcat_stardustextended_initializers_Rotation = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Rotation"] = idv_cjcat_stardustextended_initializers_Rotation;
+idv_cjcat_stardustextended_initializers_Rotation.__name__ = "idv.cjcat.stardustextended.initializers.Rotation";
+idv_cjcat_stardustextended_initializers_Rotation.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Rotation.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,initialize: function(particle) {
+		particle.rotation = this.get_random().random();
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(0,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Rotation";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",this._random.name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Rotation
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_Scale = function(random) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.set_random(random);
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Scale"] = idv_cjcat_stardustextended_initializers_Scale;
+idv_cjcat_stardustextended_initializers_Scale.__name__ = "idv.cjcat.stardustextended.initializers.Scale";
+idv_cjcat_stardustextended_initializers_Scale.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Scale.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	_random: null
+	,initialize: function(particle) {
+		particle.initScale = particle.scale = this.get_random().random();
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom(1,0);
+		}
+		this._random = value;
+		return value;
+	}
+	,getRelatedObjects: function() {
+		var relatedObjects = openfl_Vector.toObjectVector(null);
+		relatedObjects.push(this._random);
+		return relatedObjects;
+	}
+	,getXMLTagName: function() {
+		return "Scale";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		xml.set("random",this._random.name);
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("random")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("random")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_random(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Scale
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_random:"set_random",get_random:"get_random"})
+});
+var idv_cjcat_stardustextended_initializers_Velocity = function(zones) {
+	idv_cjcat_stardustextended_initializers_Initializer.call(this);
+	this.zoneCollection = new idv_cjcat_stardustextended_zones_ZoneCollection();
+	if(zones != null) {
+		this.zoneCollection.zones = zones;
+	} else {
+		this.zoneCollection.zones.push(new idv_cjcat_stardustextended_zones_SinglePoint(0,0));
+	}
+};
+$hxClasses["idv.cjcat.stardustextended.initializers.Velocity"] = idv_cjcat_stardustextended_initializers_Velocity;
+idv_cjcat_stardustextended_initializers_Velocity.__name__ = "idv.cjcat.stardustextended.initializers.Velocity";
+idv_cjcat_stardustextended_initializers_Velocity.__interfaces__ = [idv_cjcat_stardustextended_actions_IZoneContainer];
+idv_cjcat_stardustextended_initializers_Velocity.__super__ = idv_cjcat_stardustextended_initializers_Initializer;
+idv_cjcat_stardustextended_initializers_Velocity.prototype = $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype,{
+	zoneCollection: null
+	,get_zones: function() {
+		return this.zoneCollection.zones;
+	}
+	,set_zones: function(value) {
+		this.zoneCollection.zones = value;
+		return value;
+	}
+	,initialize: function(particle) {
+		var _this = this.zoneCollection;
+		var md2D = new idv_cjcat_stardustextended_geom_MotionData2D(0,0);
+		var numZones = _this.zones.get_length();
+		if(UInt.gt(numZones,1)) {
+			var sumArea = 0;
+			var areas = [];
+			var _g = 0;
+			var _g1 = numZones;
+			while(_g < _g1) {
+				var i = _g++;
+				sumArea += (js_Boot.__cast(_this.zones.get(i) , idv_cjcat_stardustextended_zones_Zone)).getArea();
+				areas.push(sumArea);
+			}
+			var position = Math.random() * sumArea;
+			var _g = 0;
+			var _g1 = areas.length;
+			while(_g < _g1) {
+				var i = _g++;
+				if(position <= areas[i]) {
+					md2D = _this.zones.get(i).getPoint();
+					break;
+				}
+			}
+		} else if(numZones == 1) {
+			md2D = _this.zones.get(0).getPoint();
+		}
+		var md2D1 = md2D;
+		if(md2D1 != null) {
+			particle.vx += md2D1.x;
+			particle.vy += md2D1.y;
+			idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.push(md2D1);
+		}
+	}
+	,getRelatedObjects: function() {
+		return this.zoneCollection.zones.slice(0,null);
+	}
+	,getXMLTagName: function() {
+		return "Velocity";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_initializers_Initializer.prototype.toXML.call(this);
+		var _this = this.zoneCollection;
+		if(_this.zones.get_length() > 0) {
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = _this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_initializers_Initializer.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("zone")) {
+			haxe_Log.trace("WARNING: the simulation contains a deprecated property 'zone' for " + this.getXMLTagName(),{ fileName : "Source/idv/cjcat/stardustextended/initializers/Velocity.hx", lineNumber : 75, className : "idv.cjcat.stardustextended.initializers.Velocity", methodName : "parseXML"});
+			var tmp = xml.get("zone");
+			this.zoneCollection.zones = builder.getElementByName(tmp);
+		} else {
+			var _this = this.zoneCollection;
+			_this.zones = openfl_Vector.toObjectVector(null);
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				_this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+			}
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_initializers_Velocity
+	,__properties__: $extend(idv_cjcat_stardustextended_initializers_Initializer.prototype.__properties__,{set_zones:"set_zones",get_zones:"get_zones"})
+});
+var idv_cjcat_stardustextended_math_Random = function() {
+	idv_cjcat_stardustextended_StardustElement.call(this);
+};
+$hxClasses["idv.cjcat.stardustextended.math.Random"] = idv_cjcat_stardustextended_math_Random;
+idv_cjcat_stardustextended_math_Random.__name__ = "idv.cjcat.stardustextended.math.Random";
+idv_cjcat_stardustextended_math_Random.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_math_Random.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	random: function() {
+		return 0.5;
+	}
+	,setRange: function(lowerBound,upperBound) {
+	}
+	,getRange: function() {
+		return [0.5,0.5];
+	}
+	,getXMLTagName: function() {
+		return "Random";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.parse("<randoms/>");
+	}
+	,__class__: idv_cjcat_stardustextended_math_Random
+});
+var idv_cjcat_stardustextended_math_StardustMath = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.math.StardustMath"] = idv_cjcat_stardustextended_math_StardustMath;
+idv_cjcat_stardustextended_math_StardustMath.__name__ = "idv.cjcat.stardustextended.math.StardustMath";
+idv_cjcat_stardustextended_math_StardustMath.clamp = function(input,lowerBound,upperBound) {
+	if(input < lowerBound) {
+		return lowerBound;
+	}
+	if(input > upperBound) {
+		return upperBound;
+	}
+	return input;
+};
+idv_cjcat_stardustextended_math_StardustMath.interpolate = function(x1,y1,x2,y2,x3) {
+	return y1 - (y1 - y2) * (x1 - x3) / (x1 - x2);
+};
+idv_cjcat_stardustextended_math_StardustMath.mod = function(value1,value2) {
+	var remainder = value1 % value2;
+	if(remainder < 0) {
+		return remainder + value2;
+	} else {
+		return remainder;
+	}
+};
+idv_cjcat_stardustextended_math_StardustMath.randomFloor = function(num) {
+	var floor = num | 0 | 0;
+	return floor + (num - floor > Math.random() ? 1 : 0) | 0;
+};
+idv_cjcat_stardustextended_math_StardustMath.prototype = {
+	__class__: idv_cjcat_stardustextended_math_StardustMath
+};
+var idv_cjcat_stardustextended_math_UniformRandom = function(center,radius) {
+	if(radius == null) {
+		radius = 0;
+	}
+	if(center == null) {
+		center = 0.5;
+	}
+	idv_cjcat_stardustextended_math_Random.call(this);
+	this.center = center;
+	this.radius = radius;
+};
+$hxClasses["idv.cjcat.stardustextended.math.UniformRandom"] = idv_cjcat_stardustextended_math_UniformRandom;
+idv_cjcat_stardustextended_math_UniformRandom.__name__ = "idv.cjcat.stardustextended.math.UniformRandom";
+idv_cjcat_stardustextended_math_UniformRandom.__super__ = idv_cjcat_stardustextended_math_Random;
+idv_cjcat_stardustextended_math_UniformRandom.prototype = $extend(idv_cjcat_stardustextended_math_Random.prototype,{
+	center: null
+	,radius: null
+	,random: function() {
+		var tmp;
+		if(this.radius != 0) {
+			var f = this.radius;
+			tmp = !isNaN(f);
+		} else {
+			tmp = false;
+		}
+		if(tmp) {
+			return this.radius * 2 * (Math.random() - 0.5) + this.center;
+		} else {
+			return this.center;
+		}
+	}
+	,setRange: function(lowerBound,upperBound) {
+		var diameter = upperBound - lowerBound;
+		this.radius = 0.5 * diameter;
+		this.center = lowerBound + this.radius;
+	}
+	,getRange: function() {
+		return [this.center - this.radius,this.center + this.radius];
+	}
+	,getXMLTagName: function() {
+		return "UniformRandom";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_math_Random.prototype.toXML.call(this);
+		xml.set("center",Std.string(this.center));
+		xml.set("radius",Std.string(this.radius));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_math_Random.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("center")) {
+			this.center = parseFloat(xml.get("center"));
+		}
+		if(xml.exists("radius")) {
+			this.radius = parseFloat(xml.get("radius"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_math_UniformRandom
+});
+var idv_cjcat_stardustextended_particles_Particle = function() {
+	this.currentAnimationFrame = 0;
+	this.dictionary = new haxe_ds_StringMap();
+};
+$hxClasses["idv.cjcat.stardustextended.particles.Particle"] = idv_cjcat_stardustextended_particles_Particle;
+idv_cjcat_stardustextended_particles_Particle.__name__ = "idv.cjcat.stardustextended.particles.Particle";
+idv_cjcat_stardustextended_particles_Particle.compareFunction = function(p1,p2) {
+	if(p1.x < p2.x) {
+		return -1;
+	}
+	return 1;
+};
+idv_cjcat_stardustextended_particles_Particle.prototype = {
+	initLife: null
+	,initScale: null
+	,initAlpha: null
+	,life: null
+	,scale: null
+	,alpha: null
+	,mass: null
+	,isDead: null
+	,collisionRadius: null
+	,target: null
+	,colorR: null
+	,colorG: null
+	,colorB: null
+	,dictionary: null
+	,currentAnimationFrame: null
+	,x: null
+	,y: null
+	,vx: null
+	,vy: null
+	,rotation: null
+	,omega: null
+	,init: function() {
+		this.initLife = this.life = this.currentAnimationFrame = 0;
+		this.initScale = this.scale = 1;
+		this.initAlpha = this.alpha = 1;
+		this.mass = 1;
+		this.isDead = false;
+		this.collisionRadius = 0;
+		this.colorR = 1;
+		this.colorB = 1;
+		this.colorG = 1;
+		this.x = 0;
+		this.y = 0;
+		this.vx = 0;
+		this.vy = 0;
+		this.rotation = 0;
+		this.omega = 0;
+	}
+	,destroy: function() {
+		this.target = null;
+		var h = this.dictionary.h;
+		var key_h = h;
+		var key_keys = Object.keys(h);
+		var key_length = key_keys.length;
+		var key_current = 0;
+		while(key_current < key_length) {
+			var key = key_keys[key_current++];
+			var v = null;
+			this.dictionary.h[key] = v;
+			var _this = this.dictionary;
+			if(Object.prototype.hasOwnProperty.call(_this.h,key)) {
+				delete(_this.h[key]);
+			}
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_particles_Particle
+};
+var idv_cjcat_stardustextended_particles_ParticlePool = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.particles.ParticlePool"] = idv_cjcat_stardustextended_particles_ParticlePool;
+idv_cjcat_stardustextended_particles_ParticlePool.__name__ = "idv.cjcat.stardustextended.particles.ParticlePool";
+idv_cjcat_stardustextended_particles_ParticlePool.get = function() {
+	if(idv_cjcat_stardustextended_particles_ParticlePool._recycled.length > 0) {
+		return idv_cjcat_stardustextended_particles_ParticlePool._recycled.pop();
+	} else {
+		return new idv_cjcat_stardustextended_particles_Particle();
+	}
+};
+idv_cjcat_stardustextended_particles_ParticlePool.recycle = function(particle) {
+	idv_cjcat_stardustextended_particles_ParticlePool._recycled.push(particle);
+};
+idv_cjcat_stardustextended_particles_ParticlePool.prototype = {
+	__class__: idv_cjcat_stardustextended_particles_ParticlePool
+};
+var idv_cjcat_stardustextended_particles_PooledParticleFactory = function() {
+	this._initializerCollection = new idv_cjcat_stardustextended_initializers_InitializerCollection();
+};
+$hxClasses["idv.cjcat.stardustextended.particles.PooledParticleFactory"] = idv_cjcat_stardustextended_particles_PooledParticleFactory;
+idv_cjcat_stardustextended_particles_PooledParticleFactory.__name__ = "idv.cjcat.stardustextended.particles.PooledParticleFactory";
+idv_cjcat_stardustextended_particles_PooledParticleFactory.prototype = {
+	_initializerCollection: null
+	,createParticles: function(count,currentTime,toVector) {
+		var particles = toVector;
+		if(particles == null) {
+			particles = openfl_Vector.toObjectVector(null);
+		}
+		if(count > 0) {
+			var i;
+			var _g = 0;
+			var _g1 = count;
+			while(_g < _g1) {
+				var i = _g++;
+				var particle = idv_cjcat_stardustextended_particles_ParticlePool._recycled.length > 0 ? idv_cjcat_stardustextended_particles_ParticlePool._recycled.pop() : new idv_cjcat_stardustextended_particles_Particle();
+				particle.initLife = particle.life = particle.currentAnimationFrame = 0;
+				particle.initScale = particle.scale = 1;
+				particle.initAlpha = particle.alpha = 1;
+				particle.mass = 1;
+				particle.isDead = false;
+				particle.collisionRadius = 0;
+				particle.colorR = 1;
+				particle.colorB = 1;
+				particle.colorG = 1;
+				particle.x = 0;
+				particle.y = 0;
+				particle.vx = 0;
+				particle.vy = 0;
+				particle.rotation = 0;
+				particle.omega = 0;
+				particles.push(particle);
+			}
+			var initializers = this._initializerCollection.get_initializers();
+			var len = initializers.get_length();
+			var _g = 0;
+			var _g1 = len;
+			while(_g < _g1) {
+				var i = _g++;
+				initializers.get(i).doInitialize(particles,currentTime);
+			}
+		}
+		return particles;
+	}
+	,addInitializer: function(initializer) {
+		this._initializerCollection.addInitializer(initializer);
+	}
+	,removeInitializer: function(initializer) {
+		this._initializerCollection.removeInitializer(initializer);
+	}
+	,clearInitializers: function() {
+		this._initializerCollection.clearInitializers();
+	}
+	,get_initializerCollection: function() {
+		return this._initializerCollection;
+	}
+	,recycle: function(particle) {
+		idv_cjcat_stardustextended_particles_ParticlePool._recycled.push(particle);
+	}
+	,__class__: idv_cjcat_stardustextended_particles_PooledParticleFactory
+	,__properties__: {get_initializerCollection:"get_initializerCollection"}
+};
+var idv_cjcat_stardustextended_utils_Base64 = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.utils.Base64"] = idv_cjcat_stardustextended_utils_Base64;
+idv_cjcat_stardustextended_utils_Base64.__name__ = "idv.cjcat.stardustextended.utils.Base64";
+idv_cjcat_stardustextended_utils_Base64.encode = function(data) {
+	var out = new openfl_utils_ByteArrayData(0);
+	openfl_utils_ByteArray.set_length(out,2 + openfl_utils_ByteArray.get_length(data) - (UInt.toFloat((UInt.toFloat(openfl_utils_ByteArray.get_length(data) + 2) % UInt.toFloat(3) | 0) * 4) / UInt.toFloat(3) | 0));
+	var i = 0;
+	var r = UInt.toFloat(UInt.toFloat(openfl_utils_ByteArray.get_length(data)) % UInt.toFloat(3) | 0) | 0;
+	var len = UInt.toFloat(openfl_utils_ByteArray.get_length(data) - r) | 0;
+	var c;
+	var outPos = 0;
+	while(i < len) {
+		c = data.b[i++] << 16 | data.b[i++] << 8 | 0 | data.b[i++];
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[c >>> 18 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index1 = outPos++;
+		var value1 = idv_cjcat_stardustextended_utils_Base64._encodeChars[(c >>> 12 | 0) & 63 | 0];
+		out.__resize(index1 + 1);
+		out.b[index1] = value1 & 255;
+		var index2 = outPos++;
+		var value2 = idv_cjcat_stardustextended_utils_Base64._encodeChars[(c >>> 6 | 0) & 63 | 0];
+		out.__resize(index2 + 1);
+		out.b[index2] = value2 & 255;
+		var index3 = outPos++;
+		var value3 = idv_cjcat_stardustextended_utils_Base64._encodeChars[c & 63 | 0];
+		out.__resize(index3 + 1);
+		out.b[index3] = value3 & 255;
+	}
+	if(r == 1) {
+		c = data.b[i];
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[c >>> 2 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[(c & 3) << 4 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index = outPos++;
+		out.__resize(index + 1);
+		out.b[index] = 61;
+		var index = outPos++;
+		out.__resize(index + 1);
+		out.b[index] = 61;
+	} else if(r == 2) {
+		c = data.b[i++] << 8 | 0 | data.b[i];
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[c >>> 10 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[(c >>> 4 | 0) & 63 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index = outPos++;
+		var value = idv_cjcat_stardustextended_utils_Base64._encodeChars[(c & 15) << 2 | 0];
+		out.__resize(index + 1);
+		out.b[index] = value & 255;
+		var index = outPos++;
+		out.__resize(index + 1);
+		out.b[index] = 61;
+	}
+	return out.readUTFBytes(openfl_utils_ByteArray.get_length(out));
+};
+idv_cjcat_stardustextended_utils_Base64.decode = function(str) {
+	var c1;
+	var c2;
+	var c3;
+	var c4;
+	var i = 0;
+	var len = str.length;
+	var byteString = new openfl_utils_ByteArrayData(0);
+	byteString.writeUTFBytes(str);
+	var outPos = 0;
+	while(i < len) {
+		c1 = idv_cjcat_stardustextended_utils_Base64._decodeChars[byteString.b[i++] | 0];
+		if(c1 == -1) {
+			break;
+		}
+		c2 = idv_cjcat_stardustextended_utils_Base64._decodeChars[byteString.b[i++] | 0];
+		if(c2 == -1) {
+			break;
+		}
+		var index = outPos++;
+		var value = c1 << 2 | (c2 & 48) >> 4;
+		byteString.__resize(index + 1);
+		byteString.b[index] = value & 255;
+		c3 = byteString.b[i++];
+		if(c3 == 61) {
+			openfl_utils_ByteArray.set_length(byteString,outPos);
+			return byteString;
+		}
+		c3 = idv_cjcat_stardustextended_utils_Base64._decodeChars[c3];
+		if(c3 == -1) {
+			break;
+		}
+		var index1 = outPos++;
+		var value1 = (c2 & 15) << 4 | (c3 & 60) >> 2;
+		byteString.__resize(index1 + 1);
+		byteString.b[index1] = value1 & 255;
+		c4 = byteString.b[i++];
+		if(c4 == 61) {
+			openfl_utils_ByteArray.set_length(byteString,outPos);
+			return byteString;
+		}
+		c4 = idv_cjcat_stardustextended_utils_Base64._decodeChars[c4];
+		if(c4 == -1) {
+			break;
+		}
+		var index2 = outPos++;
+		var value2 = (c3 & 3) << 6 | c4;
+		byteString.__resize(index2 + 1);
+		byteString.b[index2] = value2 & 255;
+	}
+	openfl_utils_ByteArray.set_length(byteString,outPos);
+	return byteString;
+};
+idv_cjcat_stardustextended_utils_Base64.InitEncoreChar = function() {
+	var encodeChars = [];
+	var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	var _g = 0;
+	while(_g < 64) {
+		var i = _g++;
+		encodeChars[i] = HxOverrides.cca(chars,i);
+	}
+	return encodeChars;
+};
+idv_cjcat_stardustextended_utils_Base64.InitDecodeChar = function() {
+	var decodeChars = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63,52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-1,-1,-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,-1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
+	return decodeChars;
+};
+idv_cjcat_stardustextended_utils_Base64.prototype = {
+	__class__: idv_cjcat_stardustextended_utils_Base64
+};
+var idv_cjcat_stardustextended_utils_ColorUtil = function() {
+};
+$hxClasses["idv.cjcat.stardustextended.utils.ColorUtil"] = idv_cjcat_stardustextended_utils_ColorUtil;
+idv_cjcat_stardustextended_utils_ColorUtil.__name__ = "idv.cjcat.stardustextended.utils.ColorUtil";
+idv_cjcat_stardustextended_utils_ColorUtil.rgbToHex = function(r,g,b) {
+	return (r * 256 | 0) << 16 | (g * 256 | 0) << 8 | (b * 256 | 0) | 0;
+};
+idv_cjcat_stardustextended_utils_ColorUtil.extractRed = function(c) {
+	return ((c >> 16 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255;
+};
+idv_cjcat_stardustextended_utils_ColorUtil.extractGreen = function(c) {
+	return ((c >> 8 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255;
+};
+idv_cjcat_stardustextended_utils_ColorUtil.extractBlue = function(c) {
+	return (c & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255;
+};
+idv_cjcat_stardustextended_utils_ColorUtil.extractAlpha32 = function(c) {
+	return ((c >> 24 | 0) & 255) * idv_cjcat_stardustextended_utils_ColorUtil.inv255;
+};
+idv_cjcat_stardustextended_utils_ColorUtil.prototype = {
+	__class__: idv_cjcat_stardustextended_utils_ColorUtil
+};
+var idv_cjcat_stardustextended_xml_XMLBuilder = function() {
+	this.elementClasses = new haxe_ds_StringMap();
+	this.elements = new haxe_ds_StringMap();
+};
+$hxClasses["idv.cjcat.stardustextended.xml.XMLBuilder"] = idv_cjcat_stardustextended_xml_XMLBuilder;
+idv_cjcat_stardustextended_xml_XMLBuilder.__name__ = "idv.cjcat.stardustextended.xml.XMLBuilder";
+idv_cjcat_stardustextended_xml_XMLBuilder.buildXML = function(rootElement) {
+	var root = Xml.parse("<StardustParticleSystem />").firstElement();
+	root.set("version",Std.string(2.1));
+	var relatedElements = new haxe_ds_StringMap();
+	idv_cjcat_stardustextended_xml_XMLBuilder.traverseRelatedObjects(rootElement,relatedElements);
+	var relatedElementsArray = [];
+	var h = relatedElements.h;
+	var element_h = h;
+	var element_keys = Object.keys(h);
+	var element_length = element_keys.length;
+	var element_current = 0;
+	while(element_current < element_length) {
+		var element = element_h[element_keys[element_current++]];
+		relatedElementsArray.push(element);
+	}
+	relatedElementsArray.sort(idv_cjcat_stardustextended_xml_XMLBuilder.elementTypeSorter);
+	if(root.nodeType != Xml.Document && root.nodeType != Xml.Element) {
+		throw haxe_Exception.thrown("Invalid nodeType " + (root.nodeType == null ? "null" : XmlType.toString(root.nodeType)));
+	}
+	var root_access = root;
+	var _g = 0;
+	while(_g < relatedElementsArray.length) {
+		var element = relatedElementsArray[_g];
+		++_g;
+		var elementXML = element.toXML();
+		var typeXML = element.getElementTypeXMLTag();
+		if(typeXML.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (typeXML.nodeType == null ? "null" : XmlType.toString(typeXML.nodeType)));
+		}
+		if(!haxe_xml__$Access_HasNodeAccess.resolve(root_access,typeXML.nodeName)) {
+			root_access.addChild(typeXML);
+		}
+		if(typeXML.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (typeXML.nodeType == null ? "null" : XmlType.toString(typeXML.nodeType)));
+		}
+		haxe_xml__$Access_NodeAccess.resolve(root_access,typeXML.nodeName).addChild(elementXML);
+	}
+	return root;
+};
+idv_cjcat_stardustextended_xml_XMLBuilder.elementTypeSorter = function(e1,e2) {
+	if(e1.getXMLTagName() > e2.getXMLTagName()) {
+		return 1;
+	} else if(e1.getXMLTagName() < e2.getXMLTagName()) {
+		return -1;
+	}
+	if(e1.name > e2.name) {
+		return 1;
+	}
+	return -1;
+};
+idv_cjcat_stardustextended_xml_XMLBuilder.traverseRelatedObjects = function(element,relatedElements) {
+	if(element == null) {
+		return;
+	}
+	if(relatedElements.h[element.name] != null) {
+		if(relatedElements.h[element.name] != element) {
+			throw new openfl_errors_Error("Duplicate element name: " + element.name + " " + Std.string(relatedElements.h[element.name]));
+		}
+	} else {
+		relatedElements.h[element.name] = element;
+	}
+	var e = element.getRelatedObjects().iterator();
+	while(e.hasNext()) {
+		var e1 = e.next();
+		idv_cjcat_stardustextended_xml_XMLBuilder.traverseRelatedObjects(e1,relatedElements);
+	}
+};
+idv_cjcat_stardustextended_xml_XMLBuilder.prototype = {
+	elementClasses: null
+	,elements: null
+	,registerClass: function(elementClass) {
+		var element = js_Boot.__cast(Type.createInstance(elementClass,[]) , idv_cjcat_stardustextended_StardustElement);
+		if(element == null) {
+			throw new openfl_errors_IllegalOperationError(Std.string(elementClass) + " is not a subclass of the StardustElement class.");
+		}
+		var tagName = element.getXMLTagName();
+		if(this.elementClasses.h[tagName] != null) {
+			throw new openfl_errors_IllegalOperationError("This element class name is already registered: " + element.getXMLTagName());
+		}
+		this.elementClasses.h[tagName] = elementClass;
+	}
+	,registerClasses: function(classes) {
+		var _g = 0;
+		while(_g < classes.length) {
+			var c = classes[_g];
+			++_g;
+			this.registerClass(c);
+		}
+	}
+	,registerClassesFromClassPackage: function(classPackage) {
+		this.registerClasses(classPackage.getClasses());
+	}
+	,unregisterClass: function(name) {
+		var _this = this.elementClasses;
+		if(Object.prototype.hasOwnProperty.call(_this.h,name)) {
+			delete(_this.h[name]);
+		}
+	}
+	,getElementByName: function(name) {
+		if(this.elements.h[name] == null) {
+			throw new openfl_errors_IllegalOperationError("Element not found: " + name);
+		}
+		return this.elements.h[name];
+	}
+	,getElementsByClass: function(cl) {
+		var ret = [];
+		var h = this.elements.h;
+		var key_h = h;
+		var key_keys = Object.keys(h);
+		var key_length = key_keys.length;
+		var key_current = 0;
+		while(key_current < key_length) {
+			var key = key_keys[key_current++];
+			if(js_Boot.__instanceof(this.elements.h[key],cl)) {
+				ret.push(this.elements.h[key]);
+			}
+		}
+		return ret;
+	}
+	,buildFromXML: function(xml) {
+		this.elements = new haxe_ds_StringMap();
+		var element;
+		if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+		}
+		var access = xml;
+		var tag = access.elements();
+		while(tag.hasNext()) {
+			var tag1 = tag.next();
+			var node = tag1.elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				try {
+					var this1 = this.elementClasses;
+					var key = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
+					var NodeClass = this1.h[key];
+					element = js_Boot.__cast(Type.createInstance(NodeClass,[]) , idv_cjcat_stardustextended_StardustElement);
+				} catch( _g ) {
+					var _g1 = haxe_Exception.caught(_g);
+					if(((_g1) instanceof openfl_errors_TypeError)) {
+						var err = _g1;
+						throw new openfl_errors_Error("Unable to instantiate class " + haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString() + ". Perhaps you forgot to " + "call XMLBuilder.registerClass for this type? Original error: " + err.toString());
+					} else {
+						throw _g;
+					}
+				}
+				var this2 = this.elements;
+				var key1 = haxe_xml__$Access_AttribAccess.resolve(node1,"name");
+				if(this2.h[key1] != null) {
+					throw new openfl_errors_Error("Duplicate element name: " + haxe_xml__$Access_AttribAccess.resolve(node1,"name") + " " + element.name);
+				}
+				var this3 = this.elements;
+				var k = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
+				this3.h[k] = element;
+			}
+		}
+		var tag = access.elements();
+		while(tag.hasNext()) {
+			var tag1 = tag.next();
+			var node = tag1.elements();
+			while(node.hasNext()) {
+				var node1 = node.next();
+				var this1 = this.elements;
+				var key = haxe_xml__$Access_AttribAccess.resolve(node1,"name").toString();
+				element = js_Boot.__cast(this1.h[key] , idv_cjcat_stardustextended_StardustElement);
+				element.parseXML(node1,this);
+			}
+		}
+		var h = this.elements.h;
+		var stardustElement_h = h;
+		var stardustElement_keys = Object.keys(h);
+		var stardustElement_length = stardustElement_keys.length;
+		var stardustElement_current = 0;
+		while(stardustElement_current < stardustElement_length) {
+			var stardustElement = stardustElement_h[stardustElement_keys[stardustElement_current++]];
+			stardustElement.onXMLInitComplete();
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_xml_XMLBuilder
+};
+var idv_cjcat_stardustextended_zones_Zone = function() {
+	this.position = new openfl_geom_Point();
+	idv_cjcat_stardustextended_StardustElement.call(this);
+	this.set_rotation(0);
+};
+$hxClasses["idv.cjcat.stardustextended.zones.Zone"] = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_Zone.__name__ = "idv.cjcat.stardustextended.zones.Zone";
+idv_cjcat_stardustextended_zones_Zone.__interfaces__ = [idv_cjcat_stardustextended_interfaces_IPosition];
+idv_cjcat_stardustextended_zones_Zone.__super__ = idv_cjcat_stardustextended_StardustElement;
+idv_cjcat_stardustextended_zones_Zone.prototype = $extend(idv_cjcat_stardustextended_StardustElement.prototype,{
+	_rotation: null
+	,angleCos: null
+	,angleSin: null
+	,area: null
+	,position: null
+	,_x: null
+	,get_x: function() {
+		return this._x;
+	}
+	,set_x: function(value) {
+		this._x = value;
+		return value;
+	}
+	,_y: null
+	,get_y: function() {
+		return this._y;
+	}
+	,set_y: function(value) {
+		this._y = value;
+		return value;
+	}
+	,updateArea: function() {
+	}
+	,contains: function(x,y) {
+		return false;
+	}
+	,getPoint: function() {
+		var md2D = this.calculateMotionData2D();
+		if(this._rotation != 0) {
+			var originalX = md2D.x;
+			md2D.x = originalX * this.angleCos - md2D.y * this.angleSin;
+			md2D.y = originalX * this.angleSin + md2D.y * this.angleCos;
+		}
+		md2D.x = this._x + md2D.x;
+		md2D.y = this._y + md2D.y;
+		return md2D;
+	}
+	,get_rotation: function() {
+		return this._rotation;
+	}
+	,set_rotation: function(value) {
+		var valInRad = value * idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN;
+		this.angleCos = Math.cos(valInRad);
+		this.angleSin = Math.sin(valInRad);
+		this._rotation = value;
+		return value;
+	}
+	,calculateMotionData2D: function() {
+		throw new openfl_errors_Error("calculateMotionData2D() must be overridden in the subclasses");
+	}
+	,getArea: function() {
+		return this.area;
+	}
+	,setPosition: function(xc,yc) {
+		this.set_x(xc);
+		this.set_y(yc);
+	}
+	,getPosition: function() {
+		this.position.setTo(this.get_x(),this.get_y());
+		return this.position;
+	}
+	,getXMLTagName: function() {
+		return "Zone";
+	}
+	,getElementTypeXMLTag: function() {
+		return Xml.createElement("zones");
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_StardustElement.prototype.toXML.call(this);
+		xml.set("rotation",Std.string(this._rotation));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_StardustElement.prototype.parseXML.call(this,xml,builder);
+		this.set_rotation(parseFloat(xml.get("rotation")));
+	}
+	,__class__: idv_cjcat_stardustextended_zones_Zone
+	,__properties__: {set_rotation:"set_rotation",get_rotation:"get_rotation",set_y:"set_y",get_y:"get_y",set_x:"set_x",get_x:"get_x"}
+});
+var idv_cjcat_stardustextended_zones_Contour = function() {
+	idv_cjcat_stardustextended_zones_Zone.call(this);
+	this._virtualThickness = 1;
+};
+$hxClasses["idv.cjcat.stardustextended.zones.Contour"] = idv_cjcat_stardustextended_zones_Contour;
+idv_cjcat_stardustextended_zones_Contour.__name__ = "idv.cjcat.stardustextended.zones.Contour";
+idv_cjcat_stardustextended_zones_Contour.__super__ = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_Contour.prototype = $extend(idv_cjcat_stardustextended_zones_Zone.prototype,{
+	_virtualThickness: null
+	,get_virtualThickness: function() {
+		return this._virtualThickness;
+	}
+	,set_virtualThickness: function(value) {
+		this._virtualThickness = value;
+		this.updateArea();
+		return value;
+	}
+	,getXMLTagName: function() {
+		return "Contour";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Zone.prototype.toXML.call(this);
+		xml.set("virtualThickness",Std.string(this.get_virtualThickness()));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Zone.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("virtualThickness")) {
+			this.set_virtualThickness(parseFloat(xml.get("virtualThickness")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_Contour
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Zone.prototype.__properties__,{set_virtualThickness:"set_virtualThickness",get_virtualThickness:"get_virtualThickness"})
+});
+var idv_cjcat_stardustextended_zones_CircleContour = function(x,y,radius) {
+	if(radius == null) {
+		radius = 100;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Contour.call(this);
+	this._x = x;
+	this._y = y;
+	this.set_radius(radius);
+};
+$hxClasses["idv.cjcat.stardustextended.zones.CircleContour"] = idv_cjcat_stardustextended_zones_CircleContour;
+idv_cjcat_stardustextended_zones_CircleContour.__name__ = "idv.cjcat.stardustextended.zones.CircleContour";
+idv_cjcat_stardustextended_zones_CircleContour.__super__ = idv_cjcat_stardustextended_zones_Contour;
+idv_cjcat_stardustextended_zones_CircleContour.prototype = $extend(idv_cjcat_stardustextended_zones_Contour.prototype,{
+	_radius: null
+	,_r1SQ: null
+	,_r2SQ: null
+	,get_radius: function() {
+		return this._radius;
+	}
+	,set_radius: function(value) {
+		this._radius = value;
+		var r1 = value + 0.5 * this.get_virtualThickness();
+		var r2 = value - 0.5 * this.get_virtualThickness();
+		this._r1SQ = r1 * r1;
+		this._r2SQ = r2 * r2;
+		this.updateArea();
+		return value;
+	}
+	,updateArea: function() {
+		this.area = (this._r1SQ - this._r2SQ) * Math.PI * this.get_virtualThickness();
+	}
+	,contains: function(xc,yc) {
+		var dx = this._x - xc;
+		var dy = this._y - yc;
+		var dSQ = dx * dx + dy * dy;
+		return !(dSQ > this._r1SQ || dSQ < this._r2SQ);
+	}
+	,calculateMotionData2D: function() {
+		var theta = idv_cjcat_stardustextended_math_StardustMath.TWO_PI * Math.random();
+		var x = this._radius * Math.cos(theta);
+		var y = this._radius * Math.sin(theta);
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,getXMLTagName: function() {
+		return "CircleContour";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Contour.prototype.toXML.call(this);
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		xml.set("radius",Std.string(this.get_radius()));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Contour.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this._x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this._y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("radius")) {
+			this.set_radius(parseFloat(xml.get("radius")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_CircleContour
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Contour.prototype.__properties__,{set_radius:"set_radius",get_radius:"get_radius"})
+});
+var idv_cjcat_stardustextended_zones_CircleZone = function(x,y,radius) {
+	if(radius == null) {
+		radius = 100;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Zone.call(this);
+	this._x = x;
+	this._y = y;
+	this.set_radius(radius);
+};
+$hxClasses["idv.cjcat.stardustextended.zones.CircleZone"] = idv_cjcat_stardustextended_zones_CircleZone;
+idv_cjcat_stardustextended_zones_CircleZone.__name__ = "idv.cjcat.stardustextended.zones.CircleZone";
+idv_cjcat_stardustextended_zones_CircleZone.__super__ = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_CircleZone.prototype = $extend(idv_cjcat_stardustextended_zones_Zone.prototype,{
+	_radius: null
+	,_radiusSQ: null
+	,get_radius: function() {
+		return this._radius;
+	}
+	,set_radius: function(value) {
+		this._radius = value;
+		this._radiusSQ = value * value;
+		this.updateArea();
+		return value;
+	}
+	,calculateMotionData2D: function() {
+		var theta = idv_cjcat_stardustextended_math_StardustMath.TWO_PI * Math.random();
+		var r = this._radius * Math.sqrt(Math.random());
+		var x = r * Math.cos(theta);
+		var y = r * Math.sin(theta);
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,contains: function(x,y) {
+		var dx = this._x - x;
+		var dy = this._y - y;
+		if(dx * dx + dy * dy <= this._radiusSQ) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	,updateArea: function() {
+		this.area = this._radiusSQ * Math.PI;
+	}
+	,getXMLTagName: function() {
+		return "CircleZone";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Zone.prototype.toXML.call(this);
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		xml.set("radius",Std.string(this.get_radius()));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Zone.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this._x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this._y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("radius")) {
+			this.set_radius(parseFloat(xml.get("radius")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_CircleZone
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Zone.prototype.__properties__,{set_radius:"set_radius",get_radius:"get_radius"})
+});
+var idv_cjcat_stardustextended_zones_Composite = function() {
+	idv_cjcat_stardustextended_zones_Zone.call(this);
+	this.zoneCollection = new idv_cjcat_stardustextended_zones_ZoneCollection();
+};
+$hxClasses["idv.cjcat.stardustextended.zones.Composite"] = idv_cjcat_stardustextended_zones_Composite;
+idv_cjcat_stardustextended_zones_Composite.__name__ = "idv.cjcat.stardustextended.zones.Composite";
+idv_cjcat_stardustextended_zones_Composite.__super__ = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_Composite.prototype = $extend(idv_cjcat_stardustextended_zones_Zone.prototype,{
+	zoneCollection: null
+	,get_zones: function() {
+		return this.zoneCollection.zones;
+	}
+	,set_zones: function(value) {
+		this.zoneCollection.zones = value;
+		return value;
+	}
+	,calculateMotionData2D: function() {
+		var _this = this.zoneCollection;
+		var md2D = new idv_cjcat_stardustextended_geom_MotionData2D(0,0);
+		var numZones = _this.zones.get_length();
+		if(UInt.gt(numZones,1)) {
+			var sumArea = 0;
+			var areas = [];
+			var _g = 0;
+			var _g1 = numZones;
+			while(_g < _g1) {
+				var i = _g++;
+				sumArea += (js_Boot.__cast(_this.zones.get(i) , idv_cjcat_stardustextended_zones_Zone)).getArea();
+				areas.push(sumArea);
+			}
+			var position = Math.random() * sumArea;
+			var _g = 0;
+			var _g1 = areas.length;
+			while(_g < _g1) {
+				var i = _g++;
+				if(position <= areas[i]) {
+					md2D = _this.zones.get(i).getPoint();
+					break;
+				}
+			}
+		} else if(numZones == 1) {
+			md2D = _this.zones.get(0).getPoint();
+		}
+		return md2D;
+	}
+	,contains: function(x,y) {
+		var contains = false;
+		var zone = this.zoneCollection.zones.iterator();
+		while(zone.hasNext()) {
+			var zone1 = zone.next();
+			if(zone1.contains(x,y)) {
+				contains = true;
+				break;
+			}
+		}
+		return contains;
+	}
+	,addZone: function(zone) {
+		this.zoneCollection.zones.push(zone);
+	}
+	,removeZone: function(zone) {
+		var index;
+		while(true) {
+			index = this.zoneCollection.zones.indexOf(zone,0);
+			if(!(index >= 0)) {
+				break;
+			}
+			this.zoneCollection.zones.removeAt(index);
+		}
+	}
+	,getRelatedObjects: function() {
+		return this.zoneCollection.zones.slice(0,null);
+	}
+	,getXMLTagName: function() {
+		return "CompositeZone";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Zone.prototype.toXML.call(this);
+		var _this = this.zoneCollection;
+		if(_this.zones.get_length() > 0) {
+			if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+			}
+			var access = xml;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = _this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Zone.prototype.parseXML.call(this,xml,builder);
+		this.zoneCollection.zones = openfl_Vector.toObjectVector(null);
+		var _this = this.zoneCollection;
+		_this.zones = openfl_Vector.toObjectVector(null);
+		if(xml.nodeType != Xml.Document && xml.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Invalid nodeType " + (xml.nodeType == null ? "null" : XmlType.toString(xml.nodeType)));
+		}
+		var access = xml;
+		var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+		while(node.hasNext()) {
+			var node1 = node.next();
+			_this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_Composite
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Zone.prototype.__properties__,{set_zones:"set_zones",get_zones:"get_zones"})
+});
+var idv_cjcat_stardustextended_zones_Line = function(x1,y1,x2,y2,random) {
+	if(y2 == null) {
+		y2 = 0;
+	}
+	if(x2 == null) {
+		x2 = 0;
+	}
+	if(y1 == null) {
+		y1 = 0;
+	}
+	if(x1 == null) {
+		x1 = 0;
+	}
+	idv_cjcat_stardustextended_zones_Contour.call(this);
+	this._x = x1;
+	this._y = y1;
+	this._x2 = x2;
+	this._y2 = y2;
+	this.set_random(random);
+	this.updateArea();
+};
+$hxClasses["idv.cjcat.stardustextended.zones.Line"] = idv_cjcat_stardustextended_zones_Line;
+idv_cjcat_stardustextended_zones_Line.__name__ = "idv.cjcat.stardustextended.zones.Line";
+idv_cjcat_stardustextended_zones_Line.__super__ = idv_cjcat_stardustextended_zones_Contour;
+idv_cjcat_stardustextended_zones_Line.prototype = $extend(idv_cjcat_stardustextended_zones_Contour.prototype,{
+	set_x: function(value) {
+		this._x = value;
+		this.updateArea();
+		return value;
+	}
+	,set_y: function(value) {
+		this._y = value;
+		this.updateArea();
+		return value;
+	}
+	,_x2: null
+	,get_x2: function() {
+		return this._x2;
+	}
+	,set_x2: function(value) {
+		this._x2 = value;
+		this.updateArea();
+		return value;
+	}
+	,_y2: null
+	,get_y2: function() {
+		return this._y2;
+	}
+	,set_y2: function(value) {
+		this._y2 = value;
+		this.updateArea();
+		return value;
+	}
+	,_random: null
+	,setPosition: function(xc,yc) {
+		var xDiff = this._x2 - this._x;
+		var yDiff = this._y2 - this._y;
+		this._x = xc;
+		this._y = yc;
+		this._x2 = xc + xDiff;
+		this._y2 = yc + yDiff;
+	}
+	,get_random: function() {
+		return this._random;
+	}
+	,set_random: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._random = value;
+		return value;
+	}
+	,calculateMotionData2D: function() {
+		this._random.setRange(0,1);
+		var rand = this._random.random();
+		var x = 0 - (0 - (this._x2 - this._x)) * (0 - rand) / -1;
+		var y = 0 - (0 - (this._y2 - this._y)) * (0 - rand) / -1;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,contains: function(x,y) {
+		if(x < this._x && x < this._x2) {
+			return false;
+		}
+		if(x > this._x && x > this._x2) {
+			return false;
+		}
+		if((x - this._x) / (this._x2 - this._x) == (y - this._y) / (this._y2 - this._y)) {
+			return true;
+		}
+		return false;
+	}
+	,updateArea: function() {
+		var dx = this._x - this._x2;
+		var dy = this._y - this._y2;
+		this.area = Math.sqrt(dx * dx + dy * dy) * this.get_virtualThickness();
+	}
+	,getXMLTagName: function() {
+		return "Line";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Contour.prototype.toXML.call(this);
+		xml.set("x1",Std.string(this._x));
+		xml.set("y1",Std.string(this._y));
+		xml.set("x2",Std.string(this._x2));
+		xml.set("y2",Std.string(this._y2));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Contour.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x1")) {
+			this._x = parseFloat(xml.get("x1"));
+		}
+		if(xml.exists("y1")) {
+			this._y = parseFloat(xml.get("y1"));
+		}
+		if(xml.exists("x2")) {
+			this._x2 = parseFloat(xml.get("x2"));
+		}
+		if(xml.exists("y2")) {
+			this._y2 = parseFloat(xml.get("y2"));
+		}
+		this.updateArea();
+	}
+	,__class__: idv_cjcat_stardustextended_zones_Line
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Contour.prototype.__properties__,{set_random:"set_random",get_random:"get_random",set_y2:"set_y2",get_y2:"get_y2",set_x2:"set_x2",get_x2:"get_x2"})
+});
+var idv_cjcat_stardustextended_zones_RectContour = function(x,y,_width,_height) {
+	if(_height == null) {
+		_height = 100;
+	}
+	if(_width == null) {
+		_width = 200;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Composite.call(this);
+	this._line1 = new idv_cjcat_stardustextended_zones_Line();
+	this._line2 = new idv_cjcat_stardustextended_zones_Line();
+	this._line3 = new idv_cjcat_stardustextended_zones_Line();
+	this._line4 = new idv_cjcat_stardustextended_zones_Line();
+	this.addZone(this._line1);
+	this.addZone(this._line2);
+	this.addZone(this._line3);
+	this.addZone(this._line4);
+	this.set_virtualThickness(1);
+	this._x = x;
+	this._y = y;
+	this.set_width(_width);
+	this.set_height(_height);
+	this.updateArea();
+};
+$hxClasses["idv.cjcat.stardustextended.zones.RectContour"] = idv_cjcat_stardustextended_zones_RectContour;
+idv_cjcat_stardustextended_zones_RectContour.__name__ = "idv.cjcat.stardustextended.zones.RectContour";
+idv_cjcat_stardustextended_zones_RectContour.__super__ = idv_cjcat_stardustextended_zones_Composite;
+idv_cjcat_stardustextended_zones_RectContour.prototype = $extend(idv_cjcat_stardustextended_zones_Composite.prototype,{
+	_virtualThickness: null
+	,_width: null
+	,_height: null
+	,_line1: null
+	,_line2: null
+	,_line3: null
+	,_line4: null
+	,getPoint: function() {
+		var md2D = idv_cjcat_stardustextended_zones_Composite.prototype.getPoint.call(this);
+		if(this._rotation != 0) {
+			var originalX = md2D.x;
+			md2D.x = originalX * this.angleCos - md2D.y * this.angleSin;
+			md2D.y = originalX * this.angleSin + md2D.y * this.angleCos;
+		}
+		md2D.x = this._x + md2D.x;
+		md2D.y = this._y + md2D.y;
+		return md2D;
+	}
+	,get_width: function() {
+		return this._width;
+	}
+	,set_width: function(value) {
+		this._width = value;
+		this.updateContour();
+		this.updateArea();
+		return value;
+	}
+	,get_height: function() {
+		return this._height;
+	}
+	,set_height: function(value) {
+		this._height = value;
+		this.updateContour();
+		this.updateArea();
+		return value;
+	}
+	,get_virtualThickness: function() {
+		return this._virtualThickness;
+	}
+	,set_virtualThickness: function(value) {
+		this._virtualThickness = value;
+		this._line1.set_virtualThickness(value);
+		this._line2.set_virtualThickness(value);
+		this._line3.set_virtualThickness(value);
+		this._line4.set_virtualThickness(value);
+		this.updateArea();
+		return value;
+	}
+	,updateContour: function() {
+		this._line1.set_x(0);
+		this._line1.set_y(0);
+		this._line1.set_x2(this.get_width());
+		this._line1.set_y2(0);
+		this._line2.set_x(0);
+		this._line2.set_y(this.get_height());
+		this._line2.set_x2(this.get_width());
+		this._line2.set_y2(this.get_height());
+		this._line3.set_x(0);
+		this._line3.set_y(0);
+		this._line3.set_x2(0);
+		this._line3.set_y2(this.get_height());
+		this._line4.set_x(this.get_width());
+		this._line4.set_y(0);
+		this._line4.set_x2(this.get_width());
+		this._line4.set_y2(this.get_height());
+	}
+	,updateArea: function() {
+		this.area = 0;
+		var line = this.get_zones().iterator();
+		while(line.hasNext()) {
+			var line1 = line.next();
+			this.area += line1.getArea();
+		}
+	}
+	,getXMLTagName: function() {
+		return "RectContour";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Composite.prototype.toXML.call(this);
+		xml.remove("zones");
+		xml.set("virtualThickness",Std.string(this.get_virtualThickness()));
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		xml.set("width",Std.string(this.get_width()));
+		xml.set("height",Std.string(this.get_height()));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Composite.prototype.parseXML.call(this,xml,builder);
+		this.addZone(this._line1);
+		this.addZone(this._line2);
+		this.addZone(this._line3);
+		this.addZone(this._line4);
+		if(xml.exists("virtualThickness")) {
+			this.set_virtualThickness(parseFloat(xml.get("virtualThickness")));
+		}
+		if(xml.exists("x")) {
+			this.set_x(parseFloat(xml.get("x")));
+		}
+		if(xml.exists("y")) {
+			this.set_y(parseFloat(xml.get("y")));
+		}
+		if(xml.exists("width")) {
+			this.set_width(parseFloat(xml.get("width")));
+		}
+		if(xml.exists("height")) {
+			this.set_height(parseFloat(xml.get("height")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_RectContour
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Composite.prototype.__properties__,{set_virtualThickness:"set_virtualThickness",get_virtualThickness:"get_virtualThickness",set_height:"set_height",get_height:"get_height",set_width:"set_width",get_width:"get_width"})
+});
+var idv_cjcat_stardustextended_zones_RectZone = function(x,y,width,height,randomX,randomY) {
+	if(height == null) {
+		height = 50;
+	}
+	if(width == null) {
+		width = 150;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Zone.call(this);
+	if(randomX == null) {
+		randomX = new idv_cjcat_stardustextended_math_UniformRandom();
+	}
+	if(randomY == null) {
+		randomY = new idv_cjcat_stardustextended_math_UniformRandom();
+	}
+	this._x = x;
+	this._y = y;
+	this.set_width(width);
+	this.set_height(height);
+	this.set_randomX(randomX);
+	this.set_randomY(randomY);
+};
+$hxClasses["idv.cjcat.stardustextended.zones.RectZone"] = idv_cjcat_stardustextended_zones_RectZone;
+idv_cjcat_stardustextended_zones_RectZone.__name__ = "idv.cjcat.stardustextended.zones.RectZone";
+idv_cjcat_stardustextended_zones_RectZone.__super__ = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_RectZone.prototype = $extend(idv_cjcat_stardustextended_zones_Zone.prototype,{
+	_randomX: null
+	,_randomY: null
+	,_width: null
+	,_height: null
+	,get_width: function() {
+		return this._width;
+	}
+	,set_width: function(value) {
+		this._width = value;
+		this.updateArea();
+		return value;
+	}
+	,get_height: function() {
+		return this._height;
+	}
+	,set_height: function(value) {
+		this._height = value;
+		this.updateArea();
+		return value;
+	}
+	,get_randomX: function() {
+		return this._randomX;
+	}
+	,set_randomX: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._randomX = value;
+		return value;
+	}
+	,get_randomY: function() {
+		return this._randomY;
+	}
+	,set_randomY: function(value) {
+		if(value == null) {
+			value = new idv_cjcat_stardustextended_math_UniformRandom();
+		}
+		this._randomY = value;
+		return value;
+	}
+	,updateArea: function() {
+		this.area = this._width * this._height;
+	}
+	,calculateMotionData2D: function() {
+		this._randomX.setRange(0,this._width);
+		this._randomY.setRange(0,this._height);
+		var x = this._randomX.random();
+		var y = this._randomY.random();
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,contains: function(xc,yc) {
+		if(this._rotation != 0) {
+			var x = xc;
+			var y = yc;
+			if(y == null) {
+				y = 0;
+			}
+			if(x == null) {
+				x = 0;
+			}
+			var obj;
+			if(idv_cjcat_stardustextended_geom_Vec2DPool._recycled.length > 0) {
+				obj = idv_cjcat_stardustextended_geom_Vec2DPool._recycled.pop();
+				obj.setTo(x,y);
+			} else {
+				obj = new idv_cjcat_stardustextended_geom_Vec2D(x,y);
+			}
+			var vec = obj;
+			vec.rotate(-this._rotation);
+			xc = vec.x;
+			yc = vec.y;
+		}
+		if(xc < this._x || xc > this._x + this._width) {
+			return false;
+		} else if(yc < this._y || yc > this._y + this._height) {
+			return false;
+		}
+		return true;
+	}
+	,getRelatedObjects: function() {
+		return openfl_Vector.toObjectVector(null,null,null,[this._randomX,this._randomY]);
+	}
+	,getXMLTagName: function() {
+		return "RectZone";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Zone.prototype.toXML.call(this);
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		xml.set("width",Std.string(this._width));
+		xml.set("height",Std.string(this._height));
+		xml.set("randomX",Std.string(this._randomX.name));
+		xml.set("randomY",Std.string(this._randomY.name));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Zone.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this._x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this._y = parseFloat(xml.get("y"));
+		}
+		if(xml.exists("width")) {
+			this.set_width(parseFloat(xml.get("width")));
+		}
+		if(xml.exists("height")) {
+			this.set_height(parseFloat(xml.get("height")));
+		}
+		if(xml.exists("randomX")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("randomX")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_randomX(tmp);
+		}
+		if(xml.exists("randomY")) {
+			var tmp;
+			try {
+				tmp = js_Boot.__cast(builder.getElementByName(xml.get("randomY")) , idv_cjcat_stardustextended_math_Random);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				tmp = null;
+			}
+			this.set_randomY(tmp);
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_RectZone
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Zone.prototype.__properties__,{set_randomY:"set_randomY",get_randomY:"get_randomY",set_randomX:"set_randomX",get_randomX:"get_randomX",set_height:"set_height",get_height:"get_height",set_width:"set_width",get_width:"get_width"})
+});
+var idv_cjcat_stardustextended_zones_Sector = function(x,y,minRadius,maxRadius,minAngle,maxAngle) {
+	if(maxAngle == null) {
+		maxAngle = 360;
+	}
+	if(minAngle == null) {
+		minAngle = 0;
+	}
+	if(maxRadius == null) {
+		maxRadius = 100;
+	}
+	if(minRadius == null) {
+		minRadius = 0;
+	}
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Zone.call(this);
+	this._randomT = new idv_cjcat_stardustextended_math_UniformRandom();
+	this._x = x;
+	this._y = y;
+	this._minRadius = minRadius;
+	this._maxRadius = maxRadius;
+	this._minAngle = minAngle;
+	this._maxAngle = maxAngle;
+	this.updateArea();
+};
+$hxClasses["idv.cjcat.stardustextended.zones.Sector"] = idv_cjcat_stardustextended_zones_Sector;
+idv_cjcat_stardustextended_zones_Sector.__name__ = "idv.cjcat.stardustextended.zones.Sector";
+idv_cjcat_stardustextended_zones_Sector.__super__ = idv_cjcat_stardustextended_zones_Zone;
+idv_cjcat_stardustextended_zones_Sector.prototype = $extend(idv_cjcat_stardustextended_zones_Zone.prototype,{
+	_randomT: null
+	,_minRadius: null
+	,_maxRadius: null
+	,_minAngle: null
+	,_maxAngle: null
+	,_minAngleRad: null
+	,_maxAngleRad: null
+	,get_minRadius: function() {
+		return this._minRadius;
+	}
+	,set_minRadius: function(value) {
+		this._minRadius = value;
+		this.updateArea();
+		return value;
+	}
+	,get_maxRadius: function() {
+		return this._maxRadius;
+	}
+	,set_maxRadius: function(value) {
+		this._maxRadius = value;
+		this.updateArea();
+		return value;
+	}
+	,get_minAngle: function() {
+		return this._minAngle;
+	}
+	,set_minAngle: function(value) {
+		this._minAngle = value;
+		this.updateArea();
+		return value;
+	}
+	,get_maxAngle: function() {
+		return this._maxAngle;
+	}
+	,set_maxAngle: function(value) {
+		this._maxAngle = value;
+		this.updateArea();
+		return value;
+	}
+	,calculateMotionData2D: function() {
+		if(this._maxRadius == 0) {
+			var x = this._x;
+			var y = this._y;
+			if(y == null) {
+				y = 0;
+			}
+			if(x == null) {
+				x = 0;
+			}
+			var obj;
+			if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+				obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+				obj.x = x;
+				obj.y = y;
+			} else {
+				obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+			}
+			return obj;
+		}
+		this._randomT.setRange(this._minAngleRad,this._maxAngleRad);
+		var theta = this._randomT.random();
+		var y1 = this._minRadius;
+		var r = y1 - (y1 - this._maxRadius) * (0 - Math.sqrt(Math.random())) / -1;
+		var x = r * Math.cos(theta);
+		var y = r * Math.sin(theta);
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,updateArea: function() {
+		this._minAngleRad = this._minAngle * idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN;
+		this._maxAngleRad = this._maxAngle * idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN;
+		if(Math.abs(this._minAngleRad) > idv_cjcat_stardustextended_math_StardustMath.TWO_PI) {
+			this._minAngleRad %= idv_cjcat_stardustextended_math_StardustMath.TWO_PI;
+		}
+		if(Math.abs(this._maxAngleRad) > idv_cjcat_stardustextended_math_StardustMath.TWO_PI) {
+			this._maxAngleRad %= idv_cjcat_stardustextended_math_StardustMath.TWO_PI;
+		}
+		var dT = this._maxAngleRad - this._minAngleRad;
+		var dRSQ = this._minRadius * this._minRadius - this._maxRadius * this._maxRadius;
+		this.area = Math.abs(dRSQ * dT);
+	}
+	,contains: function(x,y) {
+		var dx = this._x - x;
+		var dy = this._y - y;
+		var squaredDistance = dx * dx + dy * dy;
+		var isInsideOuterCircle = squaredDistance <= this._maxRadius * this._maxRadius;
+		if(!isInsideOuterCircle) {
+			return false;
+		}
+		var isInsideInnerCircle = squaredDistance <= this._minRadius * this._minRadius;
+		if(isInsideInnerCircle) {
+			return false;
+		}
+		var angle = Math.atan2(dy,dx) + Math.PI;
+		if(angle > this._maxAngleRad || angle < this._minAngleRad) {
+			return false;
+		}
+		return true;
+	}
+	,getXMLTagName: function() {
+		return "Sector";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Zone.prototype.toXML.call(this);
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		xml.set("minRadius",Std.string(this.get_minRadius()));
+		xml.set("maxRadius",Std.string(this.get_maxRadius()));
+		xml.set("minAngle",Std.string(this.get_minAngle()));
+		xml.set("maxAngle",Std.string(this.get_maxAngle()));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Zone.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this._x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this._y = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("minRadius")) {
+			this.set_minRadius(parseFloat(xml.get("minRadius")));
+		}
+		if(xml.exists("maxRadius")) {
+			this.set_maxRadius(parseFloat(xml.get("maxRadius")));
+		}
+		if(xml.exists("minAngle")) {
+			this.set_minAngle(parseFloat(xml.get("minAngle")));
+		}
+		if(xml.exists("maxAngle")) {
+			this.set_maxAngle(parseFloat(xml.get("maxAngle")));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_Sector
+	,__properties__: $extend(idv_cjcat_stardustextended_zones_Zone.prototype.__properties__,{set_maxAngle:"set_maxAngle",get_maxAngle:"get_maxAngle",set_minAngle:"set_minAngle",get_minAngle:"get_minAngle",set_maxRadius:"set_maxRadius",get_maxRadius:"get_maxRadius",set_minRadius:"set_minRadius",get_minRadius:"get_minRadius"})
+});
+var idv_cjcat_stardustextended_zones_SinglePoint = function(x,y) {
+	if(y == null) {
+		y = 0;
+	}
+	if(x == null) {
+		x = 0;
+	}
+	idv_cjcat_stardustextended_zones_Contour.call(this);
+	this._x = x;
+	this._y = y;
+	this.updateArea();
+};
+$hxClasses["idv.cjcat.stardustextended.zones.SinglePoint"] = idv_cjcat_stardustextended_zones_SinglePoint;
+idv_cjcat_stardustextended_zones_SinglePoint.__name__ = "idv.cjcat.stardustextended.zones.SinglePoint";
+idv_cjcat_stardustextended_zones_SinglePoint.__super__ = idv_cjcat_stardustextended_zones_Contour;
+idv_cjcat_stardustextended_zones_SinglePoint.prototype = $extend(idv_cjcat_stardustextended_zones_Contour.prototype,{
+	contains: function(x,y) {
+		if(this._x == x && this._y == y) {
+			return true;
+		}
+		return false;
+	}
+	,calculateMotionData2D: function() {
+		var x = 0;
+		var y = 0;
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		var obj;
+		if(idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.length > 0) {
+			obj = idv_cjcat_stardustextended_geom_MotionData2DPool._recycled.pop();
+			obj.x = x;
+			obj.y = y;
+		} else {
+			obj = new idv_cjcat_stardustextended_geom_MotionData2D(x,y);
+		}
+		return obj;
+	}
+	,updateArea: function() {
+		this.area = this.get_virtualThickness() * this.get_virtualThickness() * Math.PI;
+	}
+	,getXMLTagName: function() {
+		return "SinglePoint";
+	}
+	,toXML: function() {
+		var xml = idv_cjcat_stardustextended_zones_Contour.prototype.toXML.call(this);
+		xml.set("x",Std.string(this._x));
+		xml.set("y",Std.string(this._y));
+		return xml;
+	}
+	,parseXML: function(xml,builder) {
+		idv_cjcat_stardustextended_zones_Contour.prototype.parseXML.call(this,xml,builder);
+		if(xml.exists("x")) {
+			this._x = parseFloat(xml.get("x"));
+		}
+		if(xml.exists("y")) {
+			this._y = parseFloat(xml.get("y"));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_SinglePoint
+});
+var idv_cjcat_stardustextended_zones_ZoneCollection = function() {
+	this.zones = openfl_Vector.toObjectVector(null);
+};
+$hxClasses["idv.cjcat.stardustextended.zones.ZoneCollection"] = idv_cjcat_stardustextended_zones_ZoneCollection;
+idv_cjcat_stardustextended_zones_ZoneCollection.__name__ = "idv.cjcat.stardustextended.zones.ZoneCollection";
+idv_cjcat_stardustextended_zones_ZoneCollection.prototype = {
+	zones: null
+	,getRandomPointInZones: function() {
+		var md2D = new idv_cjcat_stardustextended_geom_MotionData2D(0,0);
+		var numZones = this.zones.get_length();
+		if(UInt.gt(numZones,1)) {
+			var sumArea = 0;
+			var areas = [];
+			var _g = 0;
+			var _g1 = numZones;
+			while(_g < _g1) {
+				var i = _g++;
+				sumArea += (js_Boot.__cast(this.zones.get(i) , idv_cjcat_stardustextended_zones_Zone)).getArea();
+				areas.push(sumArea);
+			}
+			var position = Math.random() * sumArea;
+			var _g = 0;
+			var _g1 = areas.length;
+			while(_g < _g1) {
+				var i = _g++;
+				if(position <= areas[i]) {
+					md2D = this.zones.get(i).getPoint();
+					break;
+				}
+			}
+		} else if(numZones == 1) {
+			md2D = this.zones.get(0).getPoint();
+		}
+		return md2D;
+	}
+	,contains: function(xc,yc) {
+		var contains = false;
+		var zone = this.zones.iterator();
+		while(zone.hasNext()) {
+			var zone1 = zone.next();
+			if(zone1.contains(xc,yc)) {
+				contains = true;
+				break;
+			}
+		}
+		return contains;
+	}
+	,addToStardustXML: function(stardustXML) {
+		if(this.zones.get_length() > 0) {
+			if(stardustXML.nodeType != Xml.Document && stardustXML.nodeType != Xml.Element) {
+				throw haxe_Exception.thrown("Invalid nodeType " + (stardustXML.nodeType == null ? "null" : XmlType.toString(stardustXML.nodeType)));
+			}
+			var access = stardustXML;
+			access.addChild(Xml.createElement("zones"));
+			var zone;
+			var zone = this.zones.iterator();
+			while(zone.hasNext()) {
+				var zone1 = zone.next();
+				haxe_xml__$Access_NodeAccess.resolve(access,"zones").addChild(zone1.getXMLTag());
+			}
+		}
+	}
+	,parseFromStardustXML: function(stardustXML,builder) {
+		this.zones = openfl_Vector.toObjectVector(null);
+		if(stardustXML.nodeType != Xml.Document && stardustXML.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Invalid nodeType " + (stardustXML.nodeType == null ? "null" : XmlType.toString(stardustXML.nodeType)));
+		}
+		var access = stardustXML;
+		var node = haxe_xml__$Access_NodeAccess.resolve(access,"zones").elements();
+		while(node.hasNext()) {
+			var node1 = node.next();
+			this.zones.push(js_Boot.__cast(builder.getElementByName(haxe_xml__$Access_AttribAccess.resolve(node1,"name")) , idv_cjcat_stardustextended_zones_Zone));
+		}
+	}
+	,__class__: idv_cjcat_stardustextended_zones_ZoneCollection
 };
 var js_Boot = function() { };
 $hxClasses["js.Boot"] = js_Boot;
@@ -28131,7 +37267,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 210114;
+	this.version = 624884;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
@@ -30264,8 +39400,58 @@ lime_utils_Preloader.prototype = {
 	,update: function(loaded,total) {
 	}
 	,updateProgress: function() {
+		var _gthis = this;
 		if(!this.simulateProgress) {
 			this.onProgress.dispatch(this.bytesLoaded,this.bytesTotal);
+		}
+		if(this.loadedLibraries == this.libraries.length && !this.initLibraryNames) {
+			this.initLibraryNames = true;
+			var _g = 0;
+			var _g1 = this.libraryNames;
+			while(_g < _g1.length) {
+				var name = [_g1[_g]];
+				++_g;
+				lime_utils_Log.verbose("Preloading asset library: " + name[0],{ fileName : "lime/utils/Preloader.hx", lineNumber : 239, className : "lime.utils.Preloader", methodName : "updateProgress"});
+				lime_utils_Assets.loadLibrary(name[0]).onProgress((function(name) {
+					return function(loaded,total) {
+						if(total > 0) {
+							if(!Object.prototype.hasOwnProperty.call(_gthis.bytesTotalCache.h,name[0])) {
+								_gthis.bytesTotalCache.h[name[0]] = total;
+								_gthis.bytesTotal += total - 200;
+							}
+							if(loaded > total) {
+								loaded = total;
+							}
+							if(!Object.prototype.hasOwnProperty.call(_gthis.bytesLoadedCache2.h,name[0])) {
+								_gthis.bytesLoaded += loaded;
+							} else {
+								_gthis.bytesLoaded += loaded - _gthis.bytesLoadedCache2.h[name[0]];
+							}
+							_gthis.bytesLoadedCache2.h[name[0]] = loaded;
+							if(!_gthis.simulateProgress) {
+								_gthis.onProgress.dispatch(_gthis.bytesLoaded,_gthis.bytesTotal);
+							}
+						}
+					};
+				})(name)).onComplete((function(name) {
+					return function(library) {
+						var total = 200;
+						if(Object.prototype.hasOwnProperty.call(_gthis.bytesTotalCache.h,name[0])) {
+							total = _gthis.bytesTotalCache.h[name[0]];
+						}
+						if(!Object.prototype.hasOwnProperty.call(_gthis.bytesLoadedCache2.h,name[0])) {
+							_gthis.bytesLoaded += total;
+						} else {
+							_gthis.bytesLoaded += total - _gthis.bytesLoadedCache2.h[name[0]];
+						}
+						_gthis.loadedAssetLibrary(name[0]);
+					};
+				})(name)).onError((function() {
+					return function(e) {
+						lime_utils_Log.error(e,{ fileName : "lime/utils/Preloader.hx", lineNumber : 293, className : "lime.utils.Preloader", methodName : "updateProgress"});
+					};
+				})());
+			}
 		}
 		if(!this.simulateProgress && this.loadedLibraries == this.libraries.length + this.libraryNames.length) {
 			if(!this.preloadComplete) {
@@ -67373,103 +76559,6 @@ openfl_errors_TypeError.__super__ = openfl_errors_Error;
 openfl_errors_TypeError.prototype = $extend(openfl_errors_Error.prototype,{
 	__class__: openfl_errors_TypeError
 });
-var openfl_events_Event = function(type,bubbles,cancelable) {
-	if(cancelable == null) {
-		cancelable = false;
-	}
-	if(bubbles == null) {
-		bubbles = false;
-	}
-	this.type = type;
-	this.bubbles = bubbles;
-	this.cancelable = cancelable;
-	this.eventPhase = 2;
-};
-$hxClasses["openfl.events.Event"] = openfl_events_Event;
-openfl_events_Event.__name__ = "openfl.events.Event";
-openfl_events_Event.prototype = {
-	bubbles: null
-	,cancelable: null
-	,currentTarget: null
-	,eventPhase: null
-	,target: null
-	,type: null
-	,__isCanceled: null
-	,__isCanceledNow: null
-	,__preventDefault: null
-	,clone: function() {
-		var event = new openfl_events_Event(this.type,this.bubbles,this.cancelable);
-		event.eventPhase = this.eventPhase;
-		event.target = this.target;
-		event.currentTarget = this.currentTarget;
-		return event;
-	}
-	,formatToString: function(className,p1,p2,p3,p4,p5) {
-		var parameters = [];
-		if(p1 != null) {
-			parameters.push(p1);
-		}
-		if(p2 != null) {
-			parameters.push(p2);
-		}
-		if(p3 != null) {
-			parameters.push(p3);
-		}
-		if(p4 != null) {
-			parameters.push(p4);
-		}
-		if(p5 != null) {
-			parameters.push(p5);
-		}
-		return $bind(this,this.__formatToString).apply(this,[className,parameters]);
-	}
-	,isDefaultPrevented: function() {
-		return this.__preventDefault;
-	}
-	,preventDefault: function() {
-		if(this.cancelable) {
-			this.__preventDefault = true;
-		}
-	}
-	,stopImmediatePropagation: function() {
-		this.__isCanceled = true;
-		this.__isCanceledNow = true;
-	}
-	,stopPropagation: function() {
-		this.__isCanceled = true;
-	}
-	,toString: function() {
-		return this.__formatToString("Event",["type","bubbles","cancelable"]);
-	}
-	,__formatToString: function(className,parameters) {
-		var output = "[" + className;
-		var arg = null;
-		var _g = 0;
-		while(_g < parameters.length) {
-			var param = parameters[_g];
-			++_g;
-			arg = Reflect.field(this,param);
-			if(typeof(arg) == "string") {
-				output += " " + param + "=\"" + Std.string(arg) + "\"";
-			} else {
-				output += " " + param + "=" + Std.string(arg);
-			}
-		}
-		output += "]";
-		return output;
-	}
-	,__init: function() {
-		this.target = null;
-		this.currentTarget = null;
-		this.bubbles = false;
-		this.cancelable = false;
-		this.eventPhase = 2;
-		this.__isCanceled = false;
-		this.__isCanceledNow = false;
-		this.__preventDefault = false;
-	}
-	,__class__: openfl_events_Event
-};
 var openfl_events_ActivityEvent = function(type,bubbles,cancelable,activating) {
 	if(activating == null) {
 		activating = false;
@@ -69777,6 +78866,158 @@ openfl_net_URLRequestHeader.prototype = {
 	,value: null
 	,__class__: openfl_net_URLRequestHeader
 };
+var openfl_utils_IDataInput = function() { };
+$hxClasses["openfl.utils.IDataInput"] = openfl_utils_IDataInput;
+openfl_utils_IDataInput.__name__ = "openfl.utils.IDataInput";
+openfl_utils_IDataInput.__isInterface__ = true;
+openfl_utils_IDataInput.prototype = {
+	get_bytesAvailable: null
+	,get_endian: null
+	,set_endian: null
+	,objectEncoding: null
+	,readBoolean: null
+	,readByte: null
+	,readBytes: null
+	,readDouble: null
+	,readFloat: null
+	,readInt: null
+	,readMultiByte: null
+	,readObject: null
+	,readShort: null
+	,readUnsignedByte: null
+	,readUnsignedInt: null
+	,readUnsignedShort: null
+	,readUTF: null
+	,readUTFBytes: null
+	,__class__: openfl_utils_IDataInput
+	,__properties__: {set_endian:"set_endian",get_endian:"get_endian",get_bytesAvailable:"get_bytesAvailable"}
+};
+var openfl_net_URLStream = function() {
+	openfl_events_EventDispatcher.call(this);
+	this.__loader = new openfl_net_URLLoader();
+	this.__loader.dataFormat = 0;
+};
+$hxClasses["openfl.net.URLStream"] = openfl_net_URLStream;
+openfl_net_URLStream.__name__ = "openfl.net.URLStream";
+openfl_net_URLStream.__interfaces__ = [openfl_utils_IDataInput];
+openfl_net_URLStream.__super__ = openfl_events_EventDispatcher;
+openfl_net_URLStream.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	objectEncoding: null
+	,__data: null
+	,__loader: null
+	,close: function() {
+		this.__removeEventListeners();
+		this.__data = null;
+	}
+	,load: function(request) {
+		this.__removeEventListeners();
+		this.__addEventListeners();
+		this.__loader.load(request);
+	}
+	,readBoolean: function() {
+		return this.__data.readBoolean();
+	}
+	,readByte: function() {
+		return this.__data.readByte();
+	}
+	,readBytes: function(bytes,offset,length) {
+		if(length == null) {
+			length = 0;
+		}
+		if(offset == null) {
+			offset = 0;
+		}
+		var offset1 = offset;
+		var length1 = length;
+		if(length1 == null) {
+			length1 = 0;
+		}
+		if(offset1 == null) {
+			offset1 = 0;
+		}
+		this.__data.readBytes(bytes,offset1,length1);
+	}
+	,readDouble: function() {
+		return this.__data.readDouble();
+	}
+	,readFloat: function() {
+		return this.__data.readFloat();
+	}
+	,readInt: function() {
+		return this.__data.readInt();
+	}
+	,readMultiByte: function(length,charSet) {
+		return this.__data.readMultiByte(length,charSet);
+	}
+	,readObject: function() {
+		return null;
+	}
+	,readShort: function() {
+		return this.__data.readShort();
+	}
+	,readUnsignedByte: function() {
+		return this.__data.readUnsignedByte();
+	}
+	,readUnsignedInt: function() {
+		return this.__data.readUnsignedInt();
+	}
+	,readUnsignedShort: function() {
+		return this.__data.readUnsignedShort();
+	}
+	,readUTF: function() {
+		return this.__data.readUTF();
+	}
+	,readUTFBytes: function(length) {
+		return this.__data.readUTFBytes(length);
+	}
+	,__addEventListeners: function() {
+		this.__loader.addEventListener("complete",$bind(this,this.loader_onComplete));
+		this.__loader.addEventListener("ioError",$bind(this,this.loader_onIOError));
+		this.__loader.addEventListener("securityError",$bind(this,this.loader_onSecurityError));
+		this.__loader.addEventListener("progress",$bind(this,this.loader_onProgressEvent));
+	}
+	,__removeEventListeners: function() {
+		this.__loader.removeEventListener("complete",$bind(this,this.loader_onComplete));
+		this.__loader.removeEventListener("ioError",$bind(this,this.loader_onIOError));
+		this.__loader.removeEventListener("securityError",$bind(this,this.loader_onSecurityError));
+		this.__loader.removeEventListener("progress",$bind(this,this.loader_onProgressEvent));
+	}
+	,loader_onComplete: function(event) {
+		this.__removeEventListeners();
+		this.__data = this.__loader.data;
+		this.dispatchEvent(new openfl_events_ProgressEvent("progress",false,false,this.__loader.bytesLoaded,this.__loader.bytesTotal));
+		this.dispatchEvent(new openfl_events_Event("complete"));
+	}
+	,loader_onIOError: function(event) {
+		this.__removeEventListeners();
+		this.dispatchEvent(event);
+	}
+	,loader_onSecurityError: function(event) {
+		this.__removeEventListeners();
+		this.dispatchEvent(event);
+	}
+	,loader_onProgressEvent: function(event) {
+		this.__data = this.__loader.data;
+		this.dispatchEvent(event);
+	}
+	,get_bytesAvailable: function() {
+		if(this.__data != null) {
+			return openfl_utils_ByteArray.get_length(this.__data) - this.__data.position;
+		}
+		return 0;
+	}
+	,get_connected: function() {
+		return false;
+	}
+	,get_endian: function() {
+		return this.__data.__endian;
+	}
+	,set_endian: function(value) {
+		return this.__data.__endian = value;
+	}
+	,__class__: openfl_net_URLStream
+	,__properties__: {set_endian:"set_endian",get_endian:"get_endian",get_connected:"get_connected",get_bytesAvailable:"get_bytesAvailable"}
+});
 var openfl_system_ApplicationDomain = function(parentDomain) {
 	if(parentDomain != null) {
 		this.parentDomain = parentDomain;
@@ -77224,32 +86465,6 @@ openfl_utils_IDataOutput.prototype = {
 	,__class__: openfl_utils_IDataOutput
 	,__properties__: {set_endian:"set_endian",get_endian:"get_endian"}
 };
-var openfl_utils_IDataInput = function() { };
-$hxClasses["openfl.utils.IDataInput"] = openfl_utils_IDataInput;
-openfl_utils_IDataInput.__name__ = "openfl.utils.IDataInput";
-openfl_utils_IDataInput.__isInterface__ = true;
-openfl_utils_IDataInput.prototype = {
-	get_bytesAvailable: null
-	,get_endian: null
-	,set_endian: null
-	,objectEncoding: null
-	,readBoolean: null
-	,readByte: null
-	,readBytes: null
-	,readDouble: null
-	,readFloat: null
-	,readInt: null
-	,readMultiByte: null
-	,readObject: null
-	,readShort: null
-	,readUnsignedByte: null
-	,readUnsignedInt: null
-	,readUnsignedShort: null
-	,readUTF: null
-	,readUTFBytes: null
-	,__class__: openfl_utils_IDataInput
-	,__properties__: {set_endian:"set_endian",get_endian:"get_endian",get_bytesAvailable:"get_bytesAvailable"}
-};
 var openfl_utils_ByteArrayData = function(length) {
 	if(length == null) {
 		length = 0;
@@ -78507,6 +87722,996 @@ openfl_utils__$internal_TouchData.prototype = {
 		this.rollOutStack.splice(0,this.rollOutStack.length);
 	}
 	,__class__: openfl_utils__$internal_TouchData
+};
+var org_as3commons_zip_IZip = function() { };
+$hxClasses["org.as3commons.zip.IZip"] = org_as3commons_zip_IZip;
+org_as3commons_zip_IZip.__name__ = "org.as3commons.zip.IZip";
+org_as3commons_zip_IZip.__isInterface__ = true;
+org_as3commons_zip_IZip.__interfaces__ = [openfl_events_IEventDispatcher];
+org_as3commons_zip_IZip.prototype = {
+	get_active: null
+	,addFile: null
+	,addFileAt: null
+	,addFileFromString: null
+	,addFileFromStringAt: null
+	,close: null
+	,getFileAt: null
+	,getFileByName: null
+	,getFileCount: null
+	,load: null
+	,loadBytes: null
+	,removeFileAt: null
+	,serialize: null
+	,__class__: org_as3commons_zip_IZip
+	,__properties__: {get_active:"get_active"}
+};
+var org_as3commons_zip_IZipFile = function() { };
+$hxClasses["org.as3commons.zip.IZipFile"] = org_as3commons_zip_IZipFile;
+org_as3commons_zip_IZipFile.__name__ = "org.as3commons.zip.IZipFile";
+org_as3commons_zip_IZipFile.__isInterface__ = true;
+org_as3commons_zip_IZipFile.prototype = {
+	get_content: null
+	,set_content: null
+	,get_date: null
+	,set_date: null
+	,get_filename: null
+	,set_filename: null
+	,get_sizeCompressed: null
+	,get_sizeUncompressed: null
+	,get_versionNumber: null
+	,getContentAsString: null
+	,serialize: null
+	,setContent: null
+	,setContentAsString: null
+	,__class__: org_as3commons_zip_IZipFile
+	,__properties__: {get_versionNumber:"get_versionNumber",get_sizeUncompressed:"get_sizeUncompressed",get_sizeCompressed:"get_sizeCompressed",set_filename:"set_filename",get_filename:"get_filename",set_date:"set_date",get_date:"get_date",set_content:"set_content",get_content:"get_content"}
+};
+var org_as3commons_zip_Zip = function(filenameEncoding) {
+	if(filenameEncoding == null) {
+		filenameEncoding = "utf-8";
+	}
+	openfl_events_EventDispatcher.call(this);
+	this.charEncoding = filenameEncoding;
+	this.parseFunc = $bind(this,this.parseIdle);
+};
+$hxClasses["org.as3commons.zip.Zip"] = org_as3commons_zip_Zip;
+org_as3commons_zip_Zip.__name__ = "org.as3commons.zip.Zip";
+org_as3commons_zip_Zip.__interfaces__ = [org_as3commons_zip_IZip];
+org_as3commons_zip_Zip.__super__ = openfl_events_EventDispatcher;
+org_as3commons_zip_Zip.prototype = $extend(openfl_events_EventDispatcher.prototype,{
+	filesList: null
+	,filesDict: null
+	,urlStream: null
+	,charEncoding: null
+	,parseFunc: null
+	,currentFile: null
+	,ddBuffer: null
+	,ddSignature: null
+	,ddCompressedSize: null
+	,get_active: function() {
+		return this.parseFunc != $bind(this,this.parseIdle);
+	}
+	,load: function(request) {
+		if(this.urlStream == null && this.parseFunc == $bind(this,this.parseIdle)) {
+			this.urlStream = new openfl_net_URLStream();
+			this.urlStream.set_endian(1);
+			this.addEventHandlers();
+			this.filesList = [];
+			this.filesDict = new haxe_ds_StringMap();
+			this.parseFunc = $bind(this,this.parseSignature);
+			this.urlStream.load(request);
+		}
+	}
+	,loadBytes: function(bytes) {
+		if(this.urlStream == null && this.parseFunc == $bind(this,this.parseIdle)) {
+			this.filesList = [];
+			this.filesDict = new haxe_ds_StringMap();
+			bytes.position = 0;
+			bytes.__endian = 1;
+			this.parseFunc = $bind(this,this.parseSignature);
+			if(this.parse(bytes)) {
+				this.parseFunc = $bind(this,this.parseIdle);
+				this.dispatchEvent(new openfl_events_Event("complete"));
+			} else {
+				this.dispatchEvent(new org_as3commons_zip_ZipErrorEvent("parseError","EOF"));
+			}
+		}
+	}
+	,close: function() {
+		if(this.urlStream != null) {
+			this.parseFunc = $bind(this,this.parseIdle);
+			this.removeEventHandlers();
+			this.urlStream.close();
+			this.urlStream = null;
+		}
+	}
+	,serialize: function(stream,includeAdler32) {
+		if(includeAdler32 == null) {
+			includeAdler32 = false;
+		}
+		if(stream != null && this.filesList.length > 0) {
+			var endian = openfl_utils_Endian.toString(stream.get_endian());
+			var ba = new openfl_utils_ByteArrayData(0);
+			stream.set_endian(ba.__endian = 1);
+			var offset = 0;
+			var files = 0;
+			var _g = 0;
+			var _g1 = this.filesList.length;
+			while(_g < _g1) {
+				var i = _g++;
+				var file;
+				try {
+					file = js_Boot.__cast(this.filesList[i] , org_as3commons_zip_ZipFile);
+				} catch( _g2 ) {
+					haxe_NativeStackTrace.lastError = _g2;
+					file = null;
+				}
+				if(file != null) {
+					file.serialize(ba,includeAdler32,true,offset);
+					offset += file.serialize(stream,includeAdler32);
+					++files;
+				}
+			}
+			if(UInt.gt(openfl_utils_ByteArray.get_length(ba),0)) {
+				stream.writeBytes(ba);
+			}
+			stream.writeUnsignedInt(101010256);
+			stream.writeShort(0);
+			stream.writeShort(0);
+			stream.writeShort(files);
+			stream.writeShort(files);
+			stream.writeUnsignedInt(openfl_utils_ByteArray.get_length(ba));
+			stream.writeUnsignedInt(offset);
+			stream.writeShort(0);
+			stream.set_endian(openfl_utils_Endian.fromString(endian));
+		}
+	}
+	,getFileCount: function() {
+		if(this.filesList != null) {
+			return this.filesList.length;
+		} else {
+			return 0;
+		}
+	}
+	,getFileAt: function(index) {
+		if(this.filesList != null) {
+			try {
+				return js_Boot.__cast(this.filesList[index] , org_as3commons_zip_IZipFile);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+	,getFileByName: function(name) {
+		if(this.filesDict.h[name] != null) {
+			return js_Boot.__cast(this.filesDict.h[name] , org_as3commons_zip_IZipFile);
+		} else {
+			return null;
+		}
+	}
+	,addFile: function(name,content,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		return this.addFileAt(this.filesList != null ? this.filesList.length : 0,name,content,doCompress);
+	}
+	,addFileFromString: function(name,content,charset,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		if(charset == null) {
+			charset = "utf-8";
+		}
+		return this.addFileFromStringAt(this.filesList != null ? this.filesList.length : 0,name,content,charset,doCompress);
+	}
+	,addFileAt: function(index,name,content,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		if(this.filesList == null) {
+			this.filesList = [];
+		}
+		if(this.filesDict == null) {
+			this.filesDict = new haxe_ds_StringMap();
+		} else if(this.filesDict.h[name] != null) {
+			throw new openfl_errors_Error("File already exists: " + name + ". Please remove first.");
+		}
+		var file = new org_as3commons_zip_ZipFile();
+		file.set_filename(name);
+		file.setContent(content,doCompress);
+		if(index >= this.filesList.length) {
+			this.filesList.push(file);
+		} else {
+			this.filesList.splice(index,0,file);
+		}
+		this.filesDict.h[name] = file;
+		return file;
+	}
+	,addFileFromStringAt: function(index,name,content,charset,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		if(charset == null) {
+			charset = "utf-8";
+		}
+		if(this.filesList == null) {
+			this.filesList = [];
+		}
+		if(this.filesDict == null) {
+			this.filesDict = new haxe_ds_StringMap();
+		} else if(Reflect.field(this.filesDict,name) != null) {
+			throw new openfl_errors_Error("File already exists: " + name + ". Please remove first.");
+		}
+		var file = new org_as3commons_zip_ZipFile();
+		file.set_filename(name);
+		file.setContentAsString(content,charset,doCompress);
+		if(index >= this.filesList.length) {
+			this.filesList.push(file);
+		} else {
+			this.filesList.splice(index,0,file);
+		}
+		this.filesDict[name] = file;
+		return file;
+	}
+	,removeFileAt: function(index) {
+		if(this.filesList != null && this.filesDict != null && index < this.filesList.length) {
+			var file;
+			try {
+				file = js_Boot.__cast(this.filesList[index] , org_as3commons_zip_IZipFile);
+			} catch( _g ) {
+				haxe_NativeStackTrace.lastError = _g;
+				file = null;
+			}
+			if(file != null) {
+				this.filesList.splice(index,1);
+				var this1 = this.filesDict;
+				var key = file.get_filename();
+				var _this = this1;
+				if(Object.prototype.hasOwnProperty.call(_this.h,key)) {
+					delete(_this.h[key]);
+				}
+				return file;
+			}
+		}
+		return null;
+	}
+	,parse: function(stream) {
+		while(this.parseFunc(stream)) {
+		}
+		return this.parseFunc == $bind(this,this.parseIdle);
+	}
+	,parseIdle: function(stream) {
+		return false;
+	}
+	,parseSignature: function(stream) {
+		if(UInt.gte(stream.get_bytesAvailable(),4)) {
+			var sig = stream.readUnsignedInt();
+			switch(sig) {
+			case 67324752:
+				this.parseFunc = $bind(this,this.parseLocalfile);
+				this.currentFile = new org_as3commons_zip_ZipFile(this.charEncoding);
+				break;
+			case 33639248:case 84233040:case 101010256:case 101075792:case 117853008:case 134630224:case 134695760:case 808471376:
+				this.parseFunc = $bind(this,this.parseIdle);
+				break;
+			default:
+				throw new openfl_errors_Error("Unknown record signature: 0x" + (sig == null ? "null" : "" + sig));
+			}
+			return true;
+		}
+		return false;
+	}
+	,parseLocalfile: function(stream) {
+		if(this.currentFile.parse(stream)) {
+			if(this.currentFile.get_hasDataDescriptor()) {
+				this.parseFunc = $bind(this,this.findDataDescriptor);
+				this.ddBuffer = new openfl_utils_ByteArrayData(0);
+				this.ddSignature = 0;
+				this.ddCompressedSize = 0;
+				return true;
+			} else {
+				this.onFileLoaded();
+				if(this.parseFunc != $bind(this,this.parseIdle)) {
+					this.parseFunc = $bind(this,this.parseSignature);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	,findDataDescriptor: function(stream) {
+		while(UInt.gt(stream.get_bytesAvailable(),0)) {
+			var c = stream.readUnsignedByte();
+			this.ddSignature = this.ddSignature >>> 8 | c << 24;
+			if(this.ddSignature == 134695760) {
+				openfl_utils_ByteArray.set_length(this.ddBuffer,openfl_utils_ByteArray.get_length(this.ddBuffer) - 3);
+				this.parseFunc = $bind(this,this.validateDataDescriptor);
+				return true;
+			}
+			this.ddBuffer.writeByte(c);
+		}
+		return false;
+	}
+	,validateDataDescriptor: function(stream) {
+		if(UInt.gte(stream.get_bytesAvailable(),12)) {
+			var ddCRC32 = stream.readUnsignedInt();
+			var ddSizeCompressed = stream.readUnsignedInt();
+			var ddSizeUncompressed = stream.readUnsignedInt();
+			if(openfl_utils_ByteArray.get_length(this.ddBuffer) == ddSizeCompressed) {
+				this.ddBuffer.position = 0;
+				this.currentFile._crc32 = ddCRC32;
+				this.currentFile._sizeCompressed = ddSizeCompressed;
+				this.currentFile._sizeUncompressed = ddSizeUncompressed;
+				this.currentFile.parseContent(this.ddBuffer);
+				this.onFileLoaded();
+				this.parseFunc = $bind(this,this.parseSignature);
+			} else {
+				this.ddBuffer.writeUnsignedInt(ddCRC32);
+				this.ddBuffer.writeUnsignedInt(ddSizeCompressed);
+				this.ddBuffer.writeUnsignedInt(ddSizeUncompressed);
+				this.parseFunc = $bind(this,this.findDataDescriptor);
+			}
+			return true;
+		}
+		return false;
+	}
+	,onFileLoaded: function() {
+		this.filesList.push(this.currentFile);
+		if(this.currentFile.get_filename() != null) {
+			var this1 = this.filesDict;
+			var k = this.currentFile.get_filename();
+			var v = this.currentFile;
+			this1.h[k] = v;
+		}
+		this.dispatchEvent(new org_as3commons_zip_ZipEvent("fileLoaded",this.currentFile));
+		this.currentFile = null;
+	}
+	,progressHandler: function(evt) {
+		this.dispatchEvent(evt.clone());
+		try {
+			if(this.parse(this.urlStream)) {
+				this.close();
+				this.dispatchEvent(new openfl_events_Event("complete"));
+			}
+		} catch( _g ) {
+			var _g1 = haxe_Exception.caught(_g);
+			if(((_g1) instanceof openfl_errors_Error)) {
+				var e = _g1;
+				this.close();
+				if(this.hasEventListener("parseError")) {
+					this.dispatchEvent(new org_as3commons_zip_ZipErrorEvent("parseError",e.get_message()));
+				} else {
+					throw e;
+				}
+			} else {
+				throw _g;
+			}
+		}
+	}
+	,defaultHandler: function(evt) {
+		this.dispatchEvent(evt.clone());
+	}
+	,defaultErrorHandler: function(evt) {
+		this.close();
+		this.dispatchEvent(evt.clone());
+	}
+	,addEventHandlers: function() {
+		this.urlStream.addEventListener("complete",$bind(this,this.defaultHandler));
+		this.urlStream.addEventListener("open",$bind(this,this.defaultHandler));
+		this.urlStream.addEventListener("httpStatus",$bind(this,this.defaultHandler));
+		this.urlStream.addEventListener("ioError",$bind(this,this.defaultErrorHandler));
+		this.urlStream.addEventListener("securityError",$bind(this,this.defaultErrorHandler));
+		this.urlStream.addEventListener("progress",$bind(this,this.progressHandler));
+	}
+	,removeEventHandlers: function() {
+		this.urlStream.removeEventListener("complete",$bind(this,this.defaultHandler));
+		this.urlStream.removeEventListener("open",$bind(this,this.defaultHandler));
+		this.urlStream.removeEventListener("httpStatus",$bind(this,this.defaultHandler));
+		this.urlStream.removeEventListener("ioError",$bind(this,this.defaultErrorHandler));
+		this.urlStream.removeEventListener("securityError",$bind(this,this.defaultErrorHandler));
+		this.urlStream.removeEventListener("progress",$bind(this,this.progressHandler));
+	}
+	,__class__: org_as3commons_zip_Zip
+	,__properties__: {get_active:"get_active"}
+});
+var org_as3commons_zip_ZipErrorEvent = function(type,text,bubbles,cancelable) {
+	if(cancelable == null) {
+		cancelable = false;
+	}
+	if(bubbles == null) {
+		bubbles = false;
+	}
+	if(text == null) {
+		text = "";
+	}
+	this.text = text;
+	openfl_events_Event.call(this,type,bubbles,cancelable);
+};
+$hxClasses["org.as3commons.zip.ZipErrorEvent"] = org_as3commons_zip_ZipErrorEvent;
+org_as3commons_zip_ZipErrorEvent.__name__ = "org.as3commons.zip.ZipErrorEvent";
+org_as3commons_zip_ZipErrorEvent.__super__ = openfl_events_Event;
+org_as3commons_zip_ZipErrorEvent.prototype = $extend(openfl_events_Event.prototype,{
+	text: null
+	,clone: function() {
+		return new org_as3commons_zip_ZipErrorEvent(this.type,this.text,this.bubbles,this.cancelable);
+	}
+	,__class__: org_as3commons_zip_ZipErrorEvent
+});
+var org_as3commons_zip_ZipEvent = function(type,file,bubbles,cancelable) {
+	if(cancelable == null) {
+		cancelable = false;
+	}
+	if(bubbles == null) {
+		bubbles = false;
+	}
+	openfl_events_Event.call(this,type,bubbles,cancelable);
+	this.file = file;
+};
+$hxClasses["org.as3commons.zip.ZipEvent"] = org_as3commons_zip_ZipEvent;
+org_as3commons_zip_ZipEvent.__name__ = "org.as3commons.zip.ZipEvent";
+org_as3commons_zip_ZipEvent.__super__ = openfl_events_Event;
+org_as3commons_zip_ZipEvent.prototype = $extend(openfl_events_Event.prototype,{
+	file: null
+	,clone: function() {
+		return new org_as3commons_zip_ZipEvent(this.type,this.file,this.bubbles,this.cancelable);
+	}
+	,toString: function() {
+		return "[ZipEvent type=\"" + this.type + "\" filename=\"" + this.file.get_filename() + "\" bubbles=" + Std.string(this.bubbles) + " cancelable=" + Std.string(this.cancelable) + " eventPhase=" + this.eventPhase + "]";
+	}
+	,__class__: org_as3commons_zip_ZipEvent
+});
+var org_as3commons_zip_ZipFile = function(filenameEncoding) {
+	if(filenameEncoding == null) {
+		filenameEncoding = "utf-8";
+	}
+	this.isCompressed = false;
+	this._sizeUncompressed = 0;
+	this._sizeCompressed = 0;
+	this._comment = "";
+	this._filename = "";
+	this._sizeExtra = 0;
+	this._sizeFilename = 0;
+	this._hasAdler32 = false;
+	this._hasCompressedPatchedData = false;
+	this._deflateSpeedOption = -1;
+	this._implodeShannonFanoTrees = -1;
+	this._implodeDictSize = -1;
+	this._encrypted = false;
+	this._compressionMethod = 8;
+	this._versionNumber = "2.0";
+	this._versionHost = 0;
+	this._hasDataDescriptor = false;
+	this.parseFunc = $bind(this,this.parseFileHead);
+	this._filenameEncoding = filenameEncoding;
+	this._extraFields = new haxe_ds_IntMap();
+	this._content = new openfl_utils_ByteArrayData(0);
+	this._content.__endian = 0;
+};
+$hxClasses["org.as3commons.zip.ZipFile"] = org_as3commons_zip_ZipFile;
+org_as3commons_zip_ZipFile.__name__ = "org.as3commons.zip.ZipFile";
+org_as3commons_zip_ZipFile.__interfaces__ = [org_as3commons_zip_IZipFile];
+org_as3commons_zip_ZipFile.prototype = {
+	_hasDataDescriptor: null
+	,_versionHost: null
+	,_versionNumber: null
+	,_compressionMethod: null
+	,_encrypted: null
+	,_implodeDictSize: null
+	,_implodeShannonFanoTrees: null
+	,_deflateSpeedOption: null
+	,_hasCompressedPatchedData: null
+	,_date: null
+	,_adler32: null
+	,_hasAdler32: null
+	,_sizeFilename: null
+	,_sizeExtra: null
+	,_filename: null
+	,_filenameEncoding: null
+	,_extraFields: null
+	,_comment: null
+	,_content: null
+	,_crc32: null
+	,_sizeCompressed: null
+	,_sizeUncompressed: null
+	,isCompressed: null
+	,parseFunc: null
+	,get_date: function() {
+		return this._date;
+	}
+	,set_date: function(value) {
+		this._date = value != null ? value : new Date();
+		return value;
+	}
+	,get_filename: function() {
+		return this._filename;
+	}
+	,set_filename: function(value) {
+		this._filename = value;
+		return value;
+	}
+	,get_hasDataDescriptor: function() {
+		return this._hasDataDescriptor;
+	}
+	,get_content: function() {
+		if(this.isCompressed) {
+			this.uncompress();
+		}
+		return this._content;
+	}
+	,set_content: function(data) {
+		this.setContent(data);
+		return data;
+	}
+	,setContent: function(data,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		if(data != null && UInt.gt(openfl_utils_ByteArray.get_length(data),0)) {
+			data.position = 0;
+			var bytes = this._content;
+			var offset = 0;
+			var length = openfl_utils_ByteArray.get_length(data);
+			if(length == null) {
+				length = 0;
+			}
+			if(offset == null) {
+				offset = 0;
+			}
+			data.readBytes(bytes,offset,length);
+			this._crc32 = org_as3commons_zip_utils_ChecksumUtil.CRC32(this._content);
+			this._hasAdler32 = false;
+		} else {
+			openfl_utils_ByteArray.set_length(this._content,0);
+			this._content.position = 0;
+			this.isCompressed = false;
+		}
+		if(doCompress) {
+			this.compress();
+		} else {
+			this._sizeUncompressed = this._sizeCompressed = openfl_utils_ByteArray.get_length(this._content);
+		}
+	}
+	,get_versionNumber: function() {
+		return this._versionNumber;
+	}
+	,get_sizeCompressed: function() {
+		return this._sizeCompressed;
+	}
+	,get_sizeUncompressed: function() {
+		return this._sizeUncompressed;
+	}
+	,getContentAsString: function(recompress,charset) {
+		if(charset == null) {
+			charset = "utf-8";
+		}
+		if(recompress == null) {
+			recompress = true;
+		}
+		if(this.isCompressed) {
+			this.uncompress();
+		}
+		this._content.position = 0;
+		var str;
+		if(charset == "utf-8") {
+			var this1 = this._content;
+			str = this._content.readUTFBytes(this1.length - this1.position);
+		} else {
+			var this1 = this._content;
+			str = this._content.readMultiByte(this1.length - this1.position,charset);
+		}
+		this._content.position = 0;
+		if(recompress) {
+			this.compress();
+		}
+		return str;
+	}
+	,setContentAsString: function(value,charset,doCompress) {
+		if(doCompress == null) {
+			doCompress = true;
+		}
+		if(charset == null) {
+			charset = "utf-8";
+		}
+		openfl_utils_ByteArray.set_length(this._content,0);
+		this._content.position = 0;
+		this.isCompressed = false;
+		if(value != null && value.length > 0) {
+			if(charset == "utf-8") {
+				this._content.writeUTFBytes(value);
+			} else {
+				this._content.writeMultiByte(value,charset);
+			}
+			this._crc32 = org_as3commons_zip_utils_ChecksumUtil.CRC32(this._content);
+			this._hasAdler32 = false;
+		}
+		if(doCompress) {
+			this.compress();
+		} else {
+			this._sizeUncompressed = this._sizeCompressed = openfl_utils_ByteArray.get_length(this._content);
+		}
+	}
+	,serialize: function(stream,includeAdler32,centralDir,centralDirOffset) {
+		if(centralDirOffset == null) {
+			centralDirOffset = 0;
+		}
+		if(centralDir == null) {
+			centralDir = false;
+		}
+		if(stream == null) {
+			return 0;
+		}
+		if(centralDir) {
+			stream.writeUnsignedInt(33639248);
+			stream.writeShort(this._versionHost << 8 | 20);
+		} else {
+			stream.writeUnsignedInt(67324752);
+		}
+		stream.writeShort(this._versionHost << 8 | 20);
+		stream.writeShort(this._filenameEncoding == "utf-8" ? 2048 : 0);
+		stream.writeShort(this.isCompressed ? 8 : 0);
+		var d = this._date != null ? this._date : new Date();
+		var msdosTime = d.getSeconds() | d.getMinutes() << 5 | d.getHours() << 11;
+		var msdosDate = d.getDate() | d.getMonth() + 1 << 5 | d.getFullYear() - 1980 << 9;
+		stream.writeShort(msdosTime);
+		stream.writeShort(msdosDate);
+		stream.writeUnsignedInt(this._crc32);
+		stream.writeUnsignedInt(this._sizeCompressed);
+		stream.writeUnsignedInt(this._sizeUncompressed);
+		var ba = new openfl_utils_ByteArrayData(0);
+		ba.__endian = 1;
+		if(this._filenameEncoding == "utf-8") {
+			ba.writeUTFBytes(this._filename);
+		} else {
+			ba.writeMultiByte(this._filename,this._filenameEncoding);
+		}
+		var filenameSize = ba.position;
+		var headerId = this._extraFields.keys();
+		while(headerId.hasNext()) {
+			var headerId1 = headerId.next();
+			var extraBytes = this._extraFields.h[headerId1];
+			if(extraBytes != null) {
+				ba.writeShort(headerId1);
+				ba.writeShort(openfl_utils_ByteArray.get_length(extraBytes));
+				ba.writeBytes(extraBytes,0,0);
+			}
+		}
+		if(includeAdler32) {
+			if(!this._hasAdler32) {
+				var compressed = this.isCompressed;
+				if(compressed) {
+					this.uncompress();
+				}
+				this._adler32 = org_as3commons_zip_utils_ChecksumUtil.Adler32(this._content,0,openfl_utils_ByteArray.get_length(this._content));
+				this._hasAdler32 = true;
+				if(compressed) {
+					this.compress();
+				}
+			}
+			ba.writeShort(56026);
+			ba.writeShort(4);
+			ba.writeUnsignedInt(this._adler32);
+		}
+		var extrafieldsSize = ba.position - filenameSize;
+		if(centralDir && this._comment.length > 0) {
+			if(this._filenameEncoding == "utf-8") {
+				ba.writeUTFBytes(this._comment);
+			} else {
+				ba.writeMultiByte(this._comment,this._filenameEncoding);
+			}
+		}
+		var commentSize = ba.position - filenameSize - extrafieldsSize;
+		stream.writeShort(filenameSize);
+		stream.writeShort(extrafieldsSize);
+		if(centralDir) {
+			stream.writeShort(commentSize);
+			stream.writeShort(0);
+			stream.writeShort(0);
+			stream.writeUnsignedInt(0);
+			stream.writeUnsignedInt(centralDirOffset);
+		}
+		if(filenameSize + extrafieldsSize + commentSize > 0) {
+			stream.writeBytes(ba);
+		}
+		var fileSize = 0;
+		if(!centralDir && UInt.gt(openfl_utils_ByteArray.get_length(this._content),0)) {
+			if(this.isCompressed) {
+				if(org_as3commons_zip_ZipFile.HAS_INFLATE) {
+					fileSize = openfl_utils_ByteArray.get_length(this._content);
+					stream.writeBytes(this._content,0,fileSize);
+				} else {
+					fileSize = openfl_utils_ByteArray.get_length(this._content) - 6;
+					stream.writeBytes(this._content,2,fileSize);
+				}
+			} else {
+				fileSize = openfl_utils_ByteArray.get_length(this._content);
+				stream.writeBytes(this._content,0,fileSize);
+			}
+		}
+		var size = 30 + filenameSize + extrafieldsSize + commentSize + fileSize;
+		if(centralDir) {
+			size += 16;
+		}
+		return size;
+	}
+	,parse: function(stream) {
+		while(stream.get_bytesAvailable() != null && this.parseFunc(stream)) {
+		}
+		return this.parseFunc == $bind(this,this.parseFileIdle);
+	}
+	,parseFileIdle: function(stream) {
+		return false;
+	}
+	,parseFileHead: function(stream) {
+		if(UInt.gte(stream.get_bytesAvailable(),30)) {
+			this.parseHead(stream);
+			if(this._sizeFilename + this._sizeExtra > 0) {
+				this.parseFunc = $bind(this,this.parseFileHeadExt);
+			} else {
+				this.parseFunc = $bind(this,this.parseFileContent);
+			}
+			return true;
+		}
+		return false;
+	}
+	,parseFileHeadExt: function(stream) {
+		if(UInt.gte(stream.get_bytesAvailable(),this._sizeFilename + this._sizeExtra)) {
+			this.parseHeadExt(stream);
+			this.parseFunc = $bind(this,this.parseFileContent);
+			return true;
+		}
+		return false;
+	}
+	,parseFileContent: function(stream) {
+		var continueParsing = true;
+		if(this._hasDataDescriptor) {
+			this.parseFunc = $bind(this,this.parseFileIdle);
+			continueParsing = false;
+		} else if(this._sizeCompressed == 0) {
+			this.parseFunc = $bind(this,this.parseFileIdle);
+		} else if(UInt.gte(stream.get_bytesAvailable(),this._sizeCompressed)) {
+			this.parseContent(stream);
+			this.parseFunc = $bind(this,this.parseFileIdle);
+		} else {
+			continueParsing = false;
+		}
+		return continueParsing;
+	}
+	,parseHead: function(data) {
+		var vSrc = data.readUnsignedShort();
+		this._versionHost = vSrc >> 8;
+		this._versionNumber = Math.floor((vSrc & 255) / 10) + "." + (vSrc & 255) % 10;
+		var flag = data.readUnsignedShort();
+		this._compressionMethod = data.readUnsignedShort();
+		this._encrypted = (flag & 1) != 0;
+		this._hasDataDescriptor = (flag & 8) != 0;
+		this._hasCompressedPatchedData = (flag & 32) != 0;
+		if((flag & 800) != 0) {
+			this._filenameEncoding = "utf-8";
+		}
+		if(this._compressionMethod == 6) {
+			this._implodeDictSize = (flag & 2) != 0 ? 8192 : 4096;
+			this._implodeShannonFanoTrees = (flag & 4) != 0 ? 3 : 2;
+		} else if(this._compressionMethod == 8) {
+			this._deflateSpeedOption = (flag & 6) >> 1;
+		}
+		var msdosTime = data.readUnsignedShort();
+		var msdosDate = data.readUnsignedShort();
+		var sec = msdosTime & 31;
+		var min = (msdosTime & 2016) >> 5;
+		var hour = (msdosTime & 63488) >> 11;
+		var day = msdosDate & 31;
+		var month = (msdosDate & 480) >> 5;
+		var year = ((msdosDate & 65024) >> 9) + 1980;
+		this._date = new Date(year,month - 1,day,hour,min,sec);
+		this._crc32 = data.readUnsignedInt();
+		this._sizeCompressed = data.readUnsignedInt();
+		this._sizeUncompressed = data.readUnsignedInt();
+		this._sizeFilename = data.readUnsignedShort();
+		this._sizeExtra = data.readUnsignedShort();
+	}
+	,parseHeadExt: function(data) {
+		if(this._filenameEncoding == "utf-8") {
+			this._filename = data.readUTFBytes(this._sizeFilename);
+		} else {
+			this._filename = data.readMultiByte(this._sizeFilename,this._filenameEncoding);
+		}
+		var bytesLeft = this._sizeExtra;
+		while(bytesLeft > 4) {
+			var headerId = data.readUnsignedShort();
+			var dataSize = data.readUnsignedShort();
+			if(UInt.gt(dataSize,bytesLeft)) {
+				throw new openfl_errors_Error("Parse error in file " + this._filename + ": Extra field data size too big.");
+			}
+			if(headerId == 56026 && dataSize == 4) {
+				this._adler32 = data.readUnsignedInt();
+				this._hasAdler32 = true;
+			} else if(UInt.gt(dataSize,0)) {
+				var extraBytes = new openfl_utils_ByteArrayData(0);
+				data.readBytes(extraBytes,0,dataSize);
+				this._extraFields.h[headerId] = extraBytes;
+			}
+			bytesLeft = bytesLeft - (dataSize + 4);
+		}
+		if(bytesLeft > 0) {
+			data.readBytes(new openfl_utils_ByteArrayData(0),0,bytesLeft);
+		}
+	}
+	,parseContent: function(data) {
+		if(this._compressionMethod == 8 && !this._encrypted) {
+			if(org_as3commons_zip_ZipFile.HAS_INFLATE) {
+				data.readBytes(this._content,0,this._sizeCompressed);
+			} else if(this._hasAdler32) {
+				this._content.writeByte(120);
+				var flg = ~this._deflateSpeedOption << 6 & 192;
+				flg += 31 - (30720 | flg) % 31;
+				this._content.writeByte(flg);
+				data.readBytes(this._content,2,this._sizeCompressed);
+				this._content.position = openfl_utils_ByteArray.get_length(this._content);
+				this._content.writeUnsignedInt(this._adler32);
+			} else {
+				throw new openfl_errors_Error("Adler32 checksum not found.");
+			}
+			this.isCompressed = true;
+		} else if(this._compressionMethod == 0) {
+			data.readBytes(this._content,0,this._sizeCompressed);
+			this.isCompressed = false;
+		} else {
+			throw new openfl_errors_Error("Compression method " + this._compressionMethod + " is not supported.");
+		}
+		this._content.position = 0;
+	}
+	,compress: function() {
+		if(!this.isCompressed) {
+			if(UInt.gt(openfl_utils_ByteArray.get_length(this._content),0)) {
+				this._content.position = 0;
+				this._sizeUncompressed = openfl_utils_ByteArray.get_length(this._content);
+				if(org_as3commons_zip_ZipFile.HAS_INFLATE) {
+					this._content.deflate();
+					this._sizeCompressed = openfl_utils_ByteArray.get_length(this._content);
+				} else {
+					this._content.compress(null);
+					this._sizeCompressed = openfl_utils_ByteArray.get_length(this._content) - 6;
+				}
+				this._content.position = 0;
+				this.isCompressed = true;
+			} else {
+				this._sizeCompressed = 0;
+				this._sizeUncompressed = 0;
+			}
+		}
+	}
+	,uncompress: function() {
+		if(this.isCompressed && UInt.gt(openfl_utils_ByteArray.get_length(this._content),0)) {
+			this._content.position = 0;
+			if(org_as3commons_zip_ZipFile.HAS_INFLATE) {
+				this._content.inflate();
+			} else {
+				this._content.uncompress(null);
+			}
+			this._content.position = 0;
+			this.isCompressed = false;
+		}
+	}
+	,toString: function() {
+		return "[ZipFile]" + "\n  name:" + this._filename + "\n  date:" + Std.string(this._date) + "\n  sizeCompressed:" + this._sizeCompressed + "\n  sizeUncompressed:" + this._sizeUncompressed + "\n  versionHost:" + this._versionHost + "\n  versionNumber:" + this._versionNumber + "\n  compressionMethod:" + this._compressionMethod + "\n  encrypted:" + Std.string(this._encrypted) + "\n  hasDataDescriptor:" + Std.string(this._hasDataDescriptor) + "\n  hasCompressedPatchedData:" + Std.string(this._hasCompressedPatchedData) + "\n  filenameEncoding:" + this._filenameEncoding + "\n  crc32:" + Std.string(this._crc32) + "\n  adler32:" + Std.string(this._adler32);
+	}
+	,__class__: org_as3commons_zip_ZipFile
+	,__properties__: {get_sizeUncompressed:"get_sizeUncompressed",get_sizeCompressed:"get_sizeCompressed",get_versionNumber:"get_versionNumber",set_content:"set_content",get_content:"get_content",get_hasDataDescriptor:"get_hasDataDescriptor",set_filename:"set_filename",get_filename:"get_filename",set_date:"set_date",get_date:"get_date"}
+};
+var org_as3commons_zip_utils_ChecksumUtil = function() {
+};
+$hxClasses["org.as3commons.zip.utils.ChecksumUtil"] = org_as3commons_zip_utils_ChecksumUtil;
+org_as3commons_zip_utils_ChecksumUtil.__name__ = "org.as3commons.zip.utils.ChecksumUtil";
+org_as3commons_zip_utils_ChecksumUtil.makeCRCTable = function() {
+	var table = [];
+	var i;
+	var j;
+	var c;
+	var _g = 0;
+	while(_g < 256) {
+		var i = _g++;
+		c = i;
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		if((c & 1) != 0) {
+			c = -306674912 ^ (c >>> 1 | 0);
+		} else {
+			c >>>= 1;
+		}
+		table.push(c);
+	}
+	return table;
+};
+org_as3commons_zip_utils_ChecksumUtil.CRC32 = function(data,start,len) {
+	if(len == null) {
+		len = 0;
+	}
+	if(start == null) {
+		start = 0;
+	}
+	if(UInt.gte(start,openfl_utils_ByteArray.get_length(data))) {
+		start = openfl_utils_ByteArray.get_length(data);
+	}
+	if(len == 0) {
+		len = UInt.toFloat(openfl_utils_ByteArray.get_length(data) - start) | 0;
+	}
+	if(UInt.gt(len + start,openfl_utils_ByteArray.get_length(data))) {
+		len = UInt.toFloat(openfl_utils_ByteArray.get_length(data) - start) | 0;
+	}
+	var i;
+	var c = -1;
+	var _g = start;
+	var _g1 = len;
+	while(_g < _g1) {
+		var i = _g++;
+		c = (org_as3commons_zip_utils_ChecksumUtil.crcTable[(c ^ data.b[i] | 0) & 255] | 0) ^ (c >>> 8 | 0);
+	}
+	return c ^ -1 | 0;
+};
+org_as3commons_zip_utils_ChecksumUtil.Adler32 = function(data,start,len) {
+	if(len == null) {
+		len = 0;
+	}
+	if(start == null) {
+		start = 0;
+	}
+	if(UInt.gte(start,openfl_utils_ByteArray.get_length(data))) {
+		start = openfl_utils_ByteArray.get_length(data);
+	}
+	if(len == 0) {
+		len = UInt.toFloat(openfl_utils_ByteArray.get_length(data) - start) | 0;
+	}
+	if(UInt.gt(len + start,openfl_utils_ByteArray.get_length(data))) {
+		len = UInt.toFloat(openfl_utils_ByteArray.get_length(data) - start) | 0;
+	}
+	var i = start;
+	var a = 1;
+	var b = 0;
+	while(i < start + len) {
+		a = (a + data.b[i]) % 65521 | 0;
+		b = (a + b) % 65521 | 0;
+		++i;
+	}
+	return b << 16 | a | 0;
+};
+org_as3commons_zip_utils_ChecksumUtil.prototype = {
+	__class__: org_as3commons_zip_utils_ChecksumUtil
 };
 var starling_animation_IAnimatable = function() { };
 $hxClasses["starling.animation.IAnimatable"] = starling_animation_IAnimatable;
@@ -90171,6 +100376,241 @@ starling_textures_SubTexture.prototype = $extend(starling_textures_Texture.proto
 	,__class__: starling_textures_SubTexture
 	,__properties__: $extend(starling_textures_Texture.prototype.__properties__,{get_region:"get_region",get_rotated:"get_rotated",get_ownsParent:"get_ownsParent",get_parent:"get_parent"})
 });
+var starling_textures_TextureAtlas = function(texture,data) {
+	this.__subTextures = new haxe_ds_StringMap();
+	this.__atlasTexture = texture;
+	if(data != null) {
+		this.parseAtlasData(data);
+	}
+};
+$hxClasses["starling.textures.TextureAtlas"] = starling_textures_TextureAtlas;
+starling_textures_TextureAtlas.__name__ = "starling.textures.TextureAtlas";
+starling_textures_TextureAtlas.parseBool = function(value) {
+	if(value != null) {
+		return value.toLowerCase() == "true";
+	} else {
+		return false;
+	}
+};
+starling_textures_TextureAtlas.prototype = {
+	__atlasTexture: null
+	,__subTextures: null
+	,__subTextureNames: null
+	,dispose: function() {
+		this.__atlasTexture.dispose();
+	}
+	,parseAtlasData: function(data) {
+		try {
+			var atlasXml = null;
+			if(typeof(data) == "string") {
+				atlasXml = Xml.parse(data).firstElement();
+			} else if(((data) instanceof Xml)) {
+				atlasXml = data;
+			}
+			this.parseAtlasXml(atlasXml);
+		} catch( _g ) {
+			haxe_NativeStackTrace.lastError = _g;
+			throw new openfl_errors_ArgumentError("TextureAtlas only supports XML data");
+		}
+	}
+	,parseAtlasXml: function(atlasXml) {
+		var scale = this.__atlasTexture.get_scale();
+		var region = new openfl_geom_Rectangle();
+		var frame = new openfl_geom_Rectangle();
+		var pivotPoints_h = Object.create(null);
+		var _this = atlasXml.firstElement();
+		if(_this.nodeType != Xml.Element) {
+			throw haxe_Exception.thrown("Bad node type, expected Element but found " + (_this.nodeType == null ? "null" : XmlType.toString(_this.nodeType)));
+		}
+		if(_this.nodeName == "TextureAtlas") {
+			atlasXml = atlasXml.firstElement();
+		}
+		var subTexture = atlasXml.elementsNamed("SubTexture");
+		while(subTexture.hasNext()) {
+			var subTexture1 = subTexture.next();
+			var name = subTexture1.get("name");
+			var x = scale > 0 ? this.getXmlFloat(subTexture1,"x") / scale : 0.0;
+			var y = scale > 0 ? this.getXmlFloat(subTexture1,"y") / scale : 0.0;
+			var width = scale > 0 ? this.getXmlFloat(subTexture1,"width") / scale : 0.0;
+			var height = scale > 0 ? this.getXmlFloat(subTexture1,"height") / scale : 0.0;
+			var frameX = scale > 0 ? this.getXmlFloat(subTexture1,"frameX") / scale : 0.0;
+			var frameY = scale > 0 ? this.getXmlFloat(subTexture1,"frameY") / scale : 0.0;
+			var frameWidth = scale > 0 ? this.getXmlFloat(subTexture1,"frameWidth") / scale : 0.0;
+			var frameHeight = scale > 0 ? this.getXmlFloat(subTexture1,"frameHeight") / scale : 0.0;
+			var pivotX = scale > 0 ? this.getXmlFloat(subTexture1,"pivotX") / scale : 0.0;
+			var pivotY = scale > 0 ? this.getXmlFloat(subTexture1,"pivotY") / scale : 0.0;
+			var rotated = starling_textures_TextureAtlas.parseBool(subTexture1.get("rotated"));
+			region.setTo(x,y,width,height);
+			frame.setTo(frameX,frameY,frameWidth,frameHeight);
+			if(frameWidth > 0 && frameHeight > 0) {
+				this.addRegion(name,region,frame,rotated);
+			} else {
+				this.addRegion(name,region,null,rotated);
+			}
+			if(pivotX != 0 || pivotY != 0) {
+				starling_display_Image.bindPivotPointToTexture(this.getTexture(name),pivotX,pivotY);
+				var v = new openfl_geom_Point(pivotX,pivotY);
+				pivotPoints_h[name] = v;
+			}
+		}
+		var h = pivotPoints_h;
+		var pivotName_h = h;
+		var pivotName_keys = Object.keys(h);
+		var pivotName_length = pivotName_keys.length;
+		var pivotName_current = 0;
+		while(pivotName_current < pivotName_length) {
+			var pivotName = pivotName_keys[pivotName_current++];
+			if(starling_textures_TextureAtlas.NAME_REGEX.match(pivotName)) {
+				var baseName = starling_textures_TextureAtlas.NAME_REGEX.matched(1);
+				var pivot = pivotPoints_h[pivotName];
+				var h = this.__subTextures.h;
+				var name_h = h;
+				var name_keys = Object.keys(h);
+				var name_length = name_keys.length;
+				var name_current = 0;
+				while(name_current < name_length) {
+					var name = name_keys[name_current++];
+					if(name.indexOf(baseName) == 0 && !Object.prototype.hasOwnProperty.call(pivotPoints_h,name)) {
+						starling_display_Image.bindPivotPointToTexture(this.__subTextures.h[name],pivot.x,pivot.y);
+					}
+				}
+			}
+		}
+	}
+	,getTexture: function(name) {
+		return this.__subTextures.h[name];
+	}
+	,getTextures: function(prefix,result) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		if(result == null) {
+			result = openfl_Vector.toObjectVector(null);
+		}
+		var name = this.getNames(prefix,starling_textures_TextureAtlas.sNames).iterator();
+		while(name.hasNext()) {
+			var name1 = name.next();
+			result.set(result.get_length(),this.getTexture(name1));
+		}
+		starling_textures_TextureAtlas.sNames.set_length(0);
+		return result;
+	}
+	,getNames: function(prefix,result) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		if(result == null) {
+			result = openfl_Vector.toObjectVector(null);
+		}
+		if(this.__subTextureNames == null) {
+			this.__subTextureNames = openfl_Vector.toObjectVector(null);
+			var h = this.__subTextures.h;
+			var name_h = h;
+			var name_keys = Object.keys(h);
+			var name_length = name_keys.length;
+			var name_current = 0;
+			while(name_current < name_length) {
+				var name = name_keys[name_current++];
+				this.__subTextureNames.set(this.__subTextureNames.get_length(),name);
+			}
+			this.__subTextureNames.sort($bind(this,this.compare));
+		}
+		var name = this.__subTextureNames.iterator();
+		while(name.hasNext()) {
+			var name1 = name.next();
+			if(name1.indexOf(prefix) == 0) {
+				result.set(result.get_length(),name1);
+			}
+		}
+		return result;
+	}
+	,getRegion: function(name) {
+		var subTexture = this.__subTextures.h[name];
+		if(subTexture != null) {
+			return subTexture.get_region();
+		} else {
+			return null;
+		}
+	}
+	,getFrame: function(name) {
+		var subTexture = this.__subTextures.h[name];
+		if(subTexture != null) {
+			return subTexture.get_frame();
+		} else {
+			return null;
+		}
+	}
+	,getRotation: function(name) {
+		var subTexture = this.__subTextures.h[name];
+		if(subTexture != null) {
+			return subTexture.get_rotated();
+		} else {
+			return false;
+		}
+	}
+	,addRegion: function(name,region,frame,rotated) {
+		if(rotated == null) {
+			rotated = false;
+		}
+		this.addSubTexture(name,new starling_textures_SubTexture(this.__atlasTexture,region,false,frame,rotated));
+	}
+	,addSubTexture: function(name,subTexture) {
+		if(subTexture.get_root() != this.__atlasTexture.get_root()) {
+			throw new openfl_errors_ArgumentError("SubTexture's root must be atlas texture.");
+		}
+		this.__subTextures.h[name] = subTexture;
+		this.__subTextureNames = null;
+	}
+	,removeRegion: function(name) {
+		var subTexture = this.__subTextures.h[name];
+		if(subTexture != null) {
+			subTexture.dispose();
+		}
+		var _this = this.__subTextures;
+		if(Object.prototype.hasOwnProperty.call(_this.h,name)) {
+			delete(_this.h[name]);
+		}
+		this.__subTextureNames = null;
+	}
+	,removeRegions: function(prefix) {
+		if(prefix == null) {
+			prefix = "";
+		}
+		var h = this.__subTextures.h;
+		var name_h = h;
+		var name_keys = Object.keys(h);
+		var name_length = name_keys.length;
+		var name_current = 0;
+		while(name_current < name_length) {
+			var name = name_keys[name_current++];
+			if(prefix == "" || name.indexOf(prefix) == 0) {
+				this.removeRegion(name);
+			}
+		}
+	}
+	,get_texture: function() {
+		return this.__atlasTexture;
+	}
+	,getXmlFloat: function(xml,attributeName) {
+		var value = xml.get(attributeName);
+		if(value != null) {
+			return parseFloat(value);
+		} else {
+			return 0;
+		}
+	}
+	,compare: function(a,b) {
+		if(a < b) {
+			return -1;
+		} else if(a > b) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	,__class__: starling_textures_TextureAtlas
+	,__properties__: {get_texture:"get_texture"}
+};
 var starling_textures_TextureSmoothing = function() { };
 $hxClasses["starling.textures.TextureSmoothing"] = starling_textures_TextureSmoothing;
 starling_textures_TextureSmoothing.__name__ = "starling.textures.TextureSmoothing";
@@ -90487,6 +100927,7 @@ starling_utils_Execute.execute = function(func,args) {
 var starling_utils_MathUtil = function() { };
 $hxClasses["starling.utils.MathUtil"] = starling_utils_MathUtil;
 starling_utils_MathUtil.__name__ = "starling.utils.MathUtil";
+starling_utils_MathUtil.__properties__ = {get_FLOAT_MAX:"get_FLOAT_MAX"};
 starling_utils_MathUtil.intersectLineWithXYPlane = function(pointA,pointB,out) {
 	if(out == null) {
 		out = new openfl_geom_Point();
@@ -90619,6 +101060,9 @@ starling_utils_MathUtil.toFixed = function(value,precision) {
 	var sign = value > 0 ? 1 : -1;
 	var mult = precision <= 0 ? 1 : precision * 10;
 	return Std.string(sign * Math.round(value * mult) / mult);
+};
+starling_utils_MathUtil.get_FLOAT_MAX = function() {
+	return Number.MAX_VALUE;
 };
 var starling_utils_MatrixUtil = function() { };
 $hxClasses["starling.utils.MatrixUtil"] = starling_utils_MatrixUtil;
@@ -91786,6 +102230,11 @@ Xml.Comment = 3;
 Xml.DocType = 4;
 Xml.ProcessingInstruction = 5;
 Xml.Document = 6;
+com_funkypandagame_stardustplayer_SDEConstants.EMITTER_NAME_PREFIX = "stardustEmitter_";
+com_funkypandagame_stardustplayer_SDEConstants.ATLAS_IMAGE_NAME = "atlas_0.png";
+com_funkypandagame_stardustplayer_SDEConstants.ATLAS_XML_NAME = "atlas_0.xml";
+com_funkypandagame_stardustplayer_SimLoader.DESCRIPTOR_FILENAME = "descriptor.json";
+com_funkypandagame_stardustplayer_SimLoader.BACKGROUND_FILENAME = "background.png";
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
@@ -91811,6 +102260,91 @@ haxe_zip_InflateImpl.LEN_BASE_VAL_TBL = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,3
 haxe_zip_InflateImpl.DIST_EXTRA_BITS_TBL = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,-1,-1];
 haxe_zip_InflateImpl.DIST_BASE_VAL_TBL = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
 haxe_zip_InflateImpl.CODE_LENGTHS_POS = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+idv_cjcat_stardustextended_Stardust.AUTHOR = "Matyas F & CJ Cat (Allen Chou)";
+idv_cjcat_stardustextended_Stardust.PROJECT_HOMEPAGE = "http://wiki.starling-framework.org/extensions/stardust-engine";
+idv_cjcat_stardustextended_Stardust.SOURCE_REPO = "https://github.com/matyasf/stardust-library-plumbee";
+idv_cjcat_stardustextended_Stardust.OLD_SOURCE_REPO = "https://code.google.com/p/stardust-particle-engine";
+idv_cjcat_stardustextended_Stardust.PROJECT_NAME = "Stardust Particle Engine";
+idv_cjcat_stardustextended_Stardust.VERSION = 2.1;
+idv_cjcat_stardustextended_StardustElement.elementCounter = new haxe_ds_StringMap();
+openfl_events_Event.ACTIVATE = "activate";
+openfl_events_Event.ADDED = "added";
+openfl_events_Event.ADDED_TO_STAGE = "addedToStage";
+openfl_events_Event.CANCEL = "cancel";
+openfl_events_Event.CHANGE = "change";
+openfl_events_Event.CLEAR = "clear";
+openfl_events_Event.CLOSING = "closing";
+openfl_events_Event.CLOSE = "close";
+openfl_events_Event.COMPLETE = "complete";
+openfl_events_Event.CONNECT = "connect";
+openfl_events_Event.CONTEXT3D_CREATE = "context3DCreate";
+openfl_events_Event.COPY = "copy";
+openfl_events_Event.CUT = "cut";
+openfl_events_Event.DEACTIVATE = "deactivate";
+openfl_events_Event.ENTER_FRAME = "enterFrame";
+openfl_events_Event.EXIT_FRAME = "exitFrame";
+openfl_events_Event.EXITING = "exiting";
+openfl_events_Event.FRAME_CONSTRUCTED = "frameConstructed";
+openfl_events_Event.FRAME_LABEL = "frameLabel";
+openfl_events_Event.FULLSCREEN = "fullScreen";
+openfl_events_Event.ID3 = "id3";
+openfl_events_Event.INIT = "init";
+openfl_events_Event.MOUSE_LEAVE = "mouseLeave";
+openfl_events_Event.OPEN = "open";
+openfl_events_Event.PASTE = "paste";
+openfl_events_Event.REMOVED = "removed";
+openfl_events_Event.REMOVED_FROM_STAGE = "removedFromStage";
+openfl_events_Event.RENDER = "render";
+openfl_events_Event.RESIZE = "resize";
+openfl_events_Event.SCROLL = "scroll";
+openfl_events_Event.SELECT = "select";
+openfl_events_Event.SELECT_ALL = "selectAll";
+openfl_events_Event.SOUND_COMPLETE = "soundComplete";
+openfl_events_Event.TAB_CHILDREN_CHANGE = "tabChildrenChange";
+openfl_events_Event.TAB_ENABLED_CHANGE = "tabEnabledChange";
+openfl_events_Event.TAB_INDEX_CHANGE = "tabIndexChange";
+openfl_events_Event.TEXTURE_READY = "textureReady";
+openfl_events_Event.UNLOAD = "unload";
+idv_cjcat_stardustextended_events_StardustActionEvent.PRIORITY_CHANGE = "PRIORITY_CHANGE";
+idv_cjcat_stardustextended_events_StardustActionEvent.ADD = "ADD";
+idv_cjcat_stardustextended_events_StardustActionEvent.REMOVE = "REMOVE";
+idv_cjcat_stardustextended_actions_Action.addEvent = new idv_cjcat_stardustextended_events_StardustActionEvent("ADD");
+idv_cjcat_stardustextended_actions_Action.removeEvent = new idv_cjcat_stardustextended_events_StardustActionEvent("REMOVE");
+idv_cjcat_stardustextended_actions_Action.priorityChangeEvent = new idv_cjcat_stardustextended_events_StardustActionEvent("PRIORITY_CHANGE");
+idv_cjcat_stardustextended_actions_triggers_LifeTrigger.MAX_VALUE = 1.79769313486232e+308;
+idv_cjcat_stardustextended_easing_Elastic._2PI = Math.PI * 2;
+idv_cjcat_stardustextended_easing_Sine._HALF_PI = Math.PI / 2;
+idv_cjcat_stardustextended_emitters_Emitter.timeStepCorrectionOffset = 0.004;
+idv_cjcat_stardustextended_events_StardustEmitterStepEndEvent.TYPE = "StardustEmitterStepEndEvent";
+idv_cjcat_stardustextended_events_StardustInitializerEvent.PRIORITY_CHANGE = "PRIORITY_CHANGE";
+idv_cjcat_stardustextended_events_StardustInitializerEvent.ADD = "ADD";
+idv_cjcat_stardustextended_events_StardustInitializerEvent.REMOVE = "REMOVE";
+idv_cjcat_stardustextended_geom_MotionData2DPool._recycled = [];
+idv_cjcat_stardustextended_geom_MotionData4DPool._recycled = [];
+idv_cjcat_stardustextended_geom_Vec2DPool._recycled = [];
+idv_cjcat_stardustextended_handlers_starling_ParticleProgram.sProgramNameCache = new haxe_ds_IntMap();
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.__meta__ = { fields : { isStateChange : { inline : null}}};
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.POSITION_OFFSET = 0;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.COLOR_OFFSET = 2;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.TEXCOORD_OFFSET = 6;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.MAX_POSSIBLE_PARTICLES = 16383;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.DEGREES_TO_RADIANS = Math.PI / 180;
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sCosLUT = openfl_Vector.toFloatVector(null);
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.sSinLUT = openfl_Vector.toFloatVector(null);
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.renderAlpha = openfl_Vector.toFloatVector(null);
+idv_cjcat_stardustextended_handlers_starling_StardustStarlingRenderer.initCalled = false;
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers._vertexBufferIdx = -1;
+idv_cjcat_stardustextended_handlers_starling_StarlingParticleBuffers.ELEMENTS_PER_VERTEX = 8;
+idv_cjcat_stardustextended_initializers_Initializer.addEvent = new idv_cjcat_stardustextended_events_StardustInitializerEvent("ADD");
+idv_cjcat_stardustextended_initializers_Initializer.removeEvent = new idv_cjcat_stardustextended_events_StardustInitializerEvent("REMOVE");
+idv_cjcat_stardustextended_initializers_Initializer.priorityChangeEvent = new idv_cjcat_stardustextended_events_StardustInitializerEvent("PRIORITY_CHANGE");
+idv_cjcat_stardustextended_math_StardustMath.TWO_PI = 2 * Math.PI;
+idv_cjcat_stardustextended_math_StardustMath.DEGREE_TO_RADIAN = Math.PI / 180;
+idv_cjcat_stardustextended_math_StardustMath.RADIAN_TO_DEGREE = 180 / Math.PI;
+idv_cjcat_stardustextended_particles_ParticlePool._recycled = [];
+idv_cjcat_stardustextended_utils_Base64._encodeChars = idv_cjcat_stardustextended_utils_Base64.InitEncoreChar();
+idv_cjcat_stardustextended_utils_Base64._decodeChars = idv_cjcat_stardustextended_utils_Base64.InitDecodeChar();
+idv_cjcat_stardustextended_utils_ColorUtil.inv255 = 0.00392156862745098;
 lime__$internal_backend_html5_HTML5HTTPRequest.OPTION_REVOKE_URL = 1;
 lime__$internal_backend_html5_HTML5HTTPRequest.activeRequests = 0;
 lime__$internal_backend_html5_HTML5HTTPRequest.requestLimit = 17;
@@ -93429,44 +103963,6 @@ openfl_display3D__$internal_Context3DState.__meta__ = { obj : { SuppressWarnings
 openfl_display3D_textures_TextureBase.__meta__ = { fields : { __textureContext : { SuppressWarnings : ["checkstyle:Dynamic"]}, __getGLFramebuffer : { SuppressWarnings : ["checkstyle:Dynamic"]}}};
 openfl_display3D_textures_Texture.__lowMemoryMode = false;
 openfl_errors_Error.DEFAULT_TO_STRING = "Error";
-openfl_events_Event.ACTIVATE = "activate";
-openfl_events_Event.ADDED = "added";
-openfl_events_Event.ADDED_TO_STAGE = "addedToStage";
-openfl_events_Event.CANCEL = "cancel";
-openfl_events_Event.CHANGE = "change";
-openfl_events_Event.CLEAR = "clear";
-openfl_events_Event.CLOSING = "closing";
-openfl_events_Event.CLOSE = "close";
-openfl_events_Event.COMPLETE = "complete";
-openfl_events_Event.CONNECT = "connect";
-openfl_events_Event.CONTEXT3D_CREATE = "context3DCreate";
-openfl_events_Event.COPY = "copy";
-openfl_events_Event.CUT = "cut";
-openfl_events_Event.DEACTIVATE = "deactivate";
-openfl_events_Event.ENTER_FRAME = "enterFrame";
-openfl_events_Event.EXIT_FRAME = "exitFrame";
-openfl_events_Event.EXITING = "exiting";
-openfl_events_Event.FRAME_CONSTRUCTED = "frameConstructed";
-openfl_events_Event.FRAME_LABEL = "frameLabel";
-openfl_events_Event.FULLSCREEN = "fullScreen";
-openfl_events_Event.ID3 = "id3";
-openfl_events_Event.INIT = "init";
-openfl_events_Event.MOUSE_LEAVE = "mouseLeave";
-openfl_events_Event.OPEN = "open";
-openfl_events_Event.PASTE = "paste";
-openfl_events_Event.REMOVED = "removed";
-openfl_events_Event.REMOVED_FROM_STAGE = "removedFromStage";
-openfl_events_Event.RENDER = "render";
-openfl_events_Event.RESIZE = "resize";
-openfl_events_Event.SCROLL = "scroll";
-openfl_events_Event.SELECT = "select";
-openfl_events_Event.SELECT_ALL = "selectAll";
-openfl_events_Event.SOUND_COMPLETE = "soundComplete";
-openfl_events_Event.TAB_CHILDREN_CHANGE = "tabChildrenChange";
-openfl_events_Event.TAB_ENABLED_CHANGE = "tabEnabledChange";
-openfl_events_Event.TAB_INDEX_CHANGE = "tabIndexChange";
-openfl_events_Event.TEXTURE_READY = "textureReady";
-openfl_events_Event.UNLOAD = "unload";
 openfl_events_ActivityEvent.ACTIVITY = "activity";
 openfl_events_TextEvent.LINK = "link";
 openfl_events_TextEvent.TEXT_INPUT = "textInput";
@@ -94059,6 +104555,31 @@ openfl_utils__$internal_TouchData.__pool = new lime_utils_ObjectPool(function() 
 },function(data) {
 	data.reset();
 });
+org_as3commons_zip_Zip.SIG_CENTRAL_FILE_HEADER = 33639248;
+org_as3commons_zip_Zip.SIG_SPANNING_MARKER = 808471376;
+org_as3commons_zip_Zip.SIG_LOCAL_FILE_HEADER = 67324752;
+org_as3commons_zip_Zip.SIG_DIGITAL_SIGNATURE = 84233040;
+org_as3commons_zip_Zip.SIG_END_OF_CENTRAL_DIRECTORY = 101010256;
+org_as3commons_zip_Zip.SIG_ZIP64_END_OF_CENTRAL_DIRECTORY = 101075792;
+org_as3commons_zip_Zip.SIG_ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR = 117853008;
+org_as3commons_zip_Zip.SIG_DATA_DESCRIPTOR = 134695760;
+org_as3commons_zip_Zip.SIG_ARCHIVE_EXTRA_DATA = 134630224;
+org_as3commons_zip_Zip.SIG_SPANNING = 134695760;
+org_as3commons_zip_ZipErrorEvent.PARSE_ERROR = "parseError";
+org_as3commons_zip_ZipEvent.FILE_LOADED = "fileLoaded";
+org_as3commons_zip_ZipFile.COMPRESSION_NONE = 0;
+org_as3commons_zip_ZipFile.COMPRESSION_SHRUNK = 1;
+org_as3commons_zip_ZipFile.COMPRESSION_REDUCED_1 = 2;
+org_as3commons_zip_ZipFile.COMPRESSION_REDUCED_2 = 3;
+org_as3commons_zip_ZipFile.COMPRESSION_REDUCED_3 = 4;
+org_as3commons_zip_ZipFile.COMPRESSION_REDUCED_4 = 5;
+org_as3commons_zip_ZipFile.COMPRESSION_IMPLODED = 6;
+org_as3commons_zip_ZipFile.COMPRESSION_TOKENIZED = 7;
+org_as3commons_zip_ZipFile.COMPRESSION_DEFLATED = 8;
+org_as3commons_zip_ZipFile.COMPRESSION_DEFLATED_EXT = 9;
+org_as3commons_zip_ZipFile.COMPRESSION_IMPLODED_PKWARE = 10;
+org_as3commons_zip_ZipFile.HAS_INFLATE = true;
+org_as3commons_zip_utils_ChecksumUtil.crcTable = org_as3commons_zip_utils_ChecksumUtil.makeCRCTable();
 starling_animation_DelayedCall.sPool = openfl_Vector.toObjectVector(null);
 starling_animation_Juggler.sCurrentObjectID = 0;
 starling_animation_Transitions.LINEAR = "linear";
@@ -94246,6 +104767,8 @@ starling_textures_ConcretePotTexture.sOrigin = new openfl_geom_Point();
 starling_textures_ConcretePotTexture.sAsyncUploadEnabled = false;
 starling_textures_ConcreteRectangleTexture.sAsyncUploadEnabled = false;
 starling_textures_SubTexture.E = 0.000001;
+starling_textures_TextureAtlas.NAME_REGEX = new EReg("(.+?)\\d+$","");
+starling_textures_TextureAtlas.sNames = openfl_Vector.toObjectVector(null);
 starling_textures_TextureSmoothing.NONE = "none";
 starling_textures_TextureSmoothing.BILINEAR = "bilinear";
 starling_textures_TextureSmoothing.TRILINEAR = "trilinear";

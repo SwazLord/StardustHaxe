@@ -80,6 +80,9 @@ class Emitter extends StardustElement implements ActionCollector implements Init
 	private var timeSinceLastStep:Float = 0;
 	private var _fps:Float;
 
+	private var _numParticles:Int;
+
+	public var numParticles(get, never):Int;
 	public var actions(get, never):Vector<Action>;
 	public var initializers(get, never):Vector<Initializer>;
 

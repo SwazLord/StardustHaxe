@@ -10,7 +10,7 @@ class ZoneCollection {
 	public function new():Void {}
 
 	inline public final function getRandomPointInZones():MotionData2D {
-		var md2D:MotionData2D;
+		var md2D:MotionData2D = new MotionData2D(0, 0);
 		var numZones:UInt = zones.length;
 		if (numZones > 1) {
 			var sumArea:Float = 0;

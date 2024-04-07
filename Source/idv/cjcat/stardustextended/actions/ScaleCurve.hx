@@ -16,8 +16,8 @@ import idv.cjcat.stardustextended.xml.XMLBuilder;
  * </p>
  */
 class ScaleCurve extends Action {
-	public var inFunctionExtraParams(get, set):Array<Dynamic>;
-	public var outFunctionExtraParams(get, set):Array<Dynamic>;
+	public var inFunctionExtraParams(get, set):Array<Float>;
+	public var outFunctionExtraParams(get, set):Array<Float>;
 	public var inFunction(get, set):Function;
 	public var outFunction(get, set):Function;
 
@@ -43,8 +43,8 @@ class ScaleCurve extends Action {
 
 	private var _inFunction:Function;
 	private var _outFunction:Function;
-	private var _inFunctionExtraParams:Array<Dynamic>;
-	private var _outFunctionExtraParams:Array<Dynamic>;
+	private var _inFunctionExtraParams:Array<Float>;
+	private var _outFunctionExtraParams:Array<Float>;
 
 	public function new(inLifespan:Float = 0, outLifespan:Float = 0, inFunction:Function = null, outFunction:Function = null) {
 		super();
@@ -89,11 +89,11 @@ class ScaleCurve extends Action {
 	/**
 	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the <code>inFunction</code>.
 	 */
-	private function get_inFunctionExtraParams():Array<Dynamic> {
+	private function get_inFunctionExtraParams():Array<Float> {
 		return _inFunctionExtraParams;
 	}
 
-	private function set_inFunctionExtraParams(value:Array<Dynamic>):Array<Dynamic> {
+	private function set_inFunctionExtraParams(value:Array<Float>):Array<Float> {
 		if (value == null) {
 			value = [];
 		}
@@ -104,11 +104,11 @@ class ScaleCurve extends Action {
 	/**
 	 * Some easing functions take more than four parameters. This property specifies those extra parameters passed to the <code>outFunction</code>.
 	 */
-	private function get_outFunctionExtraParams():Array<Dynamic> {
+	private function get_outFunctionExtraParams():Array<Float> {
 		return _outFunctionExtraParams;
 	}
 
-	private function set_outFunctionExtraParams(value:Array<Dynamic>):Array<Dynamic> {
+	private function set_outFunctionExtraParams(value:Array<Float>):Array<Float> {
 		if (value == null) {
 			value = [];
 		}
@@ -150,10 +150,10 @@ class ScaleCurve extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("inScale", inScale);
-		xml.set("outScale", outScale);
-		xml.set("inLifespan", inLifespan);
-		xml.set("outLifespan", outLifespan);
+		xml.set("inScale", Std.string(inScale));
+		xml.set("outScale", Std.string(outScale));
+		xml.set("inLifespan", Std.string(inLifespan));
+		xml.set("outLifespan", Std.string(outLifespan));
 		if (_inFunction != null) {
 			xml.set("inFunction", EasingFunctionType.functions[_inFunction]);
 		}
@@ -166,23 +166,23 @@ class ScaleCurve extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.inScale.length()) {
-			inScale = Std.parseFloat(xml.att.inScale);
+		if (xml.exists("inScale")) {
+			inScale = Std.parseFloat(xml.get("inScale"));
 		}
-		if (xml.att.outScale.length()) {
-			outScale = Std.parseFloat(xml.att.outScale);
+		if (xml.exists("outScale")) {
+			outScale = Std.parseFloat(xml.get("outScale"));
 		}
-		if (xml.att.inLifespan.length()) {
-			inLifespan = Std.parseFloat(xml.att.inLifespan);
+		if (xml.exists("inLifespan")) {
+			inLifespan = Std.parseFloat(xml.get("inLifespan"));
 		}
-		if (xml.att.outLifespan.length()) {
-			outLifespan = Std.parseFloat(xml.att.outLifespan);
+		if (xml.exists("outLifespan")) {
+			outLifespan = Std.parseFloat(xml.get("outLifespan"));
 		}
-		if (xml.att.inFunction.length()) {
-			inFunction = EasingFunctionType.functions[Std.string(xml.att.inFunction)];
+		if (xml.exists("inFunction")) {
+			inFunction = EasingFunctionType.functions[Std.string(xml.get("inFunction"))];
 		}
-		if (xml.att.outFunction.length()) {
-			outFunction = EasingFunctionType.functions[Std.string(xml.att.outFunction)];
+		if (xml.exists("outFunction")) {
+			outFunction = EasingFunctionType.functions[Std.string(xml.get("outFunction"))];
 		}
 	}
 }

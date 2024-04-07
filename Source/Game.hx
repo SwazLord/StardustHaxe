@@ -13,7 +13,7 @@ import starling.utils.Color;
 
 class Game extends Sprite {
 	@:embed(source = "/../Assets/coinShower_simple.sde", mimeType = "application/octet-stream")
-	private static var Asset:ByteArray;
+	private static var Asset:Class;
 
 	private var simContainer:Sprite;
 	private var player:SimPlayer;
@@ -23,6 +23,7 @@ class Game extends Sprite {
 	private var cnt:UInt = 0;
 
 	public function new() {
+		super();
 		Starling.current.showStatsAt(Align.LEFT, Align.BOTTOM);
 
 		simContainer = new Sprite();

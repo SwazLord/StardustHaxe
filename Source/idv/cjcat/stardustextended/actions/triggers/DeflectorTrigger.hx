@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions.triggers;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -21,8 +22,9 @@ class DeflectorTrigger extends Trigger {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [deflector];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		// return [deflector];
+		return new Vector<StardustElement>([deflector]);
 	}
 
 	override public function getXMLTagName():String {
@@ -40,8 +42,8 @@ class DeflectorTrigger extends Trigger {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.deflector.length()) {
-			deflector = try cast(builder.getElementByName(xml.att.deflector), Deflector) catch (e:Dynamic) null;
+		if (xml.exists("deflector")) {
+			deflector = try cast(builder.getElementByName(xml.get("deflector")), Deflector) catch (e:Dynamic) null;
 		}
 	}
 }

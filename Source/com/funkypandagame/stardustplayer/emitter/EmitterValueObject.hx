@@ -1,5 +1,6 @@
 package com.funkypandagame.stardustplayer.emitter;
 
+import openfl.Vector;
 import com.funkypandagame.stardustplayer.Particle2DSnapshot;
 import openfl.Lib.registerClassAlias;
 import openfl.utils.ByteArray;
@@ -11,7 +12,7 @@ import starling.textures.SubTexture;
 
 class EmitterValueObject {
 	public var id(get, never):String;
-	public var textures(get, never):Array<SubTexture>;
+	public var textures(get, never):Vector<SubTexture>;
 
 	public var emitter:Emitter;
 
@@ -26,7 +27,7 @@ class EmitterValueObject {
 		return emitter.name;
 	}
 
-	private function get_textures():Array<SubTexture> {
+	private function get_textures():Vector<SubTexture> {
 		return cast((emitter.particleHandler), StarlingHandler).textures;
 	}
 
@@ -35,7 +36,7 @@ class EmitterValueObject {
 		emitterSnapshot.position = 0;
 		var particlesData:Array<Dynamic> = emitterSnapshot.readObject();
 		var factory:PooledParticleFactory = new PooledParticleFactory();
-		var particles:Array<Particle> = factory.createParticles(particlesData.length, 0);
+		var particles:Vector<Particle> = factory.createParticles(particlesData.length, 0);
 		for (j in 0...particlesData.length) {
 			cast((particlesData[j]), Particle2DSnapshot).writeDataTo(particles[j]);
 		}

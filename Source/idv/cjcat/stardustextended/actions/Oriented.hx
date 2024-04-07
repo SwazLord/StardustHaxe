@@ -27,7 +27,7 @@ class Oriented extends Action {
 
 	public function new(factor:Float = 1, offset:Float = 0) {
 		super();
-		priority = -6;
+		_priority = -6;
 
 		this.factor = factor;
 		this.offset = offset;
@@ -60,8 +60,8 @@ class Oriented extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("factor", factor);
-		xml.set("offset", offset);
+		xml.set("factor", Std.string(factor));
+		xml.set("offset", Std.string(offset));
 
 		return xml;
 	}
@@ -69,11 +69,11 @@ class Oriented extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.factor.length()) {
-			factor = Std.parseFloat(xml.att.factor);
+		if (xml.exists("factor")) {
+			factor = Std.parseFloat(xml.get("factor"));
 		}
-		if (xml.att.offset.length()) {
-			offset = Std.parseFloat(xml.att.offset);
+		if (xml.exists("offset")) {
+			offset = Std.parseFloat(xml.get("offset"));
 		}
 	}
 }

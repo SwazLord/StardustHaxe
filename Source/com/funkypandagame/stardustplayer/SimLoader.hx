@@ -1,6 +1,10 @@
 package com.funkypandagame.stardustplayer;
 
+import openfl.Vector;
+import org.as3commons.zip.IZipFile;
+import haxe.Json;
 import openfl.errors.Error;
+import org.as3commons.zip.Zip;
 import com.funkypandagame.stardustplayer.emitter.EmitterBuilder;
 import com.funkypandagame.stardustplayer.emitter.EmitterValueObject;
 import com.funkypandagame.stardustplayer.project.ProjectValueObject;
@@ -17,8 +21,6 @@ import idv.cjcat.stardustextended.actions.Action;
 import idv.cjcat.stardustextended.actions.Spawn;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.handlers.starling.StarlingHandler;
-import org.as3commons.zip.IZipFile;
-import org.as3commons.zip.Zip;
 import starling.textures.SubTexture;
 import starling.textures.Texture;
 import starling.textures.TextureAtlas;
@@ -27,11 +29,11 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 	public static inline var DESCRIPTOR_FILENAME:String = "descriptor.json";
 	public static inline var BACKGROUND_FILENAME:String = "background.png";
 
-	private var sequenceLoader(default, never):ISequenceLoader = new SequenceLoader();
+	private var sequenceLoader:ISequenceLoader = new SequenceLoader();
 	private var projectLoaded:Bool = false;
 	private var loadedZip:Zip;
 	private var descriptorJSON:Dynamic;
-	private var rawEmitterDatas:Array<RawEmitterData> = new Array<RawEmitterData>();
+	private var rawEmitterDatas:Array<RawEmitterData> = [];
 	private var atlas:TextureAtlas;
 
 	/** Loads an .sde file (that is in a byteArray). */
@@ -41,12 +43,12 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 
 		loadedZip = new Zip();
 		loadedZip.loadBytes(data);
-		descriptorJSON = haxe.Json.parse(loadedZip.getFileByName(DESCRIPTOR_FILENAME).getContentAsString());
+		descriptorJSON = Json.parse(loadedZip.getFileByName(DESCRIPTOR_FILENAME).getContentAsString());
 		if (descriptorJSON == null) {
-			throw new Error(DESCRIPTOR_FILENAME + " not found.");
+			throw new Error('$DESCRIPTOR_FILENAME not found.');
 		}
 		if (Std.parseFloat(descriptorJSON.version) < Stardust.VERSION) {
-			trace("Stardust Sim Loader: WARNING loaded simulation is created with an old version of the editor, it might not run.");
+			trace(' Stardust Sim Loader:WARNING loaded simulation is created with an old version of the editor, it might not run.');
 		}
 
 		var atlasFound:Bool = false;
@@ -62,7 +64,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 			}
 		}
 		if (!atlasFound) {
-			throw new Error(SDEConstants.ATLAS_IMAGE_NAME + " not found, cannot load this file");
+			throw new Error('${SDEConstants.ATLAS_IMAGE_NAME} not found, cannot load this file ');
 		}
 	}
 
@@ -78,15 +80,15 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 
 				var rawData:RawEmitterData = new RawEmitterData();
 				rawData.emitterID = emitterId;
-				rawData.emitterXML = new Xml(stardustBA.readUTFBytes(stardustBA.length));
-				rawData.snapshot = (snapshot != null) ? snapshot.content : null;
+				rawData.emitterXML = Xml.parse(stardustBA.readUTFBytes(stardustBA.length));
+				rawData.snapshot = snapshot != null ? snapshot.content : null;
 				rawEmitterDatas.push(rawData);
 			}
 		}
 		var job:LoadByteArrayJob = sequenceLoader.getCompletedJobs().pop();
 		var atlasXMLBA:ByteArray = loadedZip.getFileByName(SDEConstants.ATLAS_XML_NAME).content;
-		var atlasXML:Xml = new Xml(atlasXMLBA.readUTFBytes(atlasXMLBA.length));
-		var atlasBD:BitmapData = cast((job.content), Bitmap).bitmapData;
+		var atlasXML:Xml = Xml.parse(atlasXMLBA.readUTFBytes(atlasXMLBA.length));
+		var atlasBD:BitmapData = cast(job.content, Bitmap).bitmapData;
 		atlas = new TextureAtlas(Texture.fromBitmapData(atlasBD, false), atlasXML);
 
 		loadedZip = null;
@@ -105,24 +107,23 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 			emitter.name = rawData.emitterID;
 			var emitterVO:EmitterValueObject = new EmitterValueObject(emitter);
 			project.emitters[rawData.emitterID] = emitterVO;
-			if (rawData.snapshot) {
+			if (rawData.snapshot != null) {
 				emitterVO.emitterSnapshot = rawData.snapshot;
 				emitterVO.addParticlesFromSnapshot();
 			}
-			var allTextures:Array<SubTexture> = new Array<SubTexture>();
-			var textures:Array<Texture> = atlas.getTextures(SDEConstants.getSubTexturePrefix(emitterVO.id));
-			var len:Int = textures.length;
-			for (k in 0...len) {
-				allTextures.push(textures[k]);
+			var allTextures:Vector<SubTexture> = new Vector<SubTexture>();
+			var textures:Vector<Texture> = atlas.getTextures(SDEConstants.getSubTexturePrefix(emitterVO.id));
+			for (texture in textures) {
+				allTextures.push(cast(texture, SubTexture));
 			}
-			cast((emitterVO.emitter.particleHandler), StarlingHandler).setTextures(allTextures);
+			cast(emitterVO.emitter.particleHandler, StarlingHandler).setTextures(allTextures);
 		}
 
-		for (em /* AS3HX WARNING could not determine type for var: em exp: EField(EIdent(project),emittersArr) type: null */ in project.emittersArr) {
-			for (action /* AS3HX WARNING could not determine type for var: action exp: EField(EIdent(em),actions) type: null */ in em.actions) {
-				if (Std.is(action, Spawn) && cast((action), Spawn).spawnerEmitterId) {
-					var spawnAction:Spawn = cast((action), Spawn);
-					for (emVO /* AS3HX WARNING could not determine type for var: emVO exp: EField(EIdent(project),emitters) type: null */ in project.emitters) {
+		for (em in project.get_emittersArr()) {
+			for (action in em.actions) {
+				if (Std.isOfType(action, Spawn) && cast(action, Spawn).spawnerEmitterId != null) {
+					var spawnAction:Spawn = cast(action, Spawn);
+					for (emVO in project.emitters) {
 						if (spawnAction.spawnerEmitterId == emVO.id) {
 							spawnAction.spawnerEmitter = emVO.emitter;
 						}
@@ -133,12 +134,7 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 		return project;
 	}
 
-	/**
-	 * Call this if you don't want to create more instances of this project to free up its memory and
-	 * there are no simulations from this loader running.
-	 * Note that this disposes the underlying texture atlas!
-	 * After calling it createProjectInstance() will not work.
-	 */
+	/* Call this if you don' t want to create more instances of this project to free up its memory and * there are no simulations from this loader running. * Note that this disposes the underlying texture atlas! * After calling it createProjectInstance() will not work. */
 	public function dispose():Void {
 		sequenceLoader.clearAllJobs();
 		projectLoaded = false;
@@ -148,22 +144,10 @@ class SimLoader extends EventDispatcher implements ISimLoader {
 			atlas = null;
 		}
 		for (rawEmitterData in rawEmitterDatas) {
-			if (rawEmitterData.snapshot) {
+			if (rawEmitterData.snapshot != null) {
 				rawEmitterData.snapshot.clear();
 			}
 		}
-		rawEmitterDatas = new Array<RawEmitterData>();
+		rawEmitterDatas = [];
 	}
-
-	public function new() {
-		super();
-	}
-}
-
-class RawEmitterData {
-	public var emitterID:String;
-	public var emitterXML:Xml;
-	public var snapshot:ByteArray;
-
-	public function new() {}
 }

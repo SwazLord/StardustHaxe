@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.math.Random;
@@ -34,7 +35,7 @@ class RandomDrift extends Action {
 
 	public function new(maxX:Float = 10, maxY:Float = 10, randomX:Random = null, randomY:Random = null) {
 		super();
-		priority = -3;
+		_priority = -3;
 
 		this.massless = true;
 		this.randomX = randomX;
@@ -119,8 +120,9 @@ class RandomDrift extends Action {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_randomX, _randomY];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		// return [_randomX, _randomY];
+		return new Vector<StardustElement>([_randomX, _randomY]);
 	}
 
 	override public function getXMLTagName():String {
@@ -130,11 +132,11 @@ class RandomDrift extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("massless", massless);
-		xml.set("maxX", _maxX);
-		xml.set("maxY", _maxY);
-		xml.set("randomX", _randomX.name);
-		xml.set("randomY", _randomY.name);
+		xml.set("massless", Std.string(massless));
+		xml.set("maxX", Std.string(_maxX));
+		xml.set("maxY", Std.string(_maxY));
+		xml.set("randomX", Std.string(_randomX.name));
+		xml.set("randomY", Std.string(_randomY.name));
 
 		return xml;
 	}
@@ -142,20 +144,20 @@ class RandomDrift extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.massless.length()) {
-			massless = (xml.att.massless == "true");
+		if (xml.exists("massless")) {
+			massless = (xml.get("massless") == "true");
 		}
-		if (xml.att.maxX.length()) {
-			_maxX = Std.parseFloat(xml.att.maxX);
+		if (xml.exists("maxX")) {
+			_maxX = Std.parseFloat(xml.get("maxX"));
 		}
-		if (xml.att.maxY.length()) {
-			_maxY = Std.parseFloat(xml.att.maxY);
+		if (xml.exists("maxY")) {
+			_maxY = Std.parseFloat(xml.get("maxY"));
 		}
-		if (xml.att.randomX.length()) {
-			randomX = try cast(builder.getElementByName(xml.att.randomX), Random) catch (e:Dynamic) null;
+		if (xml.exists("randomX")) {
+			randomX = try cast(builder.getElementByName(xml.get("randomX")), Random) catch (e:Dynamic) null;
 		}
-		if (xml.att.randomY.length()) {
-			randomY = try cast(builder.getElementByName(xml.att.randomY), Random) catch (e:Dynamic) null;
+		if (xml.exists("randomY")) {
+			randomY = try cast(builder.getElementByName(xml.get("randomY")), Random) catch (e:Dynamic) null;
 		}
 	}
 }

@@ -1,30 +1,27 @@
 package idv.cjcat.stardustextended.handlers.starling;
 
-import openfl.Vector;
-import openfl.display3D.IndexBuffer3D;
-import openfl.system.ApplicationDomain;
-import openfl.display3D.VertexBuffer3D;
-import openfl.display3D.Context3D;
-import openfl.utils.ByteArray;
 import starling.core.Starling;
 import starling.errors.MissingContextError;
+import openfl.Vector;
+import openfl.display3D.Context3D;
+import openfl.display3D.IndexBuffer3D;
+import openfl.display3D.VertexBuffer3D;
+import openfl.utils.ByteArray;
 
 class StarlingParticleBuffers {
 	public static var vertexBuffer(get, never):VertexBuffer3D;
-	public static var vertexBufferIdx(get, never):Int;
-	public static var buffersCreated(get, never):Bool;
-
 	public static var indexBuffer:IndexBuffer3D;
-	private static var vertexBuffers:Array<VertexBuffer3D>;
-	private static var indices:Vector<Int>;
+	private static var vertexBuffers:Vector<VertexBuffer3D>;
+	private static var indices:Vector<UInt>;
 	private static var sNumberOfVertexBuffers:Int;
+
 	private static var _vertexBufferIdx:Int = -1;
-	private static inline var ELEMENTS_PER_VERTEX:Int = 8;
+	private static inline final ELEMENTS_PER_VERTEX:Int = 8;
 
 	/** Creates buffers for the simulation.
 	 * numberOfBuffers is the amount of vertex buffers used by the particle system for multi buffering. Multi buffering
 	 * can avoid stalling of the GPU but will also increases it's memory consumption. */
-	public static function createBuffers(numParticles:Int, numberOfVertexBuffers:Int):Void {
+	public static function createBuffers(numParticles:UInt, numberOfVertexBuffers:Int):Void {
 		sNumberOfVertexBuffers = numberOfVertexBuffers;
 		_vertexBufferIdx = -1;
 
@@ -40,20 +37,16 @@ class StarlingParticleBuffers {
 
 		var context:Context3D = Starling.currentContext;
 
-		if (context == null) {
+		if (context == null)
 			throw new MissingContextError();
-		}
-		if (context.driverInfo == "Disposed") {
+		if (context.driverInfo == "Disposed")
 			return;
-		}
 
-		vertexBuffers = new Array<VertexBuffer3D>();
+		vertexBuffers = new Vector<VertexBuffer3D>();
 
-		if (ApplicationDomain.currentDomain.hasDefinition("flash.display3D.Context3DBufferUsage")) {
+		if (Type.getClassName(Type.getClass(Context3D)) == "openfl.display3D.Context3D") {
 			for (i in 0...sNumberOfVertexBuffers) {
-				// Context3DBufferUsage.DYNAMIC_DRAW; hardcoded for FP 11.x compatibility{
-
-				vertexBuffers[i] = context.createVertexBuffer.call(context, numParticles * 4, ELEMENTS_PER_VERTEX, "dynamicDraw");
+				vertexBuffers[i] = context.createVertexBuffer(numParticles * 4, ELEMENTS_PER_VERTEX, "dynamicDraw");
 			}
 		} else {
 			for (i in 0...sNumberOfVertexBuffers) {
@@ -61,7 +54,7 @@ class StarlingParticleBuffers {
 			}
 		}
 
-		var zeroBytes:ByteArray = new ByteArray();
+		var zeroBytes = new ByteArray();
 		zeroBytes.length = numParticles * 16 * ELEMENTS_PER_VERTEX;
 
 		for (i in 0...sNumberOfVertexBuffers) {
@@ -71,7 +64,7 @@ class StarlingParticleBuffers {
 		zeroBytes.length = 0;
 
 		if (indices == null) {
-			indices = new Vector<Int>();
+			indices = new Vector<UInt>();
 			var numVertices:Int = 0;
 			var indexPosition:Int = -1;
 
@@ -93,26 +86,28 @@ class StarlingParticleBuffers {
 
 	/** Call this function to switch to the next Vertex buffer before calling uploadFromVector() to implement multi
 	 *  buffering. Has only effect if numberOfVertexBuffers > 1 */
-	inline public static function switchVertexBuffer():Void {
-		_vertexBufferIdx = Std.int(++_vertexBufferIdx % sNumberOfVertexBuffers);
+	@:inline
+	public static function switchVertexBuffer():Void {
+		_vertexBufferIdx = ++_vertexBufferIdx % sNumberOfVertexBuffers;
 	}
 
-	inline private static function get_vertexBuffer():VertexBuffer3D {
+	@:inline
+	public static function get_vertexBuffer():VertexBuffer3D {
 		return vertexBuffers[_vertexBufferIdx];
 	}
 
-	inline private static function get_vertexBufferIdx():Int {
+	@:inline
+	public static function get_vertexBufferIdx():UInt {
 		return _vertexBufferIdx;
 	}
 
-	inline private static function get_buffersCreated():Bool // this has to look like this otherwise ASC 2.0 generates some garbage code
-	{
-		if (vertexBuffers != null && vertexBuffers.length > 0) {
-			return true;
-		}
+	private static var _buffersCreated:Bool;
 
-		return false;
+	public static var buffersCreated(get, never):Bool;
+
+	@:inline
+	public static function get_buffersCreated():Bool {
+		// this has to look like this otherwise ASC 2.0 generates some garbage code
+		return vertexBuffers != null && vertexBuffers.length > 0;
 	}
-
-	public function new() {}
 }

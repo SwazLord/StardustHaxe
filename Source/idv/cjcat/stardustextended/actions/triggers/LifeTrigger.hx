@@ -21,7 +21,9 @@ class LifeTrigger extends Trigger {
 	private var _lowerBound:Float;
 	private var _upperBound:Float;
 
-	public function new(lowerBound:Float = 0, upperBound:Float = MathUtil.FLOAT_MAX, triggerWithinBounds:Bool = true) {
+	private static inline var MAX_VALUE:Float = 1.79769313486232e+308;
+
+	public function new(lowerBound:Float = 0, upperBound:Float = MAX_VALUE, triggerWithinBounds:Bool = true) {
 		super();
 		this.lowerBound = lowerBound;
 		this.upperBound = upperBound;
@@ -78,17 +80,17 @@ class LifeTrigger extends Trigger {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.set("triggerWithinBounds", triggerWithinBounds);
-		xml.set("lowerBound", _lowerBound);
-		xml.set("upperBound", _upperBound);
+		xml.set("triggerWithinBounds", Std.string(triggerWithinBounds));
+		xml.set("lowerBound", Std.string(_lowerBound));
+		xml.set("upperBound", Std.string(_upperBound));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		triggerWithinBounds = (xml.att.triggerWithinBounds == "true");
-		lowerBound = Std.parseFloat(xml.att.lowerBound);
-		upperBound = Std.parseFloat(xml.att.upperBound);
+		triggerWithinBounds = (xml.get("triggerWithinBounds") == "true");
+		lowerBound = Std.parseFloat(xml.get("lowerBound"));
+		upperBound = Std.parseFloat(xml.get("upperBound"));
 	}
 }

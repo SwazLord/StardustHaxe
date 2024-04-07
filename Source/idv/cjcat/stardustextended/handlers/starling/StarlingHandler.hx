@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.handlers.starling;
 
+import openfl.Vector;
 import openfl.errors.ArgumentError;
 import openfl.errors.Error;
 import idv.cjcat.stardustextended.emitters.Emitter;
@@ -21,7 +22,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 	public var smoothing(get, set):Bool;
 	public var premultiplyAlpha(get, set):Bool;
 	public var blendMode(get, set):String;
-	public var textures(get, never):Array<SubTexture>;
+	public var textures(get, never):Vector<SubTexture>;
 
 	private var _blendMode:String = BlendMode.NORMAL;
 	private var _spriteSheetAnimationSpeed:Int = 1;
@@ -30,7 +31,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 	private var _premultiplyAlpha:Bool = true;
 	private var _spriteSheetStartAtRandomFrame:Bool;
 	private var _totalFrames:Int;
-	private var _textures:Array<SubTexture>;
+	private var _textures:Vector<SubTexture>;
 	private var _renderer:StardustStarlingRenderer;
 	private var timeSinceLastStep:Float;
 
@@ -41,7 +42,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 
 	override public function reset():Void {
 		timeSinceLastStep = 0;
-		_renderer.advanceTime(new Array<Particle>());
+		_renderer.advanceTime(new Vector<Particle>());
 	}
 
 	private function set_container(container:DisplayObjectContainer):DisplayObjectContainer {
@@ -67,7 +68,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 
 	private var _i:Int;
 
-	inline override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
+	inline override public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {
 		if (_isSpriteSheet && _spriteSheetAnimationSpeed > 0) {
 			timeSinceLastStep = timeSinceLastStep + time;
 
@@ -182,7 +183,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 	 *  - The simulations must have the same render target, smoothing, blendMode, same filter
 	 *    and the same premultiplyAlpha values.
 	**/
-	final public function setTextures(textures:Array<SubTexture>):Void {
+	final public function setTextures(textures:Vector<SubTexture>):Void {
 		if (textures == null || textures.length == 0) {
 			throw new ArgumentError("the textures parameter cannot be null and needs to hold at least 1 element");
 		}
@@ -192,7 +193,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 		_isSpriteSheet = textures.length > 1;
 		_textures = textures;
 
-		var frames:Array<Frame> = [];
+		var frames:Vector<Frame> = new Vector<Frame>();
 
 		for (texture in textures) {
 			if (texture.root != textures[0].root) {
@@ -208,7 +209,7 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 		_renderer.setTextures(textures[0].root, frames);
 	}
 
-	private function get_textures():Array<SubTexture> {
+	private function get_textures():Vector<SubTexture> {
 		return _textures;
 	}
 
@@ -219,20 +220,20 @@ class StarlingHandler extends ParticleHandler implements ISpriteSheetHandler {
 
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
-		xml.set("spriteSheetAnimationSpeed", _spriteSheetAnimationSpeed);
-		xml.set("spriteSheetStartAtRandomFrame", _spriteSheetStartAtRandomFrame);
-		xml.set("smoothing", smoothing);
-		xml.set("blendMode", _blendMode);
-		xml.set("premultiplyAlpha", _premultiplyAlpha);
+		xml.set("spriteSheetAnimationSpeed", Std.string(_spriteSheetAnimationSpeed));
+		xml.set("spriteSheetStartAtRandomFrame", Std.string(_spriteSheetStartAtRandomFrame));
+		xml.set("smoothing", Std.string(smoothing));
+		xml.set("blendMode", Std.string(_blendMode));
+		xml.set("premultiplyAlpha", Std.string(_premultiplyAlpha));
 		return xml;
 	}
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		_spriteSheetAnimationSpeed = Std.parseFloat(xml.att.spriteSheetAnimationSpeed);
-		_spriteSheetStartAtRandomFrame = (xml.att.spriteSheetStartAtRandomFrame == "true");
-		smoothing = (xml.att.smoothing == "true");
-		blendMode = (xml.att.blendMode);
-		premultiplyAlpha = (xml.att.premultiplyAlpha == "true");
+		_spriteSheetAnimationSpeed = Std.parseInt(xml.get("spriteSheetAnimationSpeed"));
+		_spriteSheetStartAtRandomFrame = (xml.get("spriteSheetStartAtRandomFrame") == "true");
+		smoothing = (xml.get("smoothing") == "true");
+		blendMode = (xml.get("blendMode"));
+		premultiplyAlpha = (xml.get("premultiplyAlpha") == "true");
 	}
 }

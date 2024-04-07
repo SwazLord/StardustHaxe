@@ -1,5 +1,7 @@
 package idv.cjcat.stardustextended.handlers;
 
+import openfl.Vector;
+import openfl.display.BitmapData;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.handlers.ParticleHandler;
 import idv.cjcat.stardustextended.particles.Particle;
@@ -23,7 +25,7 @@ class PixelHandler extends ParticleHandler {
 	private var y:Int;
 	private var finalColor:Int;
 
-	inline final override public function stepEnd(emitter:Emitter, particles:Array<Particle>, time:Float):Void {
+	inline final override public function stepEnd(emitter:Emitter, particles:Vector<Particle>, time:Float):Void {
 		for (particle in particles) {
 			x = Std.int(particle.x + 0.5);
 

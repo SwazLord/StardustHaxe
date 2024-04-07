@@ -96,8 +96,8 @@ class BitmapField extends Field {
 		} else if ((px < 0) || (px >= _bitmapData.width) || (py < 0) || (py >= _bitmapData.height)) {
 			return null;
 		}
-		var finalX:Float;
-		var finalY:Float;
+		var finalX:Float = 0;
+		var finalY:Float = 0;
 		var color:Int = _bitmapData.getPixel(Std.int(px), Std.int(py));
 		switch (channelX) {
 			case 1:

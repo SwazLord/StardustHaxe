@@ -25,7 +25,7 @@ class Move extends Action {
 
 	public function new(multiplier:Float = 1) {
 		super();
-		priority = -4;
+		_priority = -4;
 
 		this.multiplier = multiplier;
 	}
@@ -49,7 +49,7 @@ class Move extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("multiplier", multiplier);
+		xml.set("multiplier", Std.string(multiplier));
 
 		return xml;
 	}
@@ -57,8 +57,8 @@ class Move extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.multiplier.length()) {
-			multiplier = Std.parseFloat(xml.att.multiplier);
+		if (xml.exists("multiplier")) {
+			multiplier = Std.parseFloat(xml.get("multiplier"));
 		}
 	}
 }

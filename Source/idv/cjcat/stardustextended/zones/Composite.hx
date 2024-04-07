@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.zones;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.xml.XMLBuilder;
 import idv.cjcat.stardustextended.geom.MotionData2D;
@@ -13,15 +14,15 @@ import idv.cjcat.stardustextended.geom.MotionData2D;
  * </p>
  */
 class Composite extends Zone {
-	public var zones(get, set):Array<Zone>;
+	public var zones(get, set):Vector<Zone>;
 
 	private var zoneCollection:ZoneCollection;
 
-	private function get_zones():Array<Zone> {
+	private function get_zones():Vector<Zone> {
 		return zoneCollection.zones;
 	}
 
-	private function set_zones(value:Array<Zone>):Array<Zone> {
+	private function set_zones(value:Vector<Zone>):Vector<Zone> {
 		zoneCollection.zones = value;
 		return value;
 	}
@@ -54,8 +55,8 @@ class Composite extends Zone {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return zoneCollection.zones;
+	override public function getRelatedObjects():Vector<StardustElement> {
+		return cast(zoneCollection.zones.slice());
 	}
 
 	override public function getXMLTagName():String {
@@ -70,7 +71,7 @@ class Composite extends Zone {
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-		zoneCollection.zones = new Array<Zone>();
+		zoneCollection.zones = new Vector<Zone>();
 		zoneCollection.parseFromStardustXML(xml, builder);
 	}
 }

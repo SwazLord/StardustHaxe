@@ -1,5 +1,6 @@
 package idv.cjcat.stardustextended.actions;
 
+import openfl.Vector;
 import idv.cjcat.stardustextended.StardustElement;
 import idv.cjcat.stardustextended.emitters.Emitter;
 import idv.cjcat.stardustextended.geom.Vec2D;
@@ -90,8 +91,9 @@ class NormalDrift extends Action {
 	// Xml
 	//------------------------------------------------------------------------------------------------
 
-	override public function getRelatedObjects():Array<StardustElement> {
-		return [_random];
+	override public function getRelatedObjects():Vector<StardustElement> {
+		// return [_random];
+		return new Vector<StardustElement>([_random]);
 	}
 
 	override public function getXMLTagName():String {
@@ -101,9 +103,9 @@ class NormalDrift extends Action {
 	override public function toXML():Xml {
 		var xml:Xml = super.toXML();
 
-		xml.set("massless", massless);
-		xml.set("max", _max);
-		xml.set("random", _random.name);
+		xml.set("massless", Std.string(massless));
+		xml.set("max", Std.string(_max));
+		xml.set("random", Std.string(_random.name));
 
 		return xml;
 	}
@@ -111,14 +113,14 @@ class NormalDrift extends Action {
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
 
-		if (xml.att.massless.length()) {
-			massless = (xml.att.massless == "true");
+		if (xml.exists("massless")) {
+			massless = (xml.get("massless") == "true");
 		}
-		if (xml.att.max.length()) {
-			max = Std.parseFloat(xml.att.max);
+		if (xml.exists("max")) {
+			max = Std.parseFloat(xml.get("max"));
 		}
-		if (xml.att.random.length()) {
-			random = try cast(builder.getElementByName(xml.att.random), Random) catch (e:Dynamic) null;
+		if (xml.exists("random")) {
+			random = try cast(builder.getElementByName(xml.get("random")), Random) catch (e:Dynamic) null;
 		}
 	}
 }

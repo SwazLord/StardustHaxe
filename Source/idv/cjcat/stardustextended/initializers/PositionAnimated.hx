@@ -60,7 +60,8 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 	}
 
 	override public function initialize(particle:Particle):Void {
-		var md2D:MotionData2D = zoneCollection.getRandomPointInZones();
+		var md2D:MotionData2D = new MotionData2D(0, 0);
+		md2D = zoneCollection.getRandomPointInZones();
 		if (md2D != null) {
 			particle.x = md2D.x;
 			particle.y = md2D.y;
@@ -105,7 +106,7 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 		if (positions != null && positions.length > 0) {
 			Lib.registerClassAlias("String", String);
 			Lib.registerClassAlias("Point", Point);
-			Lib.registerClassAlias("VecPoint", Vector);
+			Lib.registerClassAlias("VecPoint", VecPoint);
 			var bytes = new ByteArray();
 			bytes.writeObject(positions);
 			xml.set("positions", Base64.encode(bytes));
@@ -125,7 +126,7 @@ class PositionAnimated extends Initializer implements IZoneContainer {
 		if (xml.exists("positions")) {
 			Lib.registerClassAlias("String", String);
 			Lib.registerClassAlias("Point", Point);
-			Lib.registerClassAlias("VecPoint", Vector);
+			Lib.registerClassAlias("VecPoint", VecPoint);
 			var bytes = new ByteArray();
 			bytes = Base64.decode(xml.get("positions"));
 			bytes.position = 0;

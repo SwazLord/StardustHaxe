@@ -29,8 +29,8 @@ class StardustStarlingRenderer extends DisplayObject {
 
 	public static inline var MAX_POSSIBLE_PARTICLES:Int = 16383;
 	private static var DEGREES_TO_RADIANS:Float = Math.PI / 180;
-	private static var sCosLUT:Array<Float> = new Array<Float>();
-	private static var sSinLUT:Array<Float> = new Array<Float>();
+	private static var sCosLUT:Vector<Float> = new Vector<Float>();
+	private static var sSinLUT:Vector<Float> = new Vector<Float>();
 	private static var renderAlpha:Vector<Float> = new Vector<Float>();
 
 	private static var numberOfVertexBuffers:Int;
@@ -42,7 +42,7 @@ class StardustStarlingRenderer extends DisplayObject {
 	private var mTexture:Texture;
 	private var mBatched:Bool;
 	private var vertexes:Vector<Float>;
-	private var frames:Array<Frame>;
+	private var frames:Vector<Frame>;
 
 	public var mNumParticles:Int = 0;
 	public var texSmoothing:String;
@@ -93,7 +93,7 @@ class StardustStarlingRenderer extends DisplayObject {
 		StarlingParticleBuffers.createBuffers(maxParticles, numberOfVertexBuffers);
 	}
 
-	public function setTextures(texture:Texture, _frames:Array<Frame>):Void {
+	public function setTextures(texture:Texture, _frames:Vector<Frame>):Void {
 		mTexture = texture;
 		frames = _frames;
 	}
@@ -128,7 +128,7 @@ class StardustStarlingRenderer extends DisplayObject {
 
 	private var _i:Int;
 
-	inline final public function advanceTime(mParticles:Array<Particle>):Void {
+	inline final public function advanceTime(mParticles:Vector<Particle>):Void {
 		mNumParticles = mParticles.length;
 		vertexes.fixed = false;
 		vertexes.length = mNumParticles * 32;
