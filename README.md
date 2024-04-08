@@ -4,14 +4,6 @@ Stardust a fast, extendable particle effect library for Stage3D (it requires Sta
 
 This project is a port of the Stardust Particles Framework from ActionScript 3 to Haxe, specifically for use with the Starling Framework. The Stardust Particles Framework is a powerful and flexible particle system that allows you to create stunning visual effects in your games and applications.
 
-## Features
-
-- **Particle Emitters**: Create particle emitters with various shapes, such as cones, spheres, and rectangles.
-- **Particle Renderers**: Render particles using different techniques, including images, meshes, and batched rendering for optimal performance.
-- **Particle Modifiers**: Apply modifiers to particles to control their behavior, such as gravity, drag, and color over life.
-- **Particle Actions**: Perform actions on particles, such as spawning new particles, emitting sound, or triggering other events.
-- **XML Import/Export**: Import and export particle system configurations using XML format.
-
 For detailed information read the [Starling wiki](http://wiki.starling-framework.org/extensions/stardust-engine)
 
 ## Examples(click the gifs to see it in action)
