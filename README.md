@@ -14,16 +14,12 @@ This project is a port of the Stardust Particles Framework from ActionScript 3 t
 
 For detailed information read the [Starling wiki](http://wiki.starling-framework.org/extensions/stardust-engine)
 
-## Examples
+## Examples(click the gifs to see it in action)
 
-1. Blazing Fire
-https://swazlord.itch.io/blazing-fire-stardust-particles-example
+[![Blazing Fire](https://i.gyazo.com/15dfcdac4e9edc7dccc6a4baddbfbfd4.gif)](https://swazlord.itch.io/blazing-fire-stardust-particles-example)
+[![Fireworks](https://i.gyazo.com/8630f4972aad4cbbf3b36f8c6c568517.gif)](https://swazlord.itch.io/fireworks-stardust-particles-example)
+[![Rocket](https://i.gyazo.com/0bdec2f4e0d766d6a9fb317fa20b9a58.gif)](https://swazlord.itch.io/rocket-with-trail-stardust-particles-example)
 
-2. Rocket With Trail
-https://swazlord.itch.io/rocket-with-trail-stardust-particles-example
-
-3. Fireworks
-https://swazlord.itch.io/fireworks-stardust-particles-example
 
 ## Contributing
 
