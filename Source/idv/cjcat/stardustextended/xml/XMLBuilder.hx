@@ -173,10 +173,7 @@ class XMLBuilder {
 		var ret:Vector<StardustElement> = new Vector<StardustElement>();
 		for (key in elements.keys()) {
 			if (Std.isOfType(elements.get(key), cl)) {
-				trace("yes! its of type class " + cl);
 				ret.push(elements[key]);
-			} else {
-				trace("no! its of type class " + cl);
 			}
 		}
 		return ret;
@@ -191,24 +188,23 @@ class XMLBuilder {
 	 * @param    xml
 	 */
 	public function buildFromXML(xml:Xml):Void {
-		trace("xml = " + xml);
 		var firstElement:Xml = xml.firstElement();
 		elements = new Map<String, StardustElement>();
 		var element:StardustElement;
-		trace("elementClasses = " + elementClasses);
 		for (tag in firstElement.elements()) {
 			for (node in tag.elements()) {
-				trace("node = " + node.toString());
-				try {
-					trace("node name = " + node.nodeName);
-					var NodeClass:Class<Dynamic> = elementClasses[node.nodeName];
-					element = cast(Type.createInstance(NodeClass, []), StardustElement);
-				} catch (err:TypeError) {
-					throw new Error("Unable to instantiate class "
-						+ node.get("name")
-						+ ". Perhaps you forgot to "
-						+ "call XMLBuilder.registerClass for this type? Original error: "
-						+ err.toString());
+
+				//trace("node => " + node.elements());
+					try {
+						//trace("node name = " + node.nodeName);
+						var NodeClass:Class<Dynamic> = elementClasses[node.nodeName];
+						element = cast(Type.createInstance(NodeClass, []), StardustElement);
+					} catch (err:TypeError) {
+						throw new Error("Unable to instantiate class "
+							+ node.get("name")
+							+ ". Perhaps you forgot to "
+							+ "call XMLBuilder.registerClass for this type? Original error: "
+							+ err.toString());
 				}
 				if (elements[node.get("name")] != null) {
 					throw new Error("Duplicate element name: " + node.get("name") + " " + element.name);

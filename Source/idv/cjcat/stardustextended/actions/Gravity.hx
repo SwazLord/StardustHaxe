@@ -109,12 +109,10 @@ class Gravity extends Action implements IFieldContainer {
 
 	override public function parseXML(xml:Xml, builder:XMLBuilder = null):Void {
 		super.parseXML(xml, builder);
-
 		clearFields();
-		if (xml.exists("fields")) {
-			for (node in xml.elementsNamed("fields").next().elements()) {
-				addField(cast(builder.getElementByName(node.get("name")), Field));
-			}
+
+		for (node in xml.elementsNamed("fields").next().elements()) {
+			addField(cast(builder.getElementByName(node.get("name")), Field));
 		}
 	}
 

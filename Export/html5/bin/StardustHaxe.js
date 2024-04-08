@@ -924,7 +924,7 @@ ApplicationMain.main = function() {
 ApplicationMain.create = function(config) {
 	var app = new openfl_display_Application();
 	ManifestResources.init(config);
-	app.meta.h["build"] = "8";
+	app.meta.h["build"] = "9";
 	app.meta.h["company"] = "Company Name";
 	app.meta.h["file"] = "StardustHaxe";
 	app.meta.h["name"] = "StardustHaxe";
@@ -7509,7 +7509,6 @@ Game.prototype = $extend(starling_display_Sprite.prototype,{
 	,project: null
 	,cnt: null
 	,onSimLoaded: function(event) {
-		haxe_Log.trace("sim loaded",{ fileName : "Source/Game.hx", lineNumber : 58, className : "Game", methodName : "onSimLoaded"});
 		this.loader.removeEventListener("complete",$bind(this,this.onSimLoaded));
 		this.project = this.loader.createProjectInstance();
 		this.player.setProject(this.project);
@@ -8359,14 +8358,12 @@ com_funkypandagame_stardustplayer_SimLoader.prototype = $extend(openfl_events_Ev
 		if(parseFloat(this.descriptorJSON.version) < 2.1) {
 			haxe_Log.trace(" Stardust Sim Loader:WARNING loaded simulation is created with an old version of the editor, it might not run.",{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 51, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim"});
 		}
-		haxe_Log.trace("loadedZip getFileCount = " + this.loadedZip.getFileCount(),{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 53, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim"});
 		var atlasFound = false;
 		var _g = 0;
 		var _g1 = this.loadedZip.getFileCount();
 		while(_g < _g1) {
 			var i = _g++;
 			var loadedFileName = this.loadedZip.getFileAt(i).get_filename();
-			haxe_Log.trace("loaded FileName = ",{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 57, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "loadSim", customParams : [loadedFileName]});
 			if(loadedFileName == "atlas_0.png") {
 				var loadAtlasJob = new com_funkypandagame_stardustplayer_sequenceLoader_LoadByteArrayJob(loadedFileName,loadedFileName,this.loadedZip.getFileAt(i).get_content());
 				this.sequenceLoader.addJob(loadAtlasJob);
@@ -8394,7 +8391,6 @@ com_funkypandagame_stardustplayer_SimLoader.prototype = $extend(openfl_events_Ev
 				var rawData = new com_funkypandagame_stardustplayer_RawEmitterData();
 				rawData.emitterID = emitterId;
 				rawData.emitterXML = Xml.parse(stardustBA.readUTFBytes(openfl_utils_ByteArray.get_length(stardustBA)));
-				haxe_Log.trace("rawData emitterXML = " + Std.string(rawData.emitterXML),{ fileName : "Source/com/funkypandagame/stardustplayer/SimLoader.hx", lineNumber : 85, className : "com.funkypandagame.stardustplayer.SimLoader", methodName : "onProjectAtlasLoaded"});
 				rawData.snapshot = snapshot != null ? snapshot.get_content() : null;
 				this.rawEmitterDatas.push(rawData);
 			}
@@ -8624,10 +8620,8 @@ com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__name__ = "com.funkypa
 com_funkypandagame_stardustplayer_emitter_EmitterBuilder.__properties__ = {get_builder:"get_builder"};
 com_funkypandagame_stardustplayer_emitter_EmitterBuilder.buildEmitter = function(sourceXML,uniqueEmitterId) {
 	com_funkypandagame_stardustplayer_emitter_EmitterBuilder.createBuilderIfNeeded();
-	haxe_Log.trace("uniqueEmitterId = " + uniqueEmitterId,{ fileName : "Source/com/funkypandagame/stardustplayer/emitter/EmitterBuilder.hx", lineNumber : 15, className : "com.funkypandagame.stardustplayer.emitter.EmitterBuilder", methodName : "buildEmitter"});
 	com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.buildFromXML(sourceXML);
 	var star_ele = com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter);
-	haxe_Log.trace("star_ele = " + (star_ele == null ? "null" : star_ele != null ? star_ele.toString() : null),{ fileName : "Source/com/funkypandagame/stardustplayer/emitter/EmitterBuilder.hx", lineNumber : 19, className : "com.funkypandagame.stardustplayer.emitter.EmitterBuilder", methodName : "buildEmitter"});
 	var emitter = js_Boot.__cast(com_funkypandagame_stardustplayer_emitter_EmitterBuilder._builder.getElementsByClass(idv_cjcat_stardustextended_emitters_Emitter).get(0) , idv_cjcat_stardustextended_emitters_Emitter);
 	emitter.name = uniqueEmitterId;
 	return emitter;
@@ -14322,13 +14316,12 @@ idv_cjcat_stardustextended_actions_Gravity.prototype = $extend(idv_cjcat_stardus
 	}
 	,parseXML: function(xml,builder) {
 		idv_cjcat_stardustextended_actions_Action.prototype.parseXML.call(this,xml,builder);
+		haxe_Log.trace("xml = " + Std.string(xml),{ fileName : "Source/idv/cjcat/stardustextended/actions/Gravity.hx", lineNumber : 112, className : "idv.cjcat.stardustextended.actions.Gravity", methodName : "parseXML"});
 		this.clearFields();
-		if(xml.exists("fields")) {
-			var node = xml.elementsNamed("fields").next().elements();
-			while(node.hasNext()) {
-				var node1 = node.next();
-				this.addField(js_Boot.__cast(builder.getElementByName(node1.get("name")) , idv_cjcat_stardustextended_fields_Field));
-			}
+		var node = xml.elementsNamed("fields").next().elements();
+		while(node.hasNext()) {
+			var node1 = node.next();
+			this.addField(js_Boot.__cast(builder.getElementByName(node1.get("name")) , idv_cjcat_stardustextended_fields_Field));
 		}
 	}
 	,__class__: idv_cjcat_stardustextended_actions_Gravity
@@ -19790,32 +19783,27 @@ idv_cjcat_stardustextended_xml_XMLBuilder.prototype = {
 		while(key_current < key_length) {
 			var key = key_keys[key_current++];
 			if(js_Boot.__instanceof(this.elements.h[key],cl)) {
-				haxe_Log.trace("yes! its of type class " + Std.string(cl),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 176, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "getElementsByClass"});
 				ret.push(this.elements.h[key]);
-			} else {
-				haxe_Log.trace("no! its of type class " + Std.string(cl),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 179, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "getElementsByClass"});
 			}
 		}
 		return ret;
 	}
 	,buildFromXML: function(xml) {
-		haxe_Log.trace("xml = " + Std.string(xml),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 194, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 		var firstElement = xml.firstElement();
 		this.elements = new haxe_ds_StringMap();
 		var element;
-		haxe_Log.trace("elementClasses = " + (this.elementClasses == null ? "null" : haxe_ds_StringMap.stringify(this.elementClasses.h)),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 198, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 		var tag = firstElement.elements();
 		while(tag.hasNext()) {
 			var tag1 = tag.next();
 			var node = tag1.elements();
 			while(node.hasNext()) {
 				var node1 = node.next();
-				haxe_Log.trace("node = " + haxe_xml_Printer.print(node1),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 201, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
+				haxe_Log.trace("node => " + Std.string(node1.elements()),{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 197, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 				try {
 					if(node1.nodeType != Xml.Element) {
 						throw haxe_Exception.thrown("Bad node type, expected Element but found " + (node1.nodeType == null ? "null" : XmlType.toString(node1.nodeType)));
 					}
-					haxe_Log.trace("node name = " + node1.nodeName,{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 203, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
+					haxe_Log.trace("node name = " + node1.nodeName,{ fileName : "Source/idv/cjcat/stardustextended/xml/XMLBuilder.hx", lineNumber : 199, className : "idv.cjcat.stardustextended.xml.XMLBuilder", methodName : "buildFromXML"});
 					var this1 = this.elementClasses;
 					if(node1.nodeType != Xml.Element) {
 						throw haxe_Exception.thrown("Bad node type, expected Element but found " + (node1.nodeType == null ? "null" : XmlType.toString(node1.nodeType)));
@@ -37533,7 +37521,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 789556;
+	this.version = 370306;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";

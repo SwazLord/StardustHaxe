@@ -59,7 +59,7 @@ class Action extends StardustElement {
 	 */
 	public var active:Bool;
 
-	private var _needsSortedParticles:Bool;
+	public var _needsSortedParticles:Bool;
 
 	public var needsSortedParticles(get, never):Bool;
 

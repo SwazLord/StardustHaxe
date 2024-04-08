@@ -55,7 +55,6 @@ class Game extends Sprite {
 	}
 
 	private function onSimLoaded(event:Event):Void {
-		trace("sim loaded");
 		loader.removeEventListener(Event.COMPLETE, onSimLoaded);
 		project = loader.createProjectInstance();
 		player.setProject(project);

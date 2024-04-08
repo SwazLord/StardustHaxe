@@ -12,11 +12,9 @@ class EmitterBuilder {
 
 	public static function buildEmitter(sourceXML:Xml, uniqueEmitterId:String):Emitter {
 		createBuilderIfNeeded();
-		trace("uniqueEmitterId = " + uniqueEmitterId);
 		_builder.buildFromXML(sourceXML);
 		// var emitter:Emitter = cast(_builder.getElementsByClass(Emitter)[0], Emitter);
 		var star_ele:Vector<StardustElement> = _builder.getElementsByClass(Emitter);
-		trace("star_ele = " + star_ele);
 		var emitter:Emitter = cast((_builder.getElementsByClass(Emitter))[0], Emitter);
 		emitter.name = uniqueEmitterId;
 		return emitter;
