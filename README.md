@@ -9,7 +9,7 @@ For detailed information read the [Starling wiki](http://wiki.starling-framework
 ## Examples(click the gifs to see it in action)
 
 [![Rocket](https://i.gyazo.com/0bdec2f4e0d766d6a9fb317fa20b9a58.gif)](https://swazlord.itch.io/rocket-with-trail-stardust-particles-example)
-[![Blazing Fire](https://i.gyazo.com/c2e9a38e721704b2302752ce3089709b.gif)](https://swazlord.itch.io/blazing-fire-stardust-particles-example)
+[![Blazing Fire](https://i.gyazo.com/cdaf97bff5d9b4347a5b4a2ce6273c99.gif)](https://swazlord.itch.io/blazing-fire-stardust-particles-example)
 [![Fireworks](https://i.gyazo.com/8630f4972aad4cbbf3b36f8c6c568517.gif)](https://swazlord.itch.io/fireworks-stardust-particles-example)
 [![BigExplosion](https://i.gyazo.com/bb9500bfc23e20b093919435bcc7b493.gif)](https://swazlord.itch.io/big-explosion-stardust-particles-example)
 
